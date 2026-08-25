@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SDET Grind FYP | StageTimePNW ➔ Costco Travel QE</title>
+  <style>
+    :root {
+      --bg: #010101;
+      --card-bg: #121212;
+      --card-hover: #181818;
+      --border: rgba(255, 255, 255, 0.1);
+      --tt-cyan: #25F4EE;
+      --tt-pink: #FE2C55;
+      --tt-white: #FFFFFF;
+      --tt-gray: #8A8B91;
+      --glow-cyan: rgba(37, 244, 238, 0.35);
+      --glow-pink: rgba(254, 44, 85, 0.35);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg); color: var(--tt-white); padding: 24px 16px; min-height: 100vh; }
+    .container { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+    
+    /* TikTok Header */
+    header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 1px solid var(--border); padding-bottom: 18px; }
+    .logo-badge { display: flex; align-items: center; gap: 10px; }
+    .tt-logo { font-size: 1.8rem; font-weight: 900; letter-spacing: -1px; text-shadow: -2px 0 var(--tt-cyan), 2px 0 var(--tt-pink); }
+    .sub-title { color: var(--tt-gray); font-size: 0.85rem; font-weight: 500; }
+    
+    .badge-row { display: flex; gap: 12px; }
+    .badge { background: #1f1f1f; border: 1px solid var(--border); padding: 8px 16px; border-radius: 30px; font-size: 0.85rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .badge.cyan { color: var(--tt-cyan); border-color: var(--tt-cyan); box-shadow: 0 0 14px var(--glow-cyan); }
+    .badge.pink { color: var(--tt-pink); border-color: var(--tt-pink); box-shadow: 0 0 14px var(--glow-pink); }
+
+    /* Readiness Progress Bar */
+    .progress-section { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    .progress-header { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.95rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+    .progress-bar-bg { width: 100%; height: 16px; background: #222; border-radius: 10px; overflow: hidden; position: relative; }
+    .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--tt-cyan), var(--tt-pink)); border-radius: 10px; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 12px var(--glow-pink); }
+
+    /* Grid */
+    .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 16px; transition: border-color 0.2s; }
+    .card:hover { border-color: rgba(255,255,255,0.25); }
+    .card-title { font-size: 1.1rem; font-weight: 800; color: #fff; display: flex; align-items: center; justify-content: space-between; }
+    .card-title span.tag { font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; background: rgba(255,255,255,0.08); color: var(--tt-cyan); font-weight: 700; }
+
+    /* Timer */
+    .timer-display { font-size: 3.4rem; font-weight: 900; text-align: center; font-variant-numeric: tabular-nums; padding: 10px 0; letter-spacing: -1px; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+    .timer-btn-row { display: flex; gap: 10px; justify-content: center; }
+    button { cursor: pointer; border: none; border-radius: 10px; font-weight: 800; padding: 12px 20px; font-size: 0.9rem; transition: transform 0.1s ease, box-shadow 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
+    button:active { transform: scale(0.96); }
+    .btn-start { background: var(--tt-cyan); color: #000; box-shadow: 0 0 15px var(--glow-cyan); }
+    .btn-pause { background: #ffaa00; color: #000; }
+    .btn-reset { background: #2a2a2a; color: var(--tt-white); }
+    .btn-save { background: var(--tt-pink); color: #fff; width: 100%; box-shadow: 0 0 18px var(--glow-pink); }
+
+    /* Syllabus */
+    .checklist { display: flex; flex-direction: column; gap: 10px; max-height: 440px; overflow-y: auto; padding-right: 4px; }
+    .check-item { display: flex; align-items: flex-start; gap: 12px; background: #191919; padding: 12px; border-radius: 10px; border: 1px solid var(--border); transition: transform 0.15s; }
+    .check-item:hover { transform: translateX(2px); border-color: rgba(37, 244, 238, 0.4); }
+    .check-item input { margin-top: 3px; accent-color: var(--tt-pink); width: 18px; height: 18px; cursor: pointer; }
+    .check-label { font-size: 0.88rem; line-height: 1.4; color: var(--tt-white); }
+    .check-label strong { color: var(--tt-cyan); display: block; font-size: 0.92rem; margin-bottom: 2px; }
+
+    /* Inputs */
+    .log-form { display: flex; flex-direction: column; gap: 12px; }
+    input, textarea { background: #0a0a0a; border: 1px solid var(--border); color: #fff; border-radius: 10px; padding: 12px; font-size: 0.9rem; outline: none; }
+    input:focus, textarea:focus { border-color: var(--tt-cyan); box-shadow: 0 0 10px var(--glow-cyan); }
+    textarea { resize: vertical; min-height: 90px; }
+    
+    .history-list { display: flex; flex-direction: column; gap: 12px; max-height: 280px; overflow-y: auto; }
+    .history-card { background: #191919; border-left: 4px solid var(--tt-pink); padding: 14px; border-radius: 8px; font-size: 0.88rem; }
+    .history-header { display: flex; justify-content: space-between; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .history-body { color: var(--tt-gray); white-space: pre-line; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="logo-badge">
+        <div class="tt-logo">StageTimePNW</div>
+        <div>
+          <div style="font-weight: 800; font-size: 1.1rem;">COSTCO TRAVEL QE ROADMAP</div>
+          <div class="sub-title">#SDETGrind • #AutomationEngineer • #ShiftLeft</div>
+        </div>
+      </div>
+      <div class="badge-row">
+        <div class="badge pink">🔥 <span id="streakCount">1</span> DAY STREAK</div>
+        <div class="badge cyan">⏱️ <span id="totalHours">0.0</span> HRS LOGGED</div>
+      </div>
+    </header>
+
+    <!-- Costco Readiness Bar -->
+    <div class="progress-section">
+      <div class="progress-header">
+        <span>🎯 Costco Travel QE Readiness Score</span>
+        <span id="readinessScore" style="color: var(--tt-cyan);">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="readinessFill"></div>
+      </div>
+    </div>
+
+    <!-- Grid Row 1 -->
+    <div class="dashboard-grid">
+      <!-- Session Timer -->
+      <div class="card">
+        <div class="card-title">
+          <span>⏱️ Live Study Session</span>
+          <span class="tag">GRIND MODE</span>
+        </div>
+        <div class="timer-display" id="timer">00:00:00</div>
+        <div class="timer-btn-row">
+          <button class="btn-start" onclick="startTimer()">▶ Start</button>
+          <button class="btn-pause" onclick="pauseTimer()">⏸ Pause</button>
+          <button class="btn-reset" onclick="resetTimer()">↺ Reset</button>
+        </div>
+      </div>
+
+      <!-- End of Day Form -->
+      <div class="card">
+        <div class="card-title">
+          <span>📝 Daily Checkout Log</span>
+          <span class="tag" style="color: var(--tt-pink);">END OF SESSION</span>
+        </div>
+        <div class="log-form">
+          <input type="text" id="logTopic" placeholder="Topic (e.g. Day 1: Shift-Left & Modifiers)" />
+          <textarea id="logSummary" placeholder="What did we accomplish today? Key concepts mastered..."></textarea>
+          <button class="btn-save" onclick="saveDailyLog()">⚡ Save Checkout Log</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grid Row 2 -->
+    <div class="dashboard-grid">
+      <!-- Syllabus -->
+      <div class="card">
+        <div class="card-title">
+          <span>📋 Capstone Syllabus & Skills</span>
+          <span class="tag">COSTCO QE</span>
+        </div>
+        <div class="checklist" id="checklistContainer"></div>
+      </div>
+
+      <!-- History Log -->
+      <div class="card">
+        <div class="card-title">
+          <span>📜 Daily Checkout History</span>
+          <span class="tag">PROGRESS</span>
+        </div>
+        <div class="history-list" id="historyList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SYLLABUS = [
+      { id: "m1_duplicate_bug", title: "App Architecture", desc: "Diagnosed & fixed duplicate Rickshaw header bug in SwiftUI", done: true },
+      { id: "m1_sorting_logic", title: "Data Parsing", desc: "Implemented time parsing & chronological show sorting in OpenMic.swift", done: true },
+      { id: "m1_shift_left", title: "Lesson 1: Shift-Left", desc: "Mastered SwiftUI Box Rule & added .accessibilityIdentifier tags", done: true },
+      { id: "m2_env_setup", title: "Lesson 2: Environment", desc: "Verify Node.js, Appium server, and XCUITest driver setup", done: false },
+      { id: "m2_wdio_init", title: "Lesson 2: Test Harness", desc: "Initialize WebdriverIO (JS) test project & configure iOS capabilities", done: false },
+      { id: "m3_pom_design", title: "Lesson 3: Page Object Model", desc: "Architect RickshawPage.js & MapPage.js using accessibility selectors", done: false },
+      { id: "m3_first_test", title: "Lesson 3: Live UI Test", desc: "Run automated Rickshaw form validation test on iOS Simulator", done: false },
+      { id: "m4_db_assertions", title: "Lesson 4: DB Verification", desc: "Query Supabase PostgreSQL in JS to assert signup payload insertion", done: false },
+      { id: "m5_cicd_pipeline", title: "Lesson 5: CI/CD & DevOps", desc: "Build GitHub Actions automated regression pipeline with HTML reports", done: false },
+      { id: "m6_interview_star", title: "Lesson 6: Interview Mastery", desc: "Master Costco Travel STAR behavioral & technical architecture defense", done: false }
+    ];
+
+    let state = JSON.parse(localStorage.getItem('sdet_tracker_state_tt')) || {
+      seconds: 0,
+      totalSeconds: 0,
+      streak: 1,
+      lastActiveDate: new Date().toDateString(),
+      syllabus: SYLLABUS,
+      logs: []
+    };
+
+    let timerInterval = null;
+
+    function init() {
+      if (!state.syllabus || state.syllabus.length !== SYLLABUS.length) {
+        state.syllabus = SYLLABUS;
+      }
+      renderChecklist();
+      renderLogs();
+      updateScore();
+      updateBadges();
+      renderTimer();
+    }
+
+    function renderChecklist() {
+      const container = document.getElementById('checklistContainer');
+      container.innerHTML = state.syllabus.map((item, idx) => `
+        <div class="check-item">
+          <input type="checkbox" id="${item.id}" ${item.done ? 'checked' : ''} onchange="toggleCheck(${idx})" />
+          <div class="check-label">
+            <strong>${item.title}</strong>
+            ${item.desc}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function toggleCheck(idx) {
+      state.syllabus[idx].done = !state.syllabus[idx].done;
+      saveState();
+      updateScore();
+    }
+
+    function updateScore() {
+      const completed = state.syllabus.filter(i => i.done).length;
+      const total = state.syllabus.length;
+      const pct = Math.round((completed / total) * 100);
+      document.getElementById('readinessScore').innerText = pct + '%';
+      document.getElementById('readinessFill').style.width = pct + '%';
+    }
+
+    function startTimer() {
+      if (timerInterval) return;
+      timerInterval = setInterval(() => {
+        state.seconds++;
+        state.totalSeconds++;
+        renderTimer();
+        if (state.seconds % 30 === 0) saveState();
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      saveState();
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      state.seconds = 0;
+      renderTimer();
+      saveState();
+    }
+
+    function renderTimer() {
+      const hrs = String(Math.floor(state.seconds / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((state.seconds % 3600) / 60)).padStart(2, '0');
+      const secs = String(state.seconds % 60).padStart(2, '0');
+      document.getElementById('timer').innerText = `${hrs}:${mins}:${secs}`;
+    }
+
+    function updateBadges() {
+      const totalHours = (state.totalSeconds / 3600).toFixed(1);
+      document.getElementById('totalHours').innerText = totalHours;
+      document.getElementById('streakCount').innerText = state.streak;
+    }
+
+    function saveDailyLog() {
+      const topic = document.getElementById('logTopic').value.trim();
+      const summary = document.getElementById('logSummary').value.trim();
+      if (!topic || !summary) return alert('Please enter both a topic and summary!');
+
+      const newLog = {
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        topic,
+        summary,
+        timeSpent: document.getElementById('timer').innerText
+      };
+
+      state.logs.unshift(newLog);
+      document.getElementById('logTopic').value = '';
+      document.getElementById('logSummary').value = '';
+      saveState();
+      renderLogs();
+      alert('🔥 Checkout Log Saved! 100% on the FYP!');
+    }
+
+    function renderLogs() {
+      const list = document.getElementById('historyList');
+      if (state.logs.length === 0) {
+        list.innerHTML = '<p style="color: var(--tt-gray); font-size: 0.85rem;">No checkout logs saved yet. Lock in today\'s work above!</p>';
+        return;
+      }
+      list.innerHTML = state.logs.map(log => `
+        <div class="history-card">
+          <div class="history-header">
+            <span>${log.date} — ${log.topic}</span>
+            <span style="color: var(--tt-cyan); font-size: 0.8rem;">⏱️ ${log.timeSpent}</span>
+          </div>
+          <div class="history-body">${log.summary}</div>
+        </div>
+      `).join('');
+    }
+
+    function saveState() {
+      localStorage.setItem('sdet_tracker_state_tt', JSON.stringify(state));
+      updateBadges();
+    }
+
+    init();
+  </script>
+</body>
+</html>
