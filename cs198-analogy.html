@@ -644,12 +644,26 @@ Content-Length: 154
         "Appium/Node.js server → XCUITest → iOS Simulator on macOS) using a 'Super Mall' analogy where " +
         "the MacBook is the mall, the macOS/XNU kernel is the General Manager, processes are stores in " +
         "sealed suites, sockets are pneumatic tube mail slots, TCP is the document slicer, etc.\n\n" +
+        "The student's CURRENT PROJECT is this exact pipeline running on their MacBook Pro:\n" +
+        "🏬 THE MACBOOK PRO (SUPER MALL) — managed by the macOS Kernel (Mall General Manager)\n" +
+        "💻 SUITE 101: VS Code (Architectural Drafting Bureau) — spawns a POSIX subprocess via kernel fork()/execve()\n" +
+        "🐍 SUITE 204: CPython Runtime Process (Python Automation Worker) — 1. source lexing & AST generation, " +
+        "2. bytecode compilation & PVM execution, 3. memory heap allocation (PyDictObject capabilities), " +
+        "4. W3C WebDriver protocol serialization (heap dict → JSON string), 5. application layer framing (HTTP POST /session)\n" +
+        "⚙️ HOST OS KERNEL: XNU / Mach / BSD subsystem (Mall General Manager & Infrastructure) — 6. POSIX socket layer " +
+        "& kernel space transition, 7. TCP layer: segmentation, 32-bit sequence numbering, checksum seals, " +
+        "8. IP layer: routing header encapsulation (127.0.0.1 → 127.0.0.1), 9. lo0 loopback driver: internal virtual " +
+        "vacuum pipeline (zero physical PHY)\n" +
+        "🏪 SUITE 400: Appium Server / Node.js (Central Logistics & Dispatch Store) — 10. kqueue / event demultiplexing " +
+        "& inbound socket buffer ingestion, 11. TCP stream reassembly, checksum verification & HTTP frame parsing, " +
+        "12. in-memory route handoff to XCUITest driver (iOS Department Manager)\n\n" +
         "The student highlighted a term in the lecture. Reply with EXACTLY two short parts:\n" +
         "1. A vivid 2-3 sentence Super Mall analogy explaining the highlighted term, consistent with the " +
         "mall metaphors above and grounded in the surrounding lecture context provided.\n" +
-        "2. On a new line starting with '🔗 In mobile automation: ', 1-2 sentences explaining SPECIFICALLY " +
-        "how THIS term participates in the Python/Appium/Xcode/XCUITest/iOS pipeline — concrete and tied " +
-        "to the term, not generic. Mention only the tools actually relevant to this term.\n\n" +
+        "2. On a new line starting with '🔗 How it relates to Project: ', 1-2 sentences explaining SPECIFICALLY " +
+        "where the highlighted term shows up in the student's project pipeline above — name the exact suite, kernel " +
+        "layer, or numbered step(s) it touches (e.g. which part of the CPython → XNU kernel → Appium/Node.js → " +
+        "XCUITest flow depends on it). Be concrete and tied to the term, not generic.\n\n" +
         "Plain text only. No markdown, no headers, no bullet points.";
 
       const res = await fetch(
@@ -829,9 +843,9 @@ Content-Length: 154
       };
 
       const genericRelevance = [
-        "In your mobile automation stack, this sits somewhere on the path between your Python test script and the iOS app — Appium relies on it working correctly.",
-        "For mobile automation, understanding this helps you debug the Python → Appium → XCUITest → iOS pipeline when tests fail mysteriously.",
-        "In the Appium world, this is part of the machinery that carries your test commands from Python to the iOS device and back."
+        "In your MacBook Pro project, this sits somewhere on the path between Suite 204 (CPython) and Suite 400 (Appium/Node.js) — the pipeline relies on it working correctly.",
+        "In your project, understanding this helps you debug the CPython → XNU kernel → Appium/Node.js → XCUITest flow when tests fail mysteriously.",
+        "In your project's Super Mall, this is part of the machinery that carries your test commands from the Python Automation Worker through the kernel to the Appium dispatch store."
       ];
 
       const raw = (currentSelection || term).toLowerCase();
@@ -839,7 +853,7 @@ Content-Length: 154
       const words = raw.split(/[^a-z0-9]+/).filter(Boolean);
 
       const compose = (k) =>
-        analogies[k] + "\n\n🔗 In mobile automation: " + (relevance[k] || genericRelevance[k.length % genericRelevance.length]);
+        analogies[k] + "\n\n🔗 How it relates to Project: " + (relevance[k] || genericRelevance[k.length % genericRelevance.length]);
 
       // 1. Exact match on the full selection
       if (analogies[key]) return compose(key);
@@ -863,7 +877,7 @@ Content-Length: 154
       let hash = 0;
       for (const ch of key) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
       return fallbacks[hash % fallbacks.length] +
-        "\n\n🔗 In mobile automation: " + genericRelevance[hash % genericRelevance.length];
+        "\n\n🔗 How it relates to Project: " + genericRelevance[hash % genericRelevance.length];
     }
   </script>
 </body>
