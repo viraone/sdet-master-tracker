@@ -427,7 +427,7 @@ Content-Length: 154
     </div>
 
     <div id="result-state" class="hidden space-y-3">
-      <div id="analogy-text" class="text-xs text-gray-200 bg-gray-800 p-2.5 rounded border border-gray-700 leading-normal whitespace-pre-line"></div>
+      <div id="analogy-text" class="text-xs text-gray-200 bg-gray-800 p-2.5 rounded border border-gray-700 leading-normal whitespace-pre-line max-h-72 overflow-y-auto"></div>
       <button id="btn-insert" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2 px-3 rounded shadow flex items-center justify-center gap-1 transition">
         📌 Insert next to highlighted text
       </button>
@@ -699,21 +699,25 @@ Content-Length: 154
         "Be specific and technical, never generic filler.\n\n" +
         "Plain text only. No markdown, no headers, no bullet points.";
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(key)}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents: [{
-              role: 'user',
-              parts: [{ text: `Highlighted term: "${term}"\n\nSurrounding lecture context:\n${(context || '').slice(0, 1500)}` }]
-            }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
-          })
+      const makeBody = (withThinkingCap) => JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{
+          role: 'user',
+          parts: [{ text: `Highlighted term: "${term}"\n\nSurrounding lecture context:\n${(context || '').slice(0, 1500)}` }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 8000, // generous headroom: model "thinking" tokens count against this cap
+          ...(withThinkingCap ? { thinkingConfig: { thinkingBudget: 1024 } } : {})
         }
-      );
+      });
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(key)}`;
+      let res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: makeBody(true) });
+      // Some model versions reject thinkingConfig — retry once without it
+      if (!res.ok && res.status === 400) {
+        res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: makeBody(false) });
+      }
       if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
       const data = await res.json();
       const text = data?.candidates?.[0]?.content?.parts?.filter(p => !p.thought && p.text).map(p => p.text).join('').trim();
