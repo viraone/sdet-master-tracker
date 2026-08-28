@@ -40,6 +40,13 @@
       font-size: 13px;
     }
     #chat-panel.open { transform: translateX(0); }
+    #chat-resizer {
+      position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+      cursor: col-resize; z-index: 71;
+    }
+    #chat-resizer:hover, #chat-resizer.dragging { background: #2563eb; }
+    body { transition: margin-right 0.2s ease-out; }
+    body.resizing-chat, body.resizing-chat #chat-panel { transition: none; }
     .chat-head {
       height: 40px; display: flex; align-items: center; gap: 10px; padding: 0 12px;
       border-bottom: 1px solid #3c3c3c; flex-shrink: 0; font-size: 12px;
@@ -491,6 +498,7 @@ Content-Length: 154
   <!-- Mobile SDET Tutor chat -->
   <button id="chat-fab" title="Open Mobile SDET Tutor">🎓</button>
   <div id="chat-panel">
+    <div id="chat-resizer" title="Drag to resize"></div>
     <div class="chat-head">
       <span class="chat-title">🎓 MOBILE SDET TUTOR</span>
       <span class="spacer"></span>
@@ -986,8 +994,38 @@ Content-Length: 154
     const chatMessages = document.getElementById('chat-messages');
     const CHAT_STORAGE = 'cs198_chat_history';
 
-    function openChat() { chatPanel.classList.add('open'); }
-    function closeChat() { chatPanel.classList.remove('open'); }
+    function openChat() {
+      chatPanel.classList.add('open');
+      chatPanel.style.width = `${chatWidth}px`;
+      document.body.style.marginRight = `${chatWidth}px`;
+    }
+    function closeChat() {
+      chatPanel.classList.remove('open');
+      document.body.style.marginRight = '';
+    }
+    let chatWidth = 380;
+
+    // Drag the left edge to resize, like VS Code panels
+    const chatResizer = document.getElementById('chat-resizer');
+    let resizingChat = false;
+    chatResizer.addEventListener('mousedown', (e) => {
+      resizingChat = true;
+      chatResizer.classList.add('dragging');
+      document.body.classList.add('resizing-chat');
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (!resizingChat) return;
+      chatWidth = Math.min(680, Math.max(280, window.innerWidth - e.clientX));
+      chatPanel.style.width = `${chatWidth}px`;
+      document.body.style.marginRight = `${chatWidth}px`;
+    });
+    document.addEventListener('mouseup', () => {
+      if (!resizingChat) return;
+      resizingChat = false;
+      chatResizer.classList.remove('dragging');
+      document.body.classList.remove('resizing-chat');
+    });
     document.getElementById('chat-fab').addEventListener('click', () => {
       chatPanel.classList.contains('open') ? closeChat() : openChat();
     });
