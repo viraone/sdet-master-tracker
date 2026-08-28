@@ -130,34 +130,80 @@
     .statusbar .grow { flex: 1; }
     .statusbar .item { display: flex; align-items: center; gap: 4px; }
 
-    /* ---------- AI tooltip ---------- */
-    #ai-tooltip {
-      position: fixed; z-index: 1000; width: 340px; background: #252526;
-      border: 1px solid #454545; border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,0.5);
-      font-size: 12px; display: none;
+    /* ---------- Sliding chat panel (Copilot-style) ---------- */
+    #chat-resizer {
+      width: 4px; cursor: col-resize; background: var(--border); flex-shrink: 0;
     }
-    #ai-tooltip .tt-head {
-      display: flex; align-items: center; justify-content: space-between;
-      background: #333; padding: 6px 10px; border-radius: 6px 6px 0 0; cursor: move;
-      font-size: 11px; color: var(--text); user-select: none;
+    #chat-resizer:hover, #chat-resizer.dragging { background: var(--accent); }
+    #chat-panel {
+      width: 340px; min-width: 0; background: var(--sidebar); flex-shrink: 0;
+      display: flex; flex-direction: column; overflow: hidden;
+      transition: width 0.18s ease-out;
     }
-    #ai-tooltip .tt-head button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 13px; }
-    #ai-tooltip .tt-head button:hover { color: #fff; }
-    #ai-tooltip .tt-body { padding: 10px; }
-    #selected-preview {
-      font-family: Menlo, monospace; font-size: 11px; background: #1e1e1e;
-      border: 1px solid var(--border); border-radius: 3px; padding: 4px 8px; color: #dcdcaa;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 8px;
+    #chat-panel.collapsed { width: 0; }
+    #chat-panel.no-anim { transition: none; }
+    .chat-head {
+      height: 35px; display: flex; align-items: center; gap: 10px; padding: 0 12px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0; font-size: 12px;
     }
-    .tt-btn {
-      width: 100%; border: none; border-radius: 3px; padding: 6px; font-size: 12px;
-      cursor: pointer; color: #fff; font-weight: 600;
+    .chat-head .chat-title { font-weight: 600; border-bottom: 1px solid var(--accent); padding: 9px 0; }
+    .chat-head .spacer { flex: 1; }
+    .chat-head button {
+      background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 13px;
     }
-    .tt-btn.blue { background: var(--accent); } .tt-btn.blue:hover { background: #1177bb; }
-    .tt-btn.green { background: #107c10; margin-top: 8px; } .tt-btn.green:hover { background: #128a12; }
-    #loading-state { color: var(--text-dim); animation: pulse 1.2s infinite; }
+    .chat-head button:hover { color: #fff; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 10px 12px; min-width: 240px; }
+    .msg { margin-bottom: 12px; font-size: 12px; line-height: 1.55; }
+    .msg .msg-author {
+      display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 11px;
+      margin-bottom: 4px; color: var(--text);
+    }
+    .msg .msg-body { color: #d4d4d4; white-space: pre-line; word-wrap: break-word; }
+    .msg .code-chip {
+      display: inline-block; font-family: Menlo, monospace; font-size: 11px;
+      background: #1e1e1e; border: 1px solid var(--border); border-radius: 3px;
+      padding: 2px 7px; color: #dcdcaa; max-width: 100%; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;
+    }
+    .msg .msg-actions { margin-top: 5px; display: flex; gap: 10px; }
+    .msg .msg-actions button {
+      background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 11px; padding: 0;
+    }
+    .msg .msg-actions button:hover { color: #fff; }
+    .msg.thinking .msg-body { color: var(--text-dim); animation: pulse 1.2s infinite; }
     @keyframes pulse { 50% { opacity: 0.4; } }
-    #analogy-text { color: #d4d4d4; line-height: 1.5; max-height: 260px; overflow-y: auto; white-space: pre-line; }
+    .chat-empty { color: var(--text-dim); font-size: 12px; font-style: italic; padding: 14px 4px; min-width: 240px; }
+    .chat-footer { border-top: 1px solid var(--border); padding: 8px 10px; flex-shrink: 0; min-width: 240px; }
+    #chat-selection {
+      display: none; align-items: center; gap: 6px; margin-bottom: 6px;
+      background: #1e1e1e; border: 1px solid var(--border); border-radius: 4px; padding: 5px 8px;
+    }
+    #chat-selection.active { display: flex; }
+    #chat-selection .sel-text {
+      flex: 1; font-family: Menlo, monospace; font-size: 11px; color: #dcdcaa;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    #chat-selection button { background: none; border: none; cursor: pointer; font-size: 11px; color: var(--text-dim); }
+    #chat-selection button:hover { color: #fff; }
+    #btn-explain {
+      width: 100%; border: none; border-radius: 3px; padding: 6px; font-size: 12px;
+      cursor: pointer; color: #fff; font-weight: 600; background: var(--accent);
+      display: none; margin-bottom: 6px;
+    }
+    #btn-explain.active { display: block; }
+    #btn-explain:hover { background: #1177bb; }
+    .chat-input-row { display: flex; gap: 6px; }
+    #chat-input {
+      flex: 1; background: #1e1e1e; border: 1px solid var(--border); border-radius: 4px;
+      color: #d4d4d4; font-size: 12px; padding: 6px 8px; resize: none; height: 54px;
+      font-family: inherit; outline: none;
+    }
+    #chat-input:focus { border-color: var(--accent); }
+    #btn-send {
+      align-self: flex-end; background: var(--accent); border: none; border-radius: 4px;
+      color: #fff; cursor: pointer; font-size: 13px; padding: 6px 10px;
+    }
+    #btn-send:hover { background: #1177bb; }
     .hidden { display: none !important; }
 
     #toast {
@@ -176,6 +222,7 @@
     </div>
     <div class="title">StageTimePNW_Automation — Live Code IDE</div>
     <div class="right">
+      <button class="tb-btn" id="btn-toggle-chat" title="Toggle Code AI chat">💬 Chat</button>
       <button class="tb-btn" id="btn-refresh" title="Pull the latest version from GitHub">🔄 Sync from GitHub</button>
       <button class="tb-btn primary" id="btn-commit" title="Commit & push your edits to GitHub" disabled>☁️ Commit &amp; Push</button>
     </div>
@@ -188,6 +235,7 @@
       <div class="icon" title="Search (decorative)">🔍</div>
       <div class="icon" title="Source Control (use Commit & Push above)">🔀</div>
       <div class="icon" title="Run (decorative)">▶️</div>
+      <div class="icon" id="icon-chat" title="Code AI Chat">💬</div>
       <div class="icon" id="icon-settings" title="Settings: API keys" style="margin-top:auto;margin-bottom:6px">⚙️</div>
     </div>
 
@@ -222,6 +270,31 @@
         </div>
       </div>
     </div>
+
+    <!-- Sliding Code AI chat (Copilot-style) -->
+    <div id="chat-resizer"></div>
+    <div id="chat-panel" class="collapsed">
+      <div class="chat-head">
+        <span class="chat-title">💬 CODE AI CHAT</span>
+        <span class="spacer"></span>
+        <button id="btn-chat-clear" title="Clear chat history">🗑</button>
+        <button id="btn-chat-close" title="Hide chat">✕</button>
+      </div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-empty" id="chat-empty">Highlight code in the editor, or ask a question below — answers are grounded in this exact project.</div>
+      </div>
+      <div class="chat-footer">
+        <div id="chat-selection">
+          <span>🔦</span><span class="sel-text" id="chat-selection-text"></span>
+          <button id="btn-sel-clear" title="Clear selection">✕</button>
+        </div>
+        <button id="btn-explain">✨ Explain this in my project</button>
+        <div class="chat-input-row">
+          <textarea id="chat-input" placeholder="Ask about this code… (Enter to send)"></textarea>
+          <button id="btn-send" title="Send">➤</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Status bar -->
@@ -234,25 +307,6 @@
     <span class="item">UTF-8</span>
     <span class="item" id="sb-lang">Python</span>
     <span class="item" id="sb-ai">⚪ AI</span>
-  </div>
-
-  <!-- AI tooltip -->
-  <div id="ai-tooltip">
-    <div class="tt-head" id="tooltip-drag-handle">
-      <span>🤖 Code AI</span>
-      <button id="btn-tt-close" title="Close">✕</button>
-    </div>
-    <div class="tt-body">
-      <div id="selected-preview"></div>
-      <div id="prompt-state">
-        <button class="tt-btn blue" id="btn-explain">✨ Explain this in my project</button>
-      </div>
-      <div id="loading-state" class="hidden">🧠 Thinking about your codebase…</div>
-      <div id="result-state" class="hidden">
-        <p id="analogy-text"></p>
-        <button class="tt-btn green" id="btn-insert">📌 Pin to panel</button>
-      </div>
-    </div>
   </div>
 
   <div id="toast"></div>
@@ -409,18 +463,16 @@
         $("btn-commit").disabled = !dirty;
       });
 
-      // Highlight-to-explain: show tooltip when a selection settles
+      // Highlight-to-explain: offer selection in the sliding chat when it settles
       let selTimer = null;
-      editor.onDidChangeCursorSelection((e) => {
+      editor.onDidChangeCursorSelection(() => {
         clearTimeout(selTimer);
         selTimer = setTimeout(() => {
           const sel = editor.getSelection();
           const text = editor.getModel().getValueInRange(sel).trim();
-          if (!text || text.length > 400) { hideTooltip(); return; }
+          if (!text || text.length > 400) { clearChatSelection(); return; }
           currentSelection = text;
-          const pos = editor.getScrolledVisiblePosition(sel.getEndPosition());
-          const box = $("monaco-container").getBoundingClientRect();
-          showTooltip(box.left + pos.left, box.top + pos.top + pos.height + 6, text);
+          offerSelectionInChat(text);
         }, 350);
       });
 
@@ -516,48 +568,151 @@
       }
     });
 
-    /* ================= AI TOOLTIP ================= */
-    const tooltip = $("ai-tooltip");
+    /* ================= SLIDING CHAT PANEL ================= */
+    const chatPanel = $("chat-panel");
+    const chatMessages = $("chat-messages");
+    const CHAT_STORAGE = "stagetime_chat_history";
+    let chatWidth = 340;
 
-    function showTooltip(x, y, text) {
-      $("selected-preview").textContent = `"${text}"`;
-      $("prompt-state").classList.remove("hidden");
-      $("loading-state").classList.add("hidden");
-      $("result-state").classList.add("hidden");
-      tooltip.style.display = "block";
-      tooltip.style.left = `${Math.min(window.innerWidth - 356, Math.max(8, x))}px`;
-      tooltip.style.top = `${Math.min(window.innerHeight - 120, Math.max(8, y))}px`;
+    function openChat() {
+      chatPanel.classList.remove("collapsed");
+      chatPanel.style.width = `${chatWidth}px`;
     }
-    function hideTooltip() { tooltip.style.display = "none"; }
-    $("btn-tt-close").addEventListener("click", hideTooltip);
+    function closeChat() { chatPanel.classList.add("collapsed"); chatPanel.style.width = ""; }
+    function toggleChat() { chatPanel.classList.contains("collapsed") ? openChat() : closeChat(); }
+    $("btn-toggle-chat").addEventListener("click", toggleChat);
+    $("icon-chat").addEventListener("click", toggleChat);
+    $("btn-chat-close").addEventListener("click", closeChat);
 
-    // Draggable tooltip
-    const dragHandle = $("tooltip-drag-handle");
-    let isDragging = false, dragOffsetX = 0, dragOffsetY = 0;
-    dragHandle.addEventListener("mousedown", (e) => {
-      if (e.target.closest("button")) return;
-      isDragging = true;
-      const rect = tooltip.getBoundingClientRect();
-      dragOffsetX = e.clientX - rect.left; dragOffsetY = e.clientY - rect.top;
+    // Slidable: drag the divider to resize, like VS Code panels
+    const resizer = $("chat-resizer");
+    let resizing = false;
+    resizer.addEventListener("mousedown", (e) => {
+      resizing = true;
+      resizer.classList.add("dragging");
+      chatPanel.classList.add("no-anim");
       e.preventDefault();
     });
     document.addEventListener("mousemove", (e) => {
-      if (!isDragging) return;
-      tooltip.style.left = `${Math.min(window.innerWidth - tooltip.offsetWidth - 4, Math.max(4, e.clientX - dragOffsetX))}px`;
-      tooltip.style.top = `${Math.min(window.innerHeight - tooltip.offsetHeight - 4, Math.max(4, e.clientY - dragOffsetY))}px`;
+      if (!resizing) return;
+      chatWidth = Math.min(640, Math.max(250, window.innerWidth - e.clientX));
+      chatPanel.classList.remove("collapsed");
+      chatPanel.style.width = `${chatWidth}px`;
     });
-    document.addEventListener("mouseup", () => { isDragging = false; });
+    document.addEventListener("mouseup", () => {
+      if (!resizing) return;
+      resizing = false;
+      resizer.classList.remove("dragging");
+      chatPanel.classList.remove("no-anim");
+    });
 
-    $("btn-explain").addEventListener("click", async () => {
-      $("prompt-state").classList.add("hidden");
-      $("loading-state").classList.remove("hidden");
-      generatedAnalogy = await fetchExplanationFromAI(currentSelection);
-      $("loading-state").classList.add("hidden");
-      $("analogy-text").textContent = generatedAnalogy;
-      $("result-state").classList.remove("hidden");
-      const rect = tooltip.getBoundingClientRect();
-      if (rect.bottom > window.innerHeight - 8) tooltip.style.top = `${Math.max(8, window.innerHeight - rect.height - 8)}px`;
+    function offerSelectionInChat(text) {
+      $("chat-selection-text").textContent = text;
+      $("chat-selection").classList.add("active");
+      $("btn-explain").classList.add("active");
+      openChat();
+    }
+    function clearChatSelection() {
+      $("chat-selection").classList.remove("active");
+      $("btn-explain").classList.remove("active");
+    }
+    $("btn-sel-clear").addEventListener("click", clearChatSelection);
+
+    function loadChat() {
+      try { return JSON.parse(localStorage.getItem(CHAT_STORAGE)) || []; } catch { return []; }
+    }
+    function saveChat(list) { localStorage.setItem(CHAT_STORAGE, JSON.stringify(list.slice(-60))); }
+
+    function addMsg(role, text, { chip = null, save = true, thinking = false, pinnable = false } = {}) {
+      $("chat-empty")?.remove();
+      const msg = document.createElement("div");
+      msg.className = "msg" + (thinking ? " thinking" : "");
+      const author = document.createElement("div");
+      author.className = "msg-author";
+      author.textContent = role === "user" ? "🧑 You" : "🤖 Code AI";
+      msg.appendChild(author);
+      if (chip) {
+        const c = document.createElement("span");
+        c.className = "code-chip"; c.textContent = chip;
+        msg.appendChild(c);
+        msg.appendChild(document.createElement("br"));
+      }
+      const body = document.createElement("div");
+      body.className = "msg-body"; body.textContent = text;
+      msg.appendChild(body);
+      if (pinnable) {
+        const actions = document.createElement("div");
+        actions.className = "msg-actions";
+        const pin = document.createElement("button");
+        pin.textContent = "📌 Pin";
+        pin.addEventListener("click", () => {
+          const note = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), term: chipOfMsg(msg) || "note", text: body.textContent };
+          $("notes-list").appendChild(buildNoteCard(note));
+          const list = loadNotes(); list.push(note); saveNotes(list);
+          $("panel").classList.remove("collapsed");
+          toast("📌 Pinned below the editor");
+        });
+        const copy = document.createElement("button");
+        copy.textContent = "⧉ Copy";
+        copy.addEventListener("click", () => { navigator.clipboard?.writeText(body.textContent); toast("Copied"); });
+        actions.appendChild(pin); actions.appendChild(copy);
+        msg.appendChild(actions);
+      }
+      chatMessages.appendChild(msg);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      if (save) { const h = loadChat(); h.push({ role, text, chip }); saveChat(h); }
+      return msg;
+    }
+    function chipOfMsg(msg) {
+      // find the chip of the preceding user message
+      let el = msg.previousElementSibling;
+      while (el) {
+        const c = el.querySelector?.(".code-chip");
+        if (c) return c.textContent;
+        el = el.previousElementSibling;
+      }
+      return null;
+    }
+
+    async function runAI(promptText, chip) {
+      addMsg("user", promptText, { chip });
+      const th = addMsg("assistant", "Thinking about your codebase…", { save: false, thinking: true });
+      const answer = chip && !promptText.replace(/^Explain:?\s*/i, "").replace(chip, "").trim()
+        ? await fetchExplanationFromAI(chip)
+        : await fetchAnswerFromAI(promptText, chip);
+      th.remove();
+      addMsg("assistant", answer, { pinnable: true, chip: null });
+    }
+
+    $("btn-explain").addEventListener("click", () => {
+      const sel = currentSelection;
+      clearChatSelection();
+      runAI("Explain:", sel);
     });
+
+    $("btn-send").addEventListener("click", sendChat);
+    $("chat-input").addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); }
+    });
+    function sendChat() {
+      const q = $("chat-input").value.trim();
+      if (!q) return;
+      $("chat-input").value = "";
+      const chip = $("chat-selection").classList.contains("active") ? currentSelection : null;
+      clearChatSelection();
+      runAI(q, chip);
+    }
+
+    $("btn-chat-clear").addEventListener("click", () => {
+      saveChat([]);
+      chatMessages.innerHTML = '<div class="chat-empty" id="chat-empty">Highlight code in the editor, or ask a question below — answers are grounded in this exact project.</div>';
+    });
+
+    // Restore chat history
+    {
+      const hist = loadChat();
+      for (const m of hist) addMsg(m.role, m.text, { chip: m.chip, save: false, pinnable: m.role === "assistant" });
+    }
 
     /* ================= PINNED NOTES ================= */
     function loadNotes() {
@@ -583,13 +738,6 @@
       card.appendChild(document.createTextNode(note.text));
       return card;
     }
-    $("btn-insert").addEventListener("click", () => {
-      const note = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7), term: currentSelection, text: generatedAnalogy };
-      $("notes-list").appendChild(buildNoteCard(note));
-      const list = loadNotes(); list.push(note); saveNotes(list);
-      hideTooltip();
-      $("panel").classList.remove("collapsed");
-    });
     {
       const saved = loadNotes();
       for (const n of saved) $("notes-list").appendChild(buildNoteCard(n));
@@ -662,6 +810,50 @@
         } catch (err) { console.warn("Gemini failed, falling back.", err); }
       }
       return localExplanation(term);
+    }
+
+    // Freeform chat Q&A grounded in the open file
+    async function fetchAnswerFromAI(question, chip) {
+      const key = getGeminiKey();
+      if (!key) {
+        if (chip) return localExplanation(chip);
+        return "⚪ Freeform chat needs a Gemini API key — click ⚙️ (bottom-left), option 1, and paste a free key from aistudio.google.com/apikey. (Highlight-to-explain works offline for common terms.)";
+      }
+      try {
+        const systemPrompt =
+          "You are 'Code AI', a friendly senior SDET pair-programmer inside a browser IDE for the project " +
+          "StageTimePNW_Automation: iOS test automation for the StageTimePNW app using Python, pytest, Appium " +
+          "(Python client), the XCUITest driver, and the iOS Simulator on a MacBook. Project structure: conftest.py " +
+          "(shared pytest fixtures), pages/ (page objects), tests/ (test cases), requirements.txt.\n\n" +
+          "Answer the student's question conversationally but technically, grounded in the actual open file provided. " +
+          "Reference their real code when relevant. If they ask how to write or improve code, show concrete Python. " +
+          "When a vivid analogy helps (theater/stage themed fits this app), add one at the end starting with '🏬 Analogy: '. " +
+          "Plain text only, no markdown headers or bullets. Keep it under ~250 words.";
+        const code = editor ? editor.getValue() : "";
+        const userText =
+          (chip ? `Selected code: "${chip}"\n\n` : "") +
+          `Question: ${question}\n\nCurrent open file (${currentFile.path}):\n${code.slice(0, 6000)}`;
+        const makeBody = (withThinkingCap) => JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: "user", parts: [{ text: userText }] }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 8000,
+            ...(withThinkingCap ? { thinkingConfig: { thinkingBudget: 1024 } } : {})
+          }
+        });
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(key)}`;
+        let res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: makeBody(true) });
+        if (!res.ok && res.status === 400) {
+          res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: makeBody(false) });
+        }
+        if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
+        const data = await res.json();
+        const text = data?.candidates?.[0]?.content?.parts?.filter((p) => !p.thought && p.text).map((p) => p.text).join("").trim();
+        return text || "Hmm, I got an empty response — try rephrasing.";
+      } catch (err) {
+        return `❌ AI request failed (${err.message}). Check your Gemini key via ⚙️.`;
+      }
     }
 
     /* ================= OFFLINE FALLBACK ================= */
