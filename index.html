@@ -129,7 +129,6 @@
           <span class="tag" style="background: var(--red-soft); color: var(--red);">END OF SESSION</span>
         </div>
         <div class="log-form">
-          <input type="text" id="logTopic" placeholder="Topic (e.g. Day 1: Shift-Left & Modifiers)" />
           <textarea id="logSummary" placeholder="What did we accomplish today? Key concepts mastered..."></textarea>
           <button class="btn-save" onclick="saveDailyLog()">⚡ Save Checkout Log</button>
         </div>
@@ -225,18 +224,15 @@
     }
 
     function saveDailyLog() {
-      const topic = document.getElementById('logTopic').value.trim();
       const summary = document.getElementById('logSummary').value.trim();
-      if (!topic || !summary) return alert('Please enter both a topic and summary!');
+      if (!summary) return alert('Please enter a summary!');
 
       const newLog = {
         date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        topic,
         summary
       };
 
       state.logs.unshift(newLog);
-      document.getElementById('logTopic').value = '';
       document.getElementById('logSummary').value = '';
       saveState();
       renderLogs();
@@ -252,7 +248,7 @@
       list.innerHTML = state.logs.map(log => `
         <div class="history-card">
           <div class="history-header">
-            <span>${log.date} — ${log.topic}</span>
+            <span>${log.date}${log.topic ? ' — ' + log.topic : ''}</span>
             ${log.timeSpent ? `<span style="color: var(--blue); font-size: 0.8rem;">⏱️ ${log.timeSpent}</span>` : ''}
           </div>
           <div class="history-body">${log.summary}</div>
