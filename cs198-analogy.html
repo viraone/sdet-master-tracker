@@ -17,6 +17,11 @@
       font-size: 0.85rem; color: #1e3a8a; animation: fadeIn 0.2s ease-in-out;
       white-space: pre-line;
     }
+    .badge-del {
+      margin-left: 8px; cursor: pointer; color: #94a3b8; font-weight: bold;
+      user-select: none; font-size: 0.8rem;
+    }
+    .badge-del:hover { color: #dc2626; }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-2px); }
       to { opacity: 1; transform: translateY(0); }
@@ -487,23 +492,111 @@ Content-Length: 154
       resultState.classList.remove('hidden');
     });
 
-    // 3. Insert analogy right next to the selected text in DOM
+    // 3. Insert analogy right next to the selected text in DOM (persisted in localStorage)
+    const ANNOTATIONS_STORAGE = 'cs198_annotations';
+
+    function loadAnnotations() {
+      try { return JSON.parse(localStorage.getItem(ANNOTATIONS_STORAGE)) || []; }
+      catch { return []; }
+    }
+    function saveAnnotations(list) {
+      localStorage.setItem(ANNOTATIONS_STORAGE, JSON.stringify(list));
+    }
+
+    // All text nodes in the lecture, excluding text inside badges or the tooltip
+    function lectureTextNodes() {
+      const root = document.getElementById('content');
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+          return node.parentElement.closest('.analogy-badge, #ai-tooltip')
+            ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+        }
+      });
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      return nodes;
+    }
+
+    // Which occurrence (0-based) of `term` does `range` start at?
+    function occurrenceIndexOfRange(term, range) {
+      let occ = -1, best = -1;
+      for (const node of lectureTextNodes()) {
+        let idx = node.textContent.indexOf(term);
+        while (idx !== -1) {
+          occ++;
+          const probe = document.createRange();
+          probe.setStart(node, idx);
+          probe.collapse(true);
+          const cmp = probe.compareBoundaryPoints(Range.START_TO_START, range);
+          if (cmp === 0) return occ;
+          if (cmp < 0) best = occ; // nearest occurrence before the selection
+          idx = node.textContent.indexOf(term, idx + 1);
+        }
+      }
+      return best;
+    }
+
+    // Range collapsed to the end of the nth occurrence of `term`
+    function rangeAtOccurrenceEnd(term, occurrence) {
+      let occ = -1;
+      for (const node of lectureTextNodes()) {
+        let idx = node.textContent.indexOf(term);
+        while (idx !== -1) {
+          occ++;
+          if (occ === occurrence) {
+            const r = document.createRange();
+            r.setStart(node, Math.min(idx + term.length, node.textContent.length));
+            r.collapse(true);
+            return r;
+          }
+          idx = node.textContent.indexOf(term, idx + 1);
+        }
+      }
+      return null;
+    }
+
+    function buildBadge(id, text) {
+      const badge = document.createElement('span');
+      badge.className = 'analogy-badge';
+      badge.dataset.annotationId = id;
+      const label = document.createElement('strong');
+      label.textContent = '💡 [Analogy]: ';
+      badge.appendChild(label);
+      badge.appendChild(document.createTextNode(text));
+      const del = document.createElement('span');
+      del.className = 'badge-del';
+      del.title = 'Remove this analogy';
+      del.textContent = '🗑';
+      del.addEventListener('click', () => {
+        badge.remove();
+        saveAnnotations(loadAnnotations().filter(a => a.id !== id));
+      });
+      badge.appendChild(del);
+      return badge;
+    }
+
     btnInsert.addEventListener('click', () => {
       if (!currentRange) return;
 
-      const annotationNode = document.createElement('span');
-      annotationNode.className = 'analogy-badge';
-      const label = document.createElement('strong');
-      label.textContent = '💡 [Analogy]: ';
-      annotationNode.appendChild(label);
-      annotationNode.appendChild(document.createTextNode(generatedAnalogy));
+      const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      const occ = occurrenceIndexOfRange(currentSelection, currentRange);
 
       currentRange.collapse(false);
-      currentRange.insertNode(annotationNode);
+      currentRange.insertNode(buildBadge(id, generatedAnalogy));
+
+      const list = loadAnnotations();
+      list.push({ id, term: currentSelection, text: generatedAnalogy, occ: Math.max(0, occ) });
+      saveAnnotations(list);
 
       tooltip.classList.add('hidden');
       window.getSelection().removeAllRanges();
     });
+
+    // Restore saved analogies on page load
+    for (const a of loadAnnotations()) {
+      const r = rangeAtOccurrenceEnd(a.term, a.occ);
+      if (r) r.insertNode(buildBadge(a.id, a.text));
+    }
 
     /**
      * Analogy generation, in priority order:
