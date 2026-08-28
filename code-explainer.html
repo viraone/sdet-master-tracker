@@ -333,6 +333,7 @@
       if (gkey) localStorage.setItem(GEMINI_KEY_STORAGE, gkey);
       if (ghtok) localStorage.setItem(GH_TOKEN_STORAGE, ghtok);
       if (gkey || ghtok) history.replaceState(null, "", location.pathname + location.search);
+      if (gkey) window.addEventListener("load", () => testGeminiKey(gkey));
     })();
 
     const $ = (id) => document.getElementById(id);
@@ -711,8 +712,12 @@
           existing
         );
         if (input !== null) {
-          if (input.trim()) localStorage.setItem(GEMINI_KEY_STORAGE, input.trim());
-          else localStorage.removeItem(GEMINI_KEY_STORAGE);
+          if (input.trim()) {
+            localStorage.setItem(GEMINI_KEY_STORAGE, input.trim());
+            testGeminiKey(input.trim());
+          } else {
+            localStorage.removeItem(GEMINI_KEY_STORAGE);
+          }
           updateAiStatus();
         }
       } else if (choice === "2") {
@@ -926,6 +931,34 @@
       "analogies when vivid (the app is StageTimePNW).";
 
     function getGeminiKey() { return localStorage.getItem(GEMINI_KEY_STORAGE) || ""; }
+
+    // Pull Google's real error message out of a failed response
+    async function geminiErrorDetail(res) {
+      const body = await res.json().catch(() => ({}));
+      const msg = body?.error?.message || "";
+      const reason = body?.error?.status || "";
+      if (res.status === 400 && /API key not valid/i.test(msg)) return "API key not valid — copy the key again with the 📋 icon on the 'Gemini API Key' row at aistudio.google.com/apikey";
+      if (res.status === 403) return `Key blocked (${reason}): ${msg}`;
+      if (res.status === 429) return "Rate limit / quota exceeded — wait a minute or enable billing on the key's project";
+      return `HTTP ${res.status} ${reason}: ${msg}`.trim();
+    }
+
+    // Live-test a key with a tiny request and report the exact result
+    async function testGeminiKey(key) {
+      toast("🔬 Testing your Gemini key…");
+      try {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(key)}`,
+          { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "Say OK" }] }], generationConfig: { maxOutputTokens: 200 } }) }
+        );
+        if (res.ok) { toast("✅ Gemini key works! Your tutor is live.", 6000); return true; }
+        toast(`❌ ${await geminiErrorDetail(res)}`, 12000);
+      } catch (e) {
+        toast(`❌ Network error testing key: ${e.message}`, 10000);
+      }
+      return false;
+    }
     function updateAiStatus() {
       const on = !!getGeminiKey();
       $("ai-status").textContent = on ? "🟢 Real AI (Gemini)" : "⚪ built-in fallback — ⚙️ to add Gemini key";
@@ -969,7 +1002,7 @@
       if (!res.ok && res.status === 400) {
         res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: makeBody(false) });
       }
-      if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
+      if (!res.ok) throw new Error(await geminiErrorDetail(res));
       const data = await res.json();
       const text = data?.candidates?.[0]?.content?.parts?.filter((p) => !p.thought && p.text).map((p) => p.text).join("").trim();
       return text || null;
@@ -980,7 +1013,10 @@
         try {
           const aiText = await fetchGeminiExplanation(term);
           if (aiText) return aiText;
-        } catch (err) { console.warn("Gemini failed, falling back.", err); }
+        } catch (err) {
+          console.warn("Gemini failed, falling back.", err);
+          toast(`❌ Gemini: ${err.message}`, 10000);
+        }
       }
       return localExplanation(term);
     }
@@ -1019,7 +1055,7 @@
         if (!res.ok && res.status === 400) {
           res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: makeBody(false) });
         }
-        if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
+        if (!res.ok) throw new Error(await geminiErrorDetail(res));
         const data = await res.json();
         const text = data?.candidates?.[0]?.content?.parts?.filter((p) => !p.thought && p.text).map((p) => p.text).join("").trim();
         return text || "Hmm, I got an empty response — try rephrasing.";
