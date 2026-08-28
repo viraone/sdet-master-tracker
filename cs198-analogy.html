@@ -560,7 +560,7 @@ Content-Length: 154
         "Plain text only. No markdown, no headers, no bullet points.";
 
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(key)}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -570,13 +570,13 @@ Content-Length: 154
               role: 'user',
               parts: [{ text: `Highlighted term: "${term}"\n\nSurrounding lecture context:\n${(context || '').slice(0, 1500)}` }]
             }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 400 }
+            generationConfig: { temperature: 0.7, maxOutputTokens: 2000 }
           })
         }
       );
       if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
       const data = await res.json();
-      const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('').trim();
+      const text = data?.candidates?.[0]?.content?.parts?.filter(p => !p.thought && p.text).map(p => p.text).join('').trim();
       return text || null;
     }
 
