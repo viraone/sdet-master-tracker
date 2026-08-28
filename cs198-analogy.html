@@ -406,7 +406,7 @@ Content-Length: 154
 
   <!-- Floating Analogy AI Tooltip -->
   <div id="ai-tooltip" class="fixed hidden z-50 bg-gray-900 text-white rounded-lg shadow-2xl p-4 w-80 space-y-3 transition-all duration-150">
-    <div class="flex items-center justify-between border-b border-gray-700 pb-2">
+    <div id="tooltip-drag-handle" class="flex items-center justify-between border-b border-gray-700 pb-2 cursor-move select-none" title="Drag to move">
       <span class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1">✨ Analogy AI</span>
       <span class="flex items-center gap-2">
         <span id="selected-preview" class="text-xs text-gray-400 truncate max-w-[100px]"></span>
@@ -448,9 +448,39 @@ Content-Length: 154
     const btnExplain = document.getElementById('btn-explain');
     const btnInsert = document.getElementById('btn-insert');
 
+    // Draggable tooltip (grab the header to move it)
+    const dragHandle = document.getElementById('tooltip-drag-handle');
+    let isDragging = false, justDragged = false, dragOffsetX = 0, dragOffsetY = 0;
+
+    dragHandle.addEventListener('mousedown', (e) => {
+      if (e.target.closest('button')) return; // don't hijack the ⚙️ button
+      isDragging = true;
+      const rect = tooltip.getBoundingClientRect();
+      dragOffsetX = e.clientX - rect.left;
+      dragOffsetY = e.clientY - rect.top;
+      tooltip.classList.remove('transition-all', 'duration-150'); // no lag while dragging
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const w = tooltip.offsetWidth, h = tooltip.offsetHeight;
+      tooltip.style.left = `${Math.min(window.innerWidth - w - 4, Math.max(4, e.clientX - dragOffsetX))}px`;
+      tooltip.style.top = `${Math.min(window.innerHeight - h - 4, Math.max(4, e.clientY - dragOffsetY))}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      justDragged = true;
+      tooltip.classList.add('transition-all', 'duration-150');
+      setTimeout(() => { justDragged = false; }, 0);
+    }, true); // capture: runs before the selection handler below
+
     // 1. Detect text selection on mouseup
     document.addEventListener('mouseup', (e) => {
       if (tooltip.contains(e.target)) return;
+      if (justDragged) return;
 
       const selection = window.getSelection();
       const text = selection.toString().trim();
@@ -657,13 +687,16 @@ Content-Length: 154
         "🏪 SUITE 400: Appium Server / Node.js (Central Logistics & Dispatch Store) — 10. kqueue / event demultiplexing " +
         "& inbound socket buffer ingestion, 11. TCP stream reassembly, checksum verification & HTTP frame parsing, " +
         "12. in-memory route handoff to XCUITest driver (iOS Department Manager)\n\n" +
-        "The student highlighted a term in the lecture. Reply with EXACTLY two short parts:\n" +
+        "The student highlighted a term in the lecture. Reply with EXACTLY two parts:\n" +
         "1. A vivid 2-3 sentence Super Mall analogy explaining the highlighted term, consistent with the " +
         "mall metaphors above and grounded in the surrounding lecture context provided.\n" +
-        "2. On a new line starting with '🔗 How it relates to Project: ', 1-2 sentences explaining SPECIFICALLY " +
-        "where the highlighted term shows up in the student's project pipeline above — name the exact suite, kernel " +
-        "layer, or numbered step(s) it touches (e.g. which part of the CPython → XNU kernel → Appium/Node.js → " +
-        "XCUITest flow depends on it). Be concrete and tied to the term, not generic.\n\n" +
+        "2. On a new line starting with '🔗 How it relates to Project: ', 3-5 sentences that trace the term through " +
+        "the student's project pipeline above. You MUST: (a) name the exact suite(s), kernel layer, and numbered " +
+        "step(s) the term lives in or touches; (b) describe the moment in a real test run when the term does its job " +
+        "(e.g. 'when your Python script calls webdriver.Remote(), at step 4 the capabilities dict is serialized...'); " +
+        "(c) explain what the student would observe if this piece failed or misbehaved — the concrete error, symptom, " +
+        "or debugging clue (e.g. ConnectionRefusedError, zombie Simulator, corrupted segment retransmission). " +
+        "Be specific and technical, never generic filler.\n\n" +
         "Plain text only. No markdown, no headers, no bullet points.";
 
       const res = await fetch(
