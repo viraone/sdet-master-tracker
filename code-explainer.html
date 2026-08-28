@@ -303,6 +303,7 @@
     <span class="item" id="sb-sync">⏳ loading…</span>
     <span class="grow"></span>
     <span class="item" id="sb-cursor">Ln 1, Col 1</span>
+    <span class="item" id="sb-problems" title="Python problems found by Ruff (real linter, running in your browser)">🛠 linter loading…</span>
     <span class="item">Spaces: 4</span>
     <span class="item">UTF-8</span>
     <span class="item" id="sb-lang">Python</span>
@@ -473,6 +474,7 @@
       editor.onDidChangeModelContent(() => {
         const dirty = editor.getValue() !== currentFile.original;
         $("tab").classList.toggle("dirty", dirty);
+        scheduleLint();
       });
 
       // Highlight-to-explain: offer selection in the sliding chat when it settles
@@ -490,7 +492,59 @@
 
       openFile("conftest.py");
       renderTree();
+      initRuff();
     });
+
+    /* ================= PYTHON LINTING (Ruff via WebAssembly) ================= */
+    let ruffWorkspace = null, lintTimer = null;
+
+    async function initRuff() {
+      try {
+        const mod = await import("https://cdn.jsdelivr.net/npm/@astral-sh/ruff-wasm-web@0.16.5/ruff_wasm.js");
+        await mod.default();
+        ruffWorkspace = new mod.Workspace({
+          "line-length": 120,
+          "indent-width": 4,
+          lint: { select: ["E4", "E7", "E9", "F", "W6"] }
+        }, mod.PositionEncoding.Utf16);
+        lintNow();
+      } catch (e) {
+        console.warn("Ruff linter failed to load", e);
+        $("sb-problems").textContent = "🛠 linter unavailable";
+      }
+    }
+
+    function scheduleLint() {
+      clearTimeout(lintTimer);
+      lintTimer = setTimeout(lintNow, 400);
+    }
+
+    function lintNow() {
+      if (!ruffWorkspace || !editor) return;
+      const model = editor.getModel();
+      if (model.getLanguageId() !== "python") {
+        monaco.editor.setModelMarkers(model, "ruff", []);
+        $("sb-problems").textContent = "✔ no problems";
+        return;
+      }
+      let diags = [];
+      try { diags = ruffWorkspace.check(editor.getValue()) || []; } catch (e) { console.warn("ruff check failed", e); }
+      const markers = diags.map((d) => {
+        const isError = !d.code || d.code.startsWith("invalid") || d.code.startsWith("E9") || d.code.startsWith("F");
+        return {
+          severity: isError ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning,
+          message: (d.code ? `${d.code}: ` : "") + d.message,
+          startLineNumber: d.start_location.row,
+          startColumn: d.start_location.column,
+          endLineNumber: d.end_location.row,
+          endColumn: d.end_location.column
+        };
+      });
+      monaco.editor.setModelMarkers(model, "ruff", markers);
+      const errs = markers.filter((m) => m.severity === monaco.MarkerSeverity.Error).length;
+      const warns = markers.length - errs;
+      $("sb-problems").textContent = markers.length ? `✖ ${errs} ⚠ ${warns}` : "✔ no problems";
+    }
 
     async function openFile(path) {
       // Only warn about unsaved edits once a real file has been loaded
