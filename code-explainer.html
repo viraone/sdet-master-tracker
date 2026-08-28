@@ -481,7 +481,8 @@
     });
 
     async function openFile(path) {
-      if (editor && editor.getValue() !== currentFile.original &&
+      // Only warn about unsaved edits once a real file has been loaded
+      if (editor && currentFile.sha && editor.getValue() !== currentFile.original &&
           !confirm("You have unsaved edits. Discard them and open the other file?")) return;
       $("sb-sync").textContent = "⏳ fetching…";
       try {
