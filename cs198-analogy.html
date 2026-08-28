@@ -15,6 +15,7 @@
       display: inline-block; margin: 0 4px; padding: 4px 8px;
       background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;
       font-size: 0.85rem; color: #1e3a8a; animation: fadeIn 0.2s ease-in-out;
+      white-space: pre-line;
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-2px); }
@@ -417,7 +418,7 @@ Content-Length: 154
     </div>
 
     <div id="result-state" class="hidden space-y-3">
-      <div id="analogy-text" class="text-xs text-gray-200 bg-gray-800 p-2.5 rounded border border-gray-700 leading-normal"></div>
+      <div id="analogy-text" class="text-xs text-gray-200 bg-gray-800 p-2.5 rounded border border-gray-700 leading-normal whitespace-pre-line"></div>
       <button id="btn-insert" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2 px-3 rounded shadow flex items-center justify-center gap-1 transition">
         📌 Insert next to highlighted text
       </button>
@@ -579,23 +580,99 @@ Content-Length: 154
         node: "Node.js is the Suite 400 dispatch clerk who never stands around waiting: they file every pending job with the paging system (libuv) and only act when a bell rings.",
         interpreter: "An interpreter is a worker who executes the checklist one numbered step at a time, rather than shipping the whole job off to a factory to be pre-built (compiled) first.",
         macos: "macOS is the whole mall complex — the building, the management office, the tube network, and the house rules — inside which every store (process) operates.",
-        simulator: "The iOS Simulator is a full model apartment built inside the mall: a real, working iPhone showroom staffed and powered by the mall itself rather than by an external building."
+        simulator: "The iOS Simulator is a full model apartment built inside the mall: a real, working iPhone showroom staffed and powered by the mall itself rather than by an external building.",
+        xcode: "Xcode is the mall's licensed general contractor: it builds the iPhone showrooms (Simulators), certifies the iOS Department Managers (XCUITest), and supplies all the official Apple-approved tools.",
+        vscode: "VS Code is your personal architect's studio across the street: you draft all the work orders (test scripts) there, then send them into the mall to be executed.",
+        visualstudiocode: "Visual Studio Code is your personal architect's studio across the street: you draft all the work orders (test scripts) there, then send them into the mall to be executed.",
+        ios: "iOS is the strict franchise rulebook of the iPhone showroom: it dictates exactly how the showroom operates and only lets certified staff (XCUITest) touch the displays.",
+        iphone: "The iPhone is the flagship showroom at the end of every delivery route: all the tubes, forms, and dispatchers exist to make something happen on its display floor."
       };
+
+      // Why each term matters for mobile automation (Python / Appium / Xcode / iOS)
+      const relevance = {
+        kernel: "Every Appium command your Python test sends crosses the kernel — it owns the sockets, memory, and process boundaries your whole test stack runs on.",
+        xnu: "XNU is the macOS kernel hosting your entire toolchain: Python, the Appium server, Xcode's tools, and the iOS Simulator are all its tenants.",
+        fork: "When Appium launches helper processes (like the WebDriverAgent runner via Xcode tooling), fork() is step one of spawning them.",
+        execve: "It's how the Appium server actually starts xcodebuild/WebDriverAgent — fork a process, then execve() it into the new program.",
+        posix: "Python and Node.js both talk to macOS through POSIX APIs — it's why the same Appium test code runs on macOS and Linux CI boxes.",
+        mmu: "The MMU is why your Python test can't just reach into the iOS app's memory — you MUST go through Appium's network protocol instead.",
+        ast: "Before your test runs, CPython parses your Python script into an AST — it's the first transformation of your test code on every run.",
+        bytecode: "Your Appium test's .pyc files are this — CPython compiles your test script to bytecode before executing a single tap or assert.",
+        pvm: "The Python Virtual Machine is what actually executes your test script, line by line, driving every Appium call you wrote.",
+        heap: "Your driver object, locators, and test data all live in Python's heap — private memory Appium and the iOS app can never see directly.",
+        pydictobject: "Every Appium capability dict and element response in your Python test is a PyDictObject under the hood.",
+        serialization: "Every find_element() and tap() must be serialized to JSON before it can leave Python and travel to the Appium server.",
+        json: "The WebDriver protocol Appium speaks is JSON over HTTP — every command and response in your test suite is a JSON document.",
+        http: "Appium is literally an HTTP server: your Python client POSTs to /session/:id/element and Appium replies — that's all a test step is.",
+        tcp: "Your test commands ride TCP to the Appium server (port 4723) — guaranteed ordered delivery is why steps never arrive scrambled.",
+        ip: "IP routes your test traffic — usually to 127.0.0.1 for local Appium, or a real address when targeting a device farm or Selenium Grid.",
+        checksum: "TCP checksums silently protect every Appium command from corruption — one reason flaky tests are almost never 'corrupted network bytes'.",
+        syn: "When your Python client opens an Appium session, this is the very first packet — no SYN, no session, and you get a ConnectionRefusedError.",
+        handshake: "Before webdriver.Remote() returns, a TCP handshake with the Appium server must complete — connection errors here mean Appium isn't running.",
+        socket: "Your Python test and the Appium server talk through sockets — 'Address already in use' on 4723 means another Appium grabbed the socket.",
+        port: "4723 is Appium's famous port — your driver URL targets it, and Appium in turn talks to WebDriverAgent on the iOS side over another port (8100).",
+        loopback: "Local Appium runs never touch a real network — Python → Appium traffic loops back inside your Mac, which is why it's fast and firewall-proof.",
+        lo0: "All localhost Appium traffic rides lo0 — you can literally watch your test commands with 'tcpdump -i lo0 port 4723'.",
+        kqueue: "kqueue is how the Node.js-based Appium server sleeps until your Python client's command arrives — event-driven, not polling.",
+        libuv: "libuv is the engine of Appium's event loop — it's why one Appium server can juggle multiple sessions and device connections at once.",
+        mbuf: "mbufs shuttle your Appium commands through the macOS kernel — zero-copy plumbing that keeps local test traffic fast.",
+        nic: "Local Simulator tests skip the NIC entirely; it only matters when your tests target real devices or a remote cloud device farm.",
+        arp: "ARP only enters the picture when Appium targets a device or grid over the LAN — localhost testing never needs it.",
+        v8: "V8 is the engine executing the Appium server itself — Appium is JavaScript, so every command you send is ultimately handled by V8.",
+        webdriver: "This is THE protocol of mobile automation: Python Appium clients, Selenium, and XCUITest drivers all speak WebDriver, which is why they interoperate.",
+        appium: "The star of the show — the middleman translating your Python WebDriver commands into native XCUITest actions on iOS (or UiAutomator2 on Android).",
+        xcuitest: "Apple's own UI testing framework, built into Xcode — Appium's iOS driver wraps it, so every tap you script becomes an XCUITest action.",
+        pid: "Appium tracks the Simulator's and WebDriverAgent's PIDs to manage them — and 'kill <pid>' is how you clean up a zombie Appium or Simulator.",
+        syscall: "Every meaningful step of a test — opening the socket, sending the command, launching the Simulator — is your tools asking macOS via syscalls.",
+        buffer: "If your Python client fires commands while Appium's event loop is busy, they wait safely in the socket buffer — nothing is lost.",
+        mss: "Large Appium payloads (like page-source dumps or screenshots) get sliced to MSS-sized TCP segments and reassembled — invisibly to your test.",
+        virtualaddressspace: "It's why Python, Appium, and the iOS app each live in their own sealed world — and why automation must go through the WebDriver protocol instead of shared memory.",
+        addressspace: "Each of Python, Node/Appium, and the Simulator gets its own — the isolation that forces mobile automation to use network protocols to communicate.",
+        memorymanagementunit: "Hardware-enforced isolation between your test process and the app under test — the physical reason Appium exists as a network middleman.",
+        processisolation: "The core reason mobile automation architecture looks the way it does: Python can't touch the iOS app directly, so Appium bridges them over HTTP.",
+        process: "Your test run is at least three processes — Python (client), Node.js (Appium server), and the iOS app/Simulator — each isolated, talking via sockets.",
+        memory: "Python's objects, Appium's session state, and the iOS app's UI tree each live in separate protected memory — only messages cross between them.",
+        ram: "Test data in Python and UI state in the iOS app occupy isolated RAM — sharing happens only through the WebDriver messages you send.",
+        ipc: "Mobile automation IS inter-process communication: Python ↔ Appium ↔ WebDriverAgent ↔ your app, all over sanctioned channels.",
+        networkstack: "Every element lookup in your test traverses this stack twice — down through it from Python, back up into the Appium server.",
+        darpa: "The 4-layer model your Appium traffic actually rides: HTTP (app) → TCP (transport) → IP (internet) → loopback (link).",
+        mach: "Mach messaging underpins how macOS coordinates the Simulator and Xcode tooling your iOS tests depend on.",
+        freebsd: "The BSD half of XNU provides the sockets API — the exact interface Python and Node use to move your Appium commands.",
+        thread: "Appium handles concurrent sessions with event-driven code instead of threads, while your Python test typically runs single-threaded top to bottom.",
+        python: "The language of your test suite — the Appium Python client turns your method calls into WebDriver HTTP requests.",
+        node: "Appium itself is a Node.js app — knowing how Node's event loop works explains Appium's async, non-blocking behavior.",
+        interpreter: "CPython interprets your test scripts at runtime — no compile step, which is why you can edit a test and immediately rerun it.",
+        macos: "The host OS of iOS automation — Xcode, the Simulator, Appium, and Python all run here, governed by its kernel.",
+        simulator: "Your primary test target during development — a full iOS environment running as a macOS process, driven by XCUITest via Appium.",
+        xcode: "Xcode ships the Simulator, XCUITest, and xcodebuild — Appium's iOS driver can't function without the toolchain Xcode installs.",
+        visualstudiocode: "Your cockpit: you write Python test scripts in VS Code, run them from its terminal, and debug Appium sessions with its Python extension.",
+        ios: "The target platform — everything in this pipeline exists to remotely control an iOS app you can't touch directly.",
+        iphone: "The end target of the whole pipeline — whether Simulator or physical device, every command ultimately lands as a UI action here."
+      };
+
+      const genericRelevance = [
+        "In your mobile automation stack, this sits somewhere on the path between your Python test script and the iOS app — Appium relies on it working correctly.",
+        "For mobile automation, understanding this helps you debug the Python → Appium → XCUITest → iOS pipeline when tests fail mysteriously.",
+        "In the Appium world, this is part of the machinery that carries your test commands from Python to the iOS device and back."
+      ];
 
       const raw = (currentSelection || term).toLowerCase();
       const key = raw.replace(/[^a-z0-9]/g, '');
       const words = raw.split(/[^a-z0-9]+/).filter(Boolean);
 
+      const compose = (k) =>
+        analogies[k] + "\n\n🔗 In mobile automation: " + (relevance[k] || genericRelevance[k.length % genericRelevance.length]);
+
       // 1. Exact match on the full selection
-      if (analogies[key]) return analogies[key];
+      if (analogies[key]) return compose(key);
       // 2. Longest dictionary key contained in the squashed selection (min length 4 to avoid false hits)
       const keys = Object.keys(analogies).sort((a, b) => b.length - a.length);
       for (const k of keys) {
-        if (k.length >= 4 && key.includes(k)) return analogies[k];
+        if (k.length >= 4 && key.includes(k)) return compose(k);
       }
       // 3. Whole-word match for short keys like "ip", "ast", "pid"
       for (const k of keys) {
-        if (words.includes(k)) return analogies[k];
+        if (words.includes(k)) return compose(k);
       }
       // 4. Varied generic fallback (deterministic per term, but different across terms)
       const fallbacks = [
@@ -607,7 +684,8 @@ Content-Length: 154
       ];
       let hash = 0;
       for (const ch of key) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
-      return fallbacks[hash % fallbacks.length];
+      return fallbacks[hash % fallbacks.length] +
+        "\n\n🔗 In mobile automation: " + genericRelevance[hash % genericRelevance.length];
     }
   </script>
 </body>
