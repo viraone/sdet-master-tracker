@@ -403,7 +403,10 @@ Content-Length: 154
   <div id="ai-tooltip" class="fixed hidden z-50 bg-gray-900 text-white rounded-lg shadow-2xl p-4 w-80 space-y-3 transition-all duration-150">
     <div class="flex items-center justify-between border-b border-gray-700 pb-2">
       <span class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1">✨ Analogy AI</span>
-      <span id="selected-preview" class="text-xs text-gray-400 truncate max-w-[120px]"></span>
+      <span class="flex items-center gap-2">
+        <span id="selected-preview" class="text-xs text-gray-400 truncate max-w-[100px]"></span>
+        <button id="btn-settings" title="Configure AI (Gemini API key)" class="text-gray-500 hover:text-gray-300 text-sm leading-none">⚙️</button>
+      </span>
     </div>
 
     <div id="prompt-state">
@@ -411,6 +414,7 @@ Content-Length: 154
       <button id="btn-explain" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 px-3 rounded shadow transition">
         💡 Explain to me using an analogy
       </button>
+      <p id="ai-status" class="text-[10px] text-gray-500 mt-2 text-center"></p>
     </div>
 
     <div id="loading-state" class="hidden text-center py-2">
@@ -473,7 +477,9 @@ Content-Length: 154
       promptState.classList.add('hidden');
       loadingState.classList.remove('hidden');
 
-      const surroundingContext = currentRange.startContainer.parentElement.innerText;
+      const anchorEl = currentRange.startContainer.parentElement;
+      const block = anchorEl.closest('p, li, td, pre, h1, h2, h3, section, div') || anchorEl;
+      const surroundingContext = block.innerText;
       generatedAnalogy = await fetchAnalogyFromAI(currentSelection, surroundingContext);
 
       loadingState.classList.add('hidden');
@@ -500,13 +506,91 @@ Content-Length: 154
     });
 
     /**
-     * Analogy generation.
-     * If ANALOGY_API_URL is set, POSTs {term, context} and expects {analogy: "..."}.
-     * Otherwise falls back to the built-in Super Mall knowledge base.
+     * Analogy generation, in priority order:
+     * 1. Google Gemini (free API key, stored ONLY in your browser's localStorage) — real AI,
+     *    tailored to the highlighted term AND its surrounding paragraph.
+     * 2. Custom backend via ANALOGY_API_URL (POST {term, context} -> {analogy}).
+     * 3. Built-in Super Mall knowledge base (offline fallback).
      */
     const ANALOGY_API_URL = ""; // e.g. "http://localhost:3000/api/analogy"
+    const GEMINI_KEY_STORAGE = "cs198_gemini_api_key";
+
+    const btnSettings = document.getElementById('btn-settings');
+    const aiStatus = document.getElementById('ai-status');
+
+    function getGeminiKey() { return localStorage.getItem(GEMINI_KEY_STORAGE) || ""; }
+
+    function updateAiStatus() {
+      aiStatus.textContent = getGeminiKey()
+        ? "🟢 Real AI enabled (Gemini)"
+        : "⚪ Using built-in analogies — click ⚙️ to add a free Gemini API key for real AI";
+    }
+    updateAiStatus();
+
+    btnSettings.addEventListener('click', () => {
+      const existing = getGeminiKey();
+      const input = window.prompt(
+        "Paste your free Google Gemini API key (get one at aistudio.google.com/apikey).\n" +
+        "It is stored ONLY in this browser's localStorage — never uploaded anywhere.\n\n" +
+        "Leave empty and press OK to remove the saved key.",
+        existing
+      );
+      if (input === null) return; // cancelled
+      if (input.trim()) localStorage.setItem(GEMINI_KEY_STORAGE, input.trim());
+      else localStorage.removeItem(GEMINI_KEY_STORAGE);
+      updateAiStatus();
+    });
+
+    async function fetchGeminiAnalogy(term, context) {
+      const key = getGeminiKey();
+      if (!key) return null;
+
+      const systemPrompt =
+        "You are the 'Super Mall Manager', a teaching assistant for CS 198: Advanced Mobile Test " +
+        "Infrastructure. The course explains the iOS test automation pipeline (Python test client → " +
+        "Appium/Node.js server → XCUITest → iOS Simulator on macOS) using a 'Super Mall' analogy where " +
+        "the MacBook is the mall, the macOS/XNU kernel is the General Manager, processes are stores in " +
+        "sealed suites, sockets are pneumatic tube mail slots, TCP is the document slicer, etc.\n\n" +
+        "The student highlighted a term in the lecture. Reply with EXACTLY two short parts:\n" +
+        "1. A vivid 2-3 sentence Super Mall analogy explaining the highlighted term, consistent with the " +
+        "mall metaphors above and grounded in the surrounding lecture context provided.\n" +
+        "2. On a new line starting with '🔗 In mobile automation: ', 1-2 sentences explaining SPECIFICALLY " +
+        "how THIS term participates in the Python/Appium/Xcode/XCUITest/iOS pipeline — concrete and tied " +
+        "to the term, not generic. Mention only the tools actually relevant to this term.\n\n" +
+        "Plain text only. No markdown, no headers, no bullet points.";
+
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: [{
+              role: 'user',
+              parts: [{ text: `Highlighted term: "${term}"\n\nSurrounding lecture context:\n${(context || '').slice(0, 1500)}` }]
+            }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 400 }
+          })
+        }
+      );
+      if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('').trim();
+      return text || null;
+    }
 
     async function fetchAnalogyFromAI(term, context) {
+      // 1. Real AI via Gemini
+      if (getGeminiKey()) {
+        try {
+          const aiText = await fetchGeminiAnalogy(term, context);
+          if (aiText) return aiText;
+        } catch (err) {
+          console.warn('Gemini failed, falling back.', err);
+        }
+      }
+      // 2. Custom backend
       if (ANALOGY_API_URL) {
         try {
           const res = await fetch(ANALOGY_API_URL, {
@@ -520,6 +604,7 @@ Content-Length: 154
           console.warn('Analogy API failed, using local knowledge base.', err);
         }
       }
+      // 3. Offline knowledge base
       return localAnalogy(term);
     }
 
