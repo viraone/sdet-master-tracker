@@ -320,6 +320,7 @@
     const GEMINI_KEY_STORAGE = "cs198_gemini_api_key";
     const GH_TOKEN_STORAGE = "stagetime_github_token";
     const NOTES_STORAGE = "stagetime_code_notes";
+    const DRAFTS_STORAGE = "stagetime_drafts";
     const IGNORED = new Set(["venv", ".git", "__pycache__", ".pytest_cache", ".gitignore", "pyvenv.cfg"]);
 
     const $ = (id) => document.getElementById(id);
@@ -475,6 +476,7 @@
         const dirty = editor.getValue() !== currentFile.original;
         $("tab").classList.toggle("dirty", dirty);
         scheduleLint();
+        scheduleDraftSave();
       });
 
       // Highlight-to-explain: offer selection in the sliding chat when it settles
@@ -546,10 +548,47 @@
       $("sb-problems").textContent = markers.length ? `✖ ${errs} ⚠ ${warns}` : "✔ no problems";
     }
 
+    /* ================= AUTO-SAVE DRAFTS (localStorage) ================= */
+    let draftTimer = null;
+
+    function loadDrafts() {
+      try { return JSON.parse(localStorage.getItem(DRAFTS_STORAGE)) || {}; } catch { return {}; }
+    }
+    function saveDrafts(d) { localStorage.setItem(DRAFTS_STORAGE, JSON.stringify(d)); }
+    function deleteDraft(path) {
+      const d = loadDrafts();
+      if (d[path]) { delete d[path]; saveDrafts(d); }
+    }
+
+    function scheduleDraftSave() {
+      clearTimeout(draftTimer);
+      draftTimer = setTimeout(saveDraftNow, 500);
+    }
+
+    function saveDraftNow() {
+      if (!editor || !currentFile.sha) return;
+      const value = editor.getValue();
+      if (value === currentFile.original) {
+        deleteDraft(currentFile.path);
+        return;
+      }
+      const d = loadDrafts();
+      d[currentFile.path] = { text: value, savedAt: Date.now() };
+      saveDrafts(d);
+      $("sb-sync").textContent = `💾 auto-saved ${new Date().toLocaleTimeString()}`;
+    }
+
+    // Flush a pending draft immediately when leaving the page
+    window.addEventListener("beforeunload", () => { clearTimeout(draftTimer); saveDraftNow(); });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") { clearTimeout(draftTimer); saveDraftNow(); }
+    });
+
     async function openFile(path) {
       // Only warn about unsaved edits once a real file has been loaded
       if (editor && currentFile.sha && editor.getValue() !== currentFile.original &&
           !confirm("You have unsaved edits. Discard them and open the other file?")) return;
+      if (editor && currentFile.sha) deleteDraft(currentFile.path); // user chose to discard (or file is clean)
       $("sb-sync").textContent = "⏳ fetching…";
       try {
         const { text, sha } = await fetchFile(path);
@@ -563,6 +602,15 @@
         $("tab").classList.remove("dirty");
         $("sb-sync").textContent = `✅ synced ${new Date().toLocaleTimeString()}`;
         markActiveFile();
+        // Auto-save: restore any unsaved draft for this file
+        const draft = loadDrafts()[path];
+        if (draft && draft.text !== text) {
+          editor.setValue(draft.text);
+          $("sb-sync").textContent = `💾 draft restored`;
+          toast(`💾 Restored your unsaved work from ${new Date(draft.savedAt).toLocaleString()}. Commit & Push to publish it, or Sync from GitHub to discard.`, 8000);
+        } else if (draft) {
+          deleteDraft(path);
+        }
       } catch (e) {
         $("sb-sync").textContent = "⚠️ fetch failed";
         toast(`Could not load ${path}: ${e.message}`);
@@ -605,6 +653,7 @@
         const data = await commitFile(currentFile.path, currentFile.sha, editor.getValue(), msg || `Update ${currentFile.path}`);
         currentFile.sha = data.content.sha;
         currentFile.original = editor.getValue();
+        deleteDraft(currentFile.path);
         $("tab").classList.remove("dirty");
         $("btn-commit").disabled = false;
         $("sb-sync").textContent = `✅ pushed ${new Date().toLocaleTimeString()}`;
