@@ -450,7 +450,20 @@
         scrollBeyondLastLine: false,
         renderLineHighlight: "all",
         padding: { top: 8 },
-        tabSize: 4
+        tabSize: 4,
+        // Learning mode: no autocomplete — type it all out yourself
+        quickSuggestions: false,
+        suggestOnTriggerCharacters: false,
+        wordBasedSuggestions: "off",
+        parameterHints: { enabled: false },
+        tabCompletion: "off",
+        acceptSuggestionOnEnter: "off",
+        snippetSuggestions: "none",
+        inlineSuggest: { enabled: false },
+        hover: { enabled: true },
+        autoClosingBrackets: "never",
+        autoClosingQuotes: "never",
+        autoSurround: "never"
       });
 
       editor.onDidChangeCursorPosition((e) => {
