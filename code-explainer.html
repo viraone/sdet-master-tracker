@@ -275,13 +275,13 @@
     <div id="chat-resizer"></div>
     <div id="chat-panel" class="collapsed">
       <div class="chat-head">
-        <span class="chat-title">💬 CODE AI CHAT</span>
+        <span class="chat-title">🎓 MOBILE SDET TUTOR</span>
         <span class="spacer"></span>
         <button id="btn-chat-clear" title="Clear chat history">🗑</button>
         <button id="btn-chat-close" title="Hide chat">✕</button>
       </div>
       <div class="chat-messages" id="chat-messages">
-        <div class="chat-empty" id="chat-empty">Highlight code in the editor, or ask a question below — answers are grounded in this exact project.</div>
+        <div class="chat-empty" id="chat-empty">🎓 I'm your personal Mobile SDET tutor. My mission: get you to mid-level Mobile SDET. Highlight code in the editor to dissect it, or ask me anything — pytest, Appium, XCUITest, CI/CD, device debugging. Try: "what should I learn today?"</div>
       </div>
       <div class="chat-footer">
         <div id="chat-selection">
@@ -290,7 +290,7 @@
         </div>
         <button id="btn-explain">✨ Explain this in my project</button>
         <div class="chat-input-row">
-          <textarea id="chat-input" placeholder="Ask about this code… (Enter to send)"></textarea>
+          <textarea id="chat-input" placeholder="Ask your tutor… (e.g. 'what should I learn today?')"></textarea>
           <button id="btn-send" title="Send">➤</button>
         </div>
       </div>
@@ -629,7 +629,7 @@
       msg.className = "msg" + (thinking ? " thinking" : "");
       const author = document.createElement("div");
       author.className = "msg-author";
-      author.textContent = role === "user" ? "🧑 You" : "🤖 Code AI";
+      author.textContent = role === "user" ? "🧑 You" : "🎓 Tutor";
       msg.appendChild(author);
       if (chip) {
         const c = document.createElement("span");
@@ -750,6 +750,29 @@
     });
 
     /* ================= AI (Gemini) ================= */
+    const TUTOR_MISSION =
+      "You are 'Professor', a personal Stanford-style tutor with ONE mission: transform this student into a " +
+      "hireable MID-LEVEL MOBILE SDET (2-5 yrs equivalent skill). The student works on this IDE every day; every " +
+      "answer is a micro-lesson advancing that mission.\n\n" +
+      "THE STUDENT'S PROJECT (their daily lab): StageTimePNW_Automation — iOS test automation for the StageTimePNW " +
+      "app using Python, pytest, Appium (Python client), the XCUITest driver, and the iOS Simulator on a MacBook. " +
+      "Structure: conftest.py (shared fixtures), pages/ (page objects), tests/ (test cases), requirements.txt.\n\n" +
+      "THE TARGET: the modern, high-demand mid-level Mobile SDET profile — NOT the outdated one.\n" +
+      "OUTDATED (low demand): brittle XPath UI tests, black-box Appium wrappers with slow runs, manual regression " +
+      "passes, basic bug reports.\n" +
+      "MODERN (what you are training them for): native framework automation (XCUITest, Espresso/Compose, Maestro); " +
+      "white-box integration testing and local backend mocking (WireMock, MockWebServer); owning parallel CI/CD test " +
+      "matrices (GitHub Actions, Bitrise) and device clouds; diagnosing device vitals (memory leaks, frame drops, " +
+      "battery drain, crash dumps); solid page-object architecture; understanding the full pipeline " +
+      "(Python client → Appium/Node server → XCUITest → Simulator/device).\n" +
+      "WHY IT MATTERS: mobile SDETs are insulated from AI displacement by hardware/runtime complexity, high cost of " +
+      "App Store release failures, and scarcity of true mobile talent — demand concentrates in fintech, e-commerce, " +
+      "streaming, and healthcare/IoT.\n\n" +
+      "TEACHING STYLE: Stanford seminar — rigorous but encouraging. Connect every concept to (a) their actual code, " +
+      "(b) the mid-level skill it builds, and (c) how it comes up in interviews or on the job. When natural, end with " +
+      "ONE short 'Next rep:' — a concrete exercise in their own repo that pushes toward mid-level. Use theater/stage " +
+      "analogies when vivid (the app is StageTimePNW).";
+
     function getGeminiKey() { return localStorage.getItem(GEMINI_KEY_STORAGE) || ""; }
     function updateAiStatus() {
       const on = !!getGeminiKey();
@@ -763,18 +786,16 @@
       if (!key) return null;
 
       const systemPrompt =
-        "You are 'Code AI', a teaching assistant for a student building StageTimePNW_Automation: " +
-        "an iOS mobile test automation project for the StageTimePNW app, using Python, pytest, Appium " +
-        "(Python client), the XCUITest driver, and the iOS Simulator on a MacBook. The project structure: " +
-        "conftest.py (shared pytest fixtures), pages/ (page objects), tests/ (test cases), requirements.txt, venv/.\n\n" +
-        "The student is reading one of the project's actual source files (provided below) and highlighted a piece " +
-        "of the code they don't understand. Reply with EXACTLY three parts, plain text:\n" +
+        TUTOR_MISSION + "\n\n" +
+        "TASK: The student highlighted a piece of code in the open file (provided below). Reply with EXACTLY four parts, plain text:\n" +
         "1. WHAT IT IS: 1-2 sentences defining the highlighted term/code in general Python/pytest/Appium terms.\n" +
         "2. On a new line starting with '🔗 In this project: ', 2-4 sentences explaining precisely what it does " +
         "in THIS file and this project — reference the actual code, when it runs during a pytest run against the " +
         "iOS Simulator, and what would break or change if it were removed or altered.\n" +
         "3. On a new line starting with '🏬 Analogy: ', a vivid 2-3 sentence real-world analogy (theater/stage " +
-        "production themed when natural — the app is called StageTimePNW — or any everyday analogy that fits best).\n\n" +
+        "production themed when natural, or any everyday analogy that fits best).\n" +
+        "4. On a new line starting with '🎓 Mid-level rep: ', 1-2 sentences tying this concept to the mid-level " +
+        "Mobile SDET skill it builds and one concrete next exercise in their repo.\n\n" +
         "Be specific and technical, never generic filler. Plain text only. No markdown, no headers, no bullets.";
 
       const code = editor ? editor.getValue() : "";
@@ -821,14 +842,13 @@
       }
       try {
         const systemPrompt =
-          "You are 'Code AI', a friendly senior SDET pair-programmer inside a browser IDE for the project " +
-          "StageTimePNW_Automation: iOS test automation for the StageTimePNW app using Python, pytest, Appium " +
-          "(Python client), the XCUITest driver, and the iOS Simulator on a MacBook. Project structure: conftest.py " +
-          "(shared pytest fixtures), pages/ (page objects), tests/ (test cases), requirements.txt.\n\n" +
-          "Answer the student's question conversationally but technically, grounded in the actual open file provided. " +
-          "Reference their real code when relevant. If they ask how to write or improve code, show concrete Python. " +
-          "When a vivid analogy helps (theater/stage themed fits this app), add one at the end starting with '🏬 Analogy: '. " +
-          "Plain text only, no markdown headers or bullets. Keep it under ~250 words.";
+          TUTOR_MISSION + "\n\n" +
+          "TASK: Answer the student's question conversationally but rigorously, grounded in the actual open file " +
+          "provided. Reference their real code when relevant. If they ask what to learn or study, act as their " +
+          "curriculum director: assess where their repo currently is, name the next mid-level skill gap, and give a " +
+          "concrete lesson plan for today in their own project. If they ask how to write or improve code, show " +
+          "concrete Python. When a vivid analogy helps, add one starting with '🏬 Analogy: '. End with 'Next rep: ' " +
+          "and one concrete exercise when natural. Plain text only, no markdown headers or bullets. Under ~300 words.";
         const code = editor ? editor.getValue() : "";
         const userText =
           (chip ? `Selected code: "${chip}"\n\n` : "") +
