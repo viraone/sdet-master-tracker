@@ -60,16 +60,10 @@
     .card-title { font-family: "Google Sans", sans-serif; font-size: 1.05rem; font-weight: 500; color: var(--text); display: flex; align-items: center; justify-content: space-between; }
     .card-title span.tag { font-size: 0.72rem; padding: 4px 10px; border-radius: 100px; background: var(--blue-soft); color: var(--blue); font-weight: 500; letter-spacing: 0.3px; }
 
-    /* Timer */
-    .timer-display { font-family: "Google Sans", sans-serif; font-size: 3.2rem; font-weight: 400; text-align: center; font-variant-numeric: tabular-nums; padding: 10px 0; letter-spacing: -1px; color: var(--text); }
-    .timer-btn-row { display: flex; gap: 10px; justify-content: center; }
+    /* Buttons */
     button { cursor: pointer; border: none; border-radius: 100px; font-family: "Google Sans", sans-serif; font-weight: 500; padding: 10px 24px; font-size: 0.9rem; transition: box-shadow 0.2s, background 0.2s; letter-spacing: 0.2px; }
     button:hover { box-shadow: 0 1px 3px rgba(60,64,67,0.24); }
     button:active { box-shadow: none; }
-    .btn-start { background: var(--blue); color: #fff; }
-    .btn-start:hover { background: #0a4dbb; }
-    .btn-pause { background: var(--blue-soft); color: var(--blue); }
-    .btn-reset { background: var(--surface-alt); color: var(--text-secondary); border: 1px solid var(--border); }
     .btn-save { background: var(--blue); color: #fff; width: 100%; }
     .btn-save:hover { background: #0a4dbb; }
 
@@ -128,22 +122,8 @@
 
     <!-- Grid Row 1 -->
     <div class="dashboard-grid">
-      <!-- Session Timer -->
-      <div class="card">
-        <div class="card-title">
-          <span>⏱️ Live Study Session</span>
-          <span class="tag">GRIND MODE</span>
-        </div>
-        <div class="timer-display" id="timer">00:00:00</div>
-        <div class="timer-btn-row">
-          <button class="btn-start" onclick="startTimer()">▶ Start</button>
-          <button class="btn-pause" onclick="pauseTimer()">⏸ Pause</button>
-          <button class="btn-reset" onclick="resetTimer()">↺ Reset</button>
-        </div>
-      </div>
-
       <!-- End of Day Form -->
-      <div class="card">
+      <div class="card" style="grid-column: 1 / -1;">
         <div class="card-title">
           <span>📝 Daily Checkout Log</span>
           <span class="tag" style="background: var(--red-soft); color: var(--red);">END OF SESSION</span>
@@ -201,8 +181,6 @@
       logs: []
     };
 
-    let timerInterval = null;
-
     function init() {
       if (!state.syllabus || state.syllabus.length !== SYLLABUS.length) {
         state.syllabus = SYLLABUS;
@@ -211,7 +189,6 @@
       renderLogs();
       updateScore();
       updateBadges();
-      renderTimer();
     }
 
     function renderChecklist() {
@@ -241,36 +218,6 @@
       document.getElementById('readinessFill').style.width = pct + '%';
     }
 
-    function startTimer() {
-      if (timerInterval) return;
-      timerInterval = setInterval(() => {
-        state.seconds++;
-        state.totalSeconds++;
-        renderTimer();
-        if (state.seconds % 30 === 0) saveState();
-      }, 1000);
-    }
-
-    function pauseTimer() {
-      clearInterval(timerInterval);
-      timerInterval = null;
-      saveState();
-    }
-
-    function resetTimer() {
-      pauseTimer();
-      state.seconds = 0;
-      renderTimer();
-      saveState();
-    }
-
-    function renderTimer() {
-      const hrs = String(Math.floor(state.seconds / 3600)).padStart(2, '0');
-      const mins = String(Math.floor((state.seconds % 3600) / 60)).padStart(2, '0');
-      const secs = String(state.seconds % 60).padStart(2, '0');
-      document.getElementById('timer').innerText = `${hrs}:${mins}:${secs}`;
-    }
-
     function updateBadges() {
       const totalHours = (state.totalSeconds / 3600).toFixed(1);
       document.getElementById('totalHours').innerText = totalHours;
@@ -285,8 +232,7 @@
       const newLog = {
         date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         topic,
-        summary,
-        timeSpent: document.getElementById('timer').innerText
+        summary
       };
 
       state.logs.unshift(newLog);
@@ -307,7 +253,7 @@
         <div class="history-card">
           <div class="history-header">
             <span>${log.date} — ${log.topic}</span>
-            <span style="color: var(--blue); font-size: 0.8rem;">⏱️ ${log.timeSpent}</span>
+            ${log.timeSpent ? `<span style="color: var(--blue); font-size: 0.8rem;">⏱️ ${log.timeSpent}</span>` : ''}
           </div>
           <div class="history-body">${log.summary}</div>
         </div>
