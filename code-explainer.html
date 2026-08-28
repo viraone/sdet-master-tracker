@@ -224,17 +224,17 @@
     <div class="right">
       <button class="tb-btn" id="btn-toggle-chat" title="Toggle Code AI chat">💬 Chat</button>
       <button class="tb-btn" id="btn-refresh" title="Pull the latest version from GitHub">🔄 Sync from GitHub</button>
-      <button class="tb-btn primary" id="btn-commit" title="Commit & push your edits to GitHub" disabled>☁️ Commit &amp; Push</button>
+      <button class="tb-btn primary" id="btn-commit" title="Commit & push your edits to GitHub">☁️ Commit &amp; Push</button>
     </div>
   </div>
 
   <div class="main">
     <!-- Activity bar -->
     <div class="activitybar">
-      <div class="icon active" title="Explorer">🗂</div>
-      <div class="icon" title="Search (decorative)">🔍</div>
-      <div class="icon" title="Source Control (use Commit & Push above)">🔀</div>
-      <div class="icon" title="Run (decorative)">▶️</div>
+      <div class="icon active" id="icon-explorer" title="Explorer: show/hide file tree">🗂</div>
+      <div class="icon" id="icon-search" title="Search in file (⌘F)">🔍</div>
+      <div class="icon" id="icon-scm" title="Source Control: commit & push">🔀</div>
+      <div class="icon" id="icon-run" title="Run tests (copies the pytest command)">▶️</div>
       <div class="icon" id="icon-chat" title="Code AI Chat">💬</div>
       <div class="icon" id="icon-settings" title="Settings: API keys" style="margin-top:auto;margin-bottom:6px">⚙️</div>
     </div>
@@ -460,7 +460,6 @@
       editor.onDidChangeModelContent(() => {
         const dirty = editor.getValue() !== currentFile.original;
         $("tab").classList.toggle("dirty", dirty);
-        $("btn-commit").disabled = !dirty;
       });
 
       // Highlight-to-explain: offer selection in the sliding chat when it settles
@@ -495,7 +494,6 @@
         $("crumb-name").textContent = path.split("/").join(" › ");
         $("sb-lang").textContent = langFor(name)[0].toUpperCase() + langFor(name).slice(1);
         $("tab").classList.remove("dirty");
-        $("btn-commit").disabled = true;
         $("sb-sync").textContent = `✅ synced ${new Date().toLocaleTimeString()}`;
         markActiveFile();
       } catch (e) {
@@ -523,6 +521,11 @@
     }
 
     $("btn-commit").addEventListener("click", async () => {
+      if (!editor || !currentFile.sha) { toast("⏳ File still loading — try again in a second."); return; }
+      if (editor.getValue() === currentFile.original) {
+        toast("✅ Nothing to commit — the editor matches GitHub. Type some code first!");
+        return;
+      }
       if (!getGhToken()) {
         promptGhToken();
         if (!getGhToken()) { toast("A GitHub token is needed to push edits."); return; }
@@ -536,6 +539,7 @@
         currentFile.sha = data.content.sha;
         currentFile.original = editor.getValue();
         $("tab").classList.remove("dirty");
+        $("btn-commit").disabled = false;
         $("sb-sync").textContent = `✅ pushed ${new Date().toLocaleTimeString()}`;
         toast(`✅ Committed to ${OWNER}/${REPO}@${BRANCH}: "${msg}"`);
       } catch (e) {
@@ -543,6 +547,25 @@
         $("sb-sync").textContent = "⚠️ push failed";
         toast(`❌ Push failed: ${e.message}. Check your token permissions.`, 6000);
       }
+    });
+
+    /* ================= ACTIVITY BAR ================= */
+    $("icon-explorer").addEventListener("click", () => {
+      const sb = document.querySelector(".sidebar");
+      const hidden = sb.style.display === "none";
+      sb.style.display = hidden ? "" : "none";
+      $("icon-explorer").classList.toggle("active", hidden);
+    });
+    $("icon-search").addEventListener("click", () => {
+      if (!editor) return;
+      editor.focus();
+      editor.getAction("actions.find").run();
+    });
+    $("icon-scm").addEventListener("click", () => $("btn-commit").click());
+    $("icon-run").addEventListener("click", () => {
+      const cmd = "cd ~/Desktop/StageTimePNW_Automation && source venv/bin/activate && pytest tests/ -v";
+      navigator.clipboard?.writeText(cmd);
+      toast("▶️ Tests need the iOS Simulator, so they run on your Mac — command copied to clipboard:\n" + cmd, 7000);
     });
 
     /* ================= SETTINGS ================= */
