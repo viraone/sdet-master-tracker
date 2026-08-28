@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CS 198: Advanced Mobile Test Infrastructure — Interactive Lecture</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    ::selection { background-color: #fef08a; }
+    pre.diagram {
+      background: #0f172a; color: #93c5fd; font-size: 0.72rem; line-height: 1.35;
+      padding: 1rem; border-radius: 0.5rem; overflow-x: auto; white-space: pre;
+    }
+    .analogy-badge {
+      display: inline-block; margin: 0 4px; padding: 4px 8px;
+      background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;
+      font-size: 0.85rem; color: #1e3a8a; animation: fadeIn 0.2s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-2px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased py-12 px-4 sm:px-6">
+
+  <main id="content" class="max-w-3xl mx-auto bg-white p-6 sm:p-10 rounded-xl shadow-md space-y-8">
+    <header class="border-b pb-5">
+      <h1 class="text-2xl font-bold text-gray-900">CS 198: Advanced Mobile Test Infrastructure &amp; Systems Architecture</h1>
+      <p class="text-sm text-gray-500 mt-1">Lecture Series: Deconstructing the iOS Test Automation Pipeline</p>
+      <p class="text-sm text-gray-500">Module 1: The Client Runtime, OS Kernel Boundaries, Protocol Serialization, and Transport Mechanics</p>
+      <p class="mt-3 text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded px-3 py-2">
+        ✨ <strong>Analogy AI is on:</strong> highlight any term you don't understand (e.g. <em>kernel</em>, <em>kqueue</em>, <em>lo0</em>, <em>AST</em>, <em>checksum</em>) and a tooltip will offer a Super&nbsp;Mall analogy you can insert inline.
+      </p>
+    </header>
+
+    <!-- ====================== TOPOLOGY ====================== -->
+    <section class="space-y-3">
+      <h2 class="text-lg font-semibold text-gray-900">Full Systems Topology Overview</h2>
+      <pre class="diagram">
+🏬 THE MACBOOK PRO (SUPER MALL) ── Managed by the macOS Kernel (Mall General Manager)
+│
+├── 💻 SUITE 101: VS CODE (The Architectural Drafting Bureau)
+│    │  Spawns POSIX Subprocess via Kernel fork()/execve()
+│    ▼
+├── 🐍 SUITE 204: CPYTHON RUNTIME PROCESS (The Python Automation Worker)
+│    ├── 1. Source Lexing & AST (Abstract Syntax Tree) Generation
+│    ├── 2. Bytecode Compilation & PVM (Python Virtual Machine) Execution
+│    ├── 3. Memory Heap Allocation (PyDictObject Capabilities)
+│    ├── 4. W3C WebDriver Protocol Serialization (Heap Dict ──► JSON String)
+│    └── 5. Application Layer Framing (HTTP POST /session)
+│
+├── ⚙️ HOST OS KERNEL: XNU / MACH / BSD SUBSYSTEM (Mall GM & Infrastructure)
+│    ├── 6. POSIX Socket Layer & Kernel Space Transition
+│    ├── 7. TCP Layer: Segmentation, 32-bit Sequence Numbering, Checksum Seals
+│    ├── 8. IP Layer: Routing Header Encapsulation (127.0.0.1 ─► 127.0.0.1)
+│    └── 9. The lo0 Loopback Driver: Internal Virtual Vacuum Pipeline
+│
+└── 🏪 SUITE 400: APPIUM SERVER / NODE.JS (Central Logistics & Dispatch Store)
+     ├── 10. kqueue / Event Demultiplexing & Inbound Socket Buffer Ingestion
+     ├── 11. TCP Stream Reassembly, Checksum Verification, & HTTP Frame Parsing
+     └── 12. In-Memory Route Handoff to XCUITest Driver (iOS Dept. Manager)
+      </pre>
+    </section>
+
+    <!-- ====================== PROLOGUE ====================== -->
+    <section class="space-y-4 leading-relaxed">
+      <h2 class="text-lg font-semibold text-gray-900">🏛 Prologue: Defining the Actors in Our Mall Ecosystem</h2>
+      <p>Before tracing a single byte across the bus, we must establish the physical and logical boundaries of our operating environment.</p>
+      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Architecture</h3>
+      <ul class="list-disc pl-6 space-y-2">
+        <li><strong>The Host System:</strong> A Unix-based operating system running on Apple Silicon or Intel hardware powered by the XNU Kernel (a hybrid of Carnegie Mellon's Mach microkernel and FreeBSD).</li>
+        <li><strong>Process Isolation:</strong> Every application executes in its own Virtual Address Space enforced by the Hardware Memory Management Unit (MMU). Process A (Python) cannot access the RAM of Process B (Node.js/Appium) without explicit Inter-Process Communication (IPC) or network sockets.</li>
+        <li><strong>Network Stack:</strong> A kernel-space subsystem implementing the standard 4-layer DARPA/Internet protocol suite (L7 Application down to L2/L1 Link/Physical).</li>
+      </ul>
+      <h3 class="font-semibold text-gray-800">🏬 The Super Mall Analogy</h3>
+      <ul class="list-disc pl-6 space-y-2">
+        <li><strong>The Super Mall:</strong> Your entire MacBook.</li>
+        <li><strong>The Mall General Manager (macOS Kernel / XNU):</strong> The ultimate authority of the building. Holds the master keys, controls physical access, assigns private office suites, monitors electricity and memory, builds soundproof concrete walls between tenants (Process Isolation), and maintains the mall's high-speed internal pneumatic vacuum tube system (The Network Stack &amp; Loopback Interface).</li>
+        <li><strong>The Mall Tenants:</strong> Applications running in the mall (VS Code, Python, Appium, Xcode). They are strictly confined to their leased office suites and cannot walk through walls into other stores.</li>
+      </ul>
+    </section>
+
+    <!-- ====================== ACT I ====================== -->
+    <section class="space-y-4 leading-relaxed">
+      <h2 class="text-lg font-semibold text-gray-900">🎬 Act I: The Blueprint Inception in VS Code</h2>
+      <pre class="diagram"># test_login.py
+from appium import webdriver
+from appium.options.ios import XCUITestOptions
+
+options = XCUITestOptions()
+options.platform_name = "iOS"
+options.automation_name = "XCUITest"
+options.device_name = "iPhone 16"
+
+driver = webdriver.Remote(
+    command_executor="http://127.0.0.1:4723",
+    options=options
+)</pre>
+      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Reality</h3>
+      <ol class="list-decimal pl-6 space-y-2">
+        <li><strong>File Storage on NVMe Disk:</strong> Your test script <code class="bg-gray-100 px-1">test_login.py</code> resides as inert UTF-8 encoded text on your APFS (Apple File System) storage volume.</li>
+        <li><strong>Execution Invocation:</strong> Inside the VS Code integrated terminal, you execute <code class="bg-gray-100 px-1">pytest test_login.py</code> (or click Run).</li>
+        <li><strong>The Kernel System Call (fork / execve):</strong> VS Code (itself an Electron/V8 engine) cannot execute Python directly. It communicates with the macOS Kernel via POSIX APIs (posix_spawn() or fork() followed by execve()).</li>
+        <li><strong>Process Space Creation:</strong> The macOS Kernel allocates a new Mach task, creates an isolated virtual memory map (Page Tables, Stack, Heap, Text Segment), assigns a unique Process ID (PID), loads the python3 executable binary into memory, and points the Instruction Pointer (PC register) to CPython's entry point.</li>
+      </ol>
+      <h3 class="font-semibold text-gray-800">🏬 Super Mall Analogy</h3>
+      <ul class="list-disc pl-6 space-y-2">
+        <li><strong>VS Code (The Architectural Drafting Bureau — Suite 101):</strong> A high-tech design office on the first floor. The automation engineer sits at a drafting desk and writes down a project blueprint (test_login.py) on paper.</li>
+        <li><strong>The General Manager's Intervention:</strong> When the engineer clicks Run, the drafting office picks up the red hotline to the Mall General Manager (macOS Kernel): <em>"We need a licensed Python contractor to execute a job immediately."</em></li>
+        <li><strong>Opening Suite 204:</strong> The General Manager unlocks a brand-new private office suite (Process PID 24088), equips it with private desks and file cabinets (Virtual Memory Allocation), and hires a dedicated Python Automation Worker.</li>
+      </ul>
+    </section>
+
+    <!-- ====================== ACT II ====================== -->
+    <section class="space-y-4 leading-relaxed">
+      <h2 class="text-lg font-semibold text-gray-900">🎬 Act II: Parsing, Abstract Syntax Trees (AST), &amp; Bytecode Compilation</h2>
+      <pre class="diagram">
+┌─────────────────┐   ┌─────────────────┐   ┌────────────────┐   ┌──────────────────┐
+│ Raw Python Text │──►│  Lexer Tokens   │──►│ AST Structure  │──►│ CPython Bytecode │
+│  (Source Code)  │   │ (Grammar Units) │   │ (Grammar Tree) │   │ (Opcodes in RAM) │
+└─────────────────┘   └─────────────────┘   └────────────────┘   └────────┬─────────┘
+                                                                          ▼
+                                                            ┌───────────────────────┐
+                                                            │ Python Virtual Machine│
+                                                            │ (PVM Execution Loop)  │
+                                                            └───────────────────────┘
+      </pre>
+      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Reality</h3>
+      <p>The CPython runtime engine does not interpret human-readable text directly; it operates as a two-stage compiled bytecode virtual machine.</p>
+      <ol class="list-decimal pl-6 space-y-2">
+        <li><strong>Lexical Analysis (Tokenization):</strong> The CPython tokenizer scans the raw stream of characters, discarding whitespace and comments, and converts text into a continuous stream of atomic language tokens (NAME, OP, STRING, NEWLINE).</li>
+        <li><strong>Parsing &amp; AST Construction:</strong> The parser applies Python's formal PEG (Parsing Expression Grammar) to transform the flat token stream into a hierarchical graph: the Abstract Syntax Tree (AST).
+          <pre class="diagram mt-2">Module(
+  body=[
+    Assign(
+      targets=[Name(id='driver', ctx=Store())],
+      value=Call(
+        func=Attribute(value=Name(id='webdriver'), attr='Remote'),
+        args=[],
+        keywords=[
+          keyword(arg='command_executor',
+                  value=Constant(value='http://127.0.0.1:4723')),
+          keyword(arg='options', value=Name(id='options'))
+        ]
+      )
+    )
+  ]
+)</pre>
+          <em>Systems Significance:</em> If the syntax is malformed (e.g., unmatched brackets), compilation aborts instantly with a SyntaxError before any socket or network layer is initialized.</li>
+        <li><strong>Bytecode Compilation:</strong> The CPython compiler walks the AST nodes and emits a sequence of low-level 16-bit instructions (Bytecode) encapsulated in a PyCodeObject.</li>
+        <li><strong>PVM Evaluation Loop:</strong> The Python Virtual Machine iterates through opcodes (LOAD_NAME, LOAD_CONST, CALL_FUNCTION_KW), manipulating values on its internal evaluation stack.</li>
+      </ol>
+      <h3 class="font-semibold text-gray-800">🏬 Super Mall Analogy</h3>
+      <ul class="list-disc pl-6 space-y-2">
+        <li><strong>The Raw Work Order:</strong> The Python Worker in Suite 204 receives the raw text blueprint from the drafting bureau.</li>
+        <li><strong>The AST Chalkboard Scaffolding:</strong> The worker walks to a massive chalkboard and sketches an AST Family Tree — "Root Goal: Assign a driver variable"; "Branch A: Connect to remote service at 127.0.0.1:4723"; "Branch B: Apply the iOS capabilities package."</li>
+        <li><strong>Validation Against the Mall Code:</strong> If any branch violates the structural grammar of the Mall Building Code, the worker drops their chalk, throws a red flag (SyntaxError), and refuses to proceed.</li>
+        <li><strong>The Bytecode Muscle Checklist:</strong> Once validated, the worker writes an exact, step-by-step physical task list: Opcode 01: walk to storage shelf; Opcode 02: pick up standard capability clipboard; Opcode 03: write destination address; Opcode 04: execute dispatch procedure.</li>
+      </ul>
+    </section>
+
+    <!-- ====================== ACT III ====================== -->
+    <section class="space-y-4 leading-relaxed">
+      <h2 class="text-lg font-semibold text-gray-900">🎬 Act III: The Virtual Memory Heap &amp; The Serialization Layer</h2>
+      <pre class="diagram">
+┌──────────────────────────────────────────────────┐
+│  CPYTHON PROCESS HEAP (Private Virtual Memory)   │
+│                                                  │
+│  PyDictObject (Memory Pointers, Hash Table)      │
+│  ├── "platformName"   ──► Pointer: 0x104b3a290   │
+│  ├── "automationName" ──► Pointer: 0x104b3a320   │
+│  └── "deviceName"     ──► Pointer: 0x104b3a410   │
+└────────────────────────┬─────────────────────────┘
+                         │  Appium-Python-Client (Serializer)
+                         ▼
+┌──────────────────────────────────────────────────┐
+│    CONTIGUOUS UTF-8 W3C JSON BYTE BUFFER         │
+│  "{\"capabilities\":{\"alwaysMatch\":{...}}}"    │
+└──────────────────────────────────────────────────┘
+      </pre>
+      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Reality</h3>
+      <p>When Python executes <code class="bg-gray-100 px-1">options = XCUITestOptions()</code>, it populates a native dynamic data structure in user-space RAM: a PyDictObject.</p>
+      <ol class="list-decimal pl-6 space-y-2">
+        <li><strong>The In-Memory Isolation Problem:</strong> This dictionary resides as fragmented C pointers and hash tables in the private virtual memory heap of PID 24088. The Appium Server is a completely separate process (Node.js PID 18402) with its own distinct Google V8 JavaScript engine heap. Node.js cannot read CPython memory addresses.</li>
+        <li><strong>The W3C WebDriver Serialization:</strong> To cross process boundaries, data must be flattened into a language-agnostic representation. The Appium-Python-Client library inspects the XCUITestOptions instance, traverses internal property maps, and formats the properties into a strict JSON payload compliant with the W3C WebDriver Specification (Section 7: Sessions).</li>
+        <li><strong>The Output String:</strong>
+          <pre class="diagram mt-2">{
+  "capabilities": {
+    "alwaysMatch": {
+      "platformName": "iOS",
+      "appium:automationName": "XCUITest",
+      "appium:deviceName": "iPhone 16"
+    },
+    "firstMatch": [{}]
+  }
+}</pre></li>
+        <li><strong>Encoding to Bytes:</strong> The JSON string is encoded into a contiguous stream of UTF-8 binary bytes ready for transport.</li>
+      </ol>
+      <h3 class="font-semibold text-gray-800">🏬 Super Mall Analogy</h3>
+      <ul class="list-disc pl-6 space-y-2">
+        <li><strong>The Worker's Private Mind (The RAM Heap):</strong> The Python Worker has all the test ideas, capabilities, and device requirements floating in their own brain and private shorthand notebook in Suite 204.</li>
+        <li><strong>The Process Isolation Problem:</strong> The Mall General Manager (macOS) has poured 3 feet of solid, reinforced soundproof concrete between Suite 204 (Python) and Suite 400 (Appium). The Python worker cannot shout through the wall, and the Node.js clerk cannot read Python's shorthand notebook.</li>
+        <li><strong>The Standardized Triplicate Work Order (W3C JSON Serialization):</strong> The Python Worker pulls out the official Super Mall Triplicate Carbon-Copy Form (W3C WebDriver Protocol) and writes: Property: iOS · Framework Specialist: XCUITest · Target Unit: iPhone 16. Now any department in the mall — whether they speak JavaScript, Java, Go, or Rust — can read and execute the exact same form.</li>
+      </ul>
+    </section>
+
+    <!-- ====================== ACT IV ====================== -->
+    <section class="space-y-4 leading-relaxed">
+      <h2 class="text-lg font-semibold text-gray-900">🎬 Act IV: Application Layer Framing (HTTP/1.1 POST /session)</h2>
+      <pre class="diagram">POST /session HTTP/1.1
+Host: 127.0.0.1:4723
+User-Agent: appium/python-client 4.0.0 (CPython/3.11.4 Darwin/23.5.0)
+Accept: application/json
+Accept-Encoding: identity
+Content-Type: application/json; charset=utf-8
+Content-Length: 154
+
+{"capabilities":{"alwaysMatch":{"platformName":"iOS","appium:automationName":"XCUITest","appium:deviceName":"iPhone 16"},"firstMatch":[{}]}}</pre>
+      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Reality</h3>
+      <p>A JSON string by itself has no operational context; the receiver does not know if it is supposed to read data, create a session, or delete a resource. The Python runtime wraps the JSON payload inside a standard HTTP/1.1 Request Envelope:</p>
+      <ol class="list-decimal pl-6 space-y-2">
+        <li><strong>Request Line:</strong> <code class="bg-gray-100 px-1">POST /session HTTP/1.1</code> — POST is the semantic verb indicating resource creation; /session is the standardized W3C endpoint for initiating automation contexts; HTTP/1.1 is the framing protocol version.</li>
+        <li><strong>Metadata Headers:</strong> <code class="bg-gray-100 px-1">Host: 127.0.0.1:4723</code> directs the request to the local authority at TCP port 4723. <code class="bg-gray-100 px-1">Content-Type: application/json; charset=utf-8</code> instructs the receiving parser to instantiate its JSON decoder. <code class="bg-gray-100 px-1">Content-Length: 154</code> is the exact byte count of the body payload, preventing premature socket stream termination (under-reading) or blocking (over-reading).</li>
+        <li><strong>Delimiter:</strong> The mandatory CRLF token pair (\r\n\r\n) that marks the definitive boundary between protocol metadata and the payload body.</li>
+      </ol>
+      <h3 class="font-semibold text-gray-800">🏬 Super Mall Analogy</h3>
+      <ul class="list-disc pl-6 space-y-2">
+        <li><strong>The Official Mall Dispatch Envelope (HTTP Envelope):</strong> The Python Worker takes the serialized triplicate work order and slides it into a heavy-duty official dispatch envelope.</li>
+        <li><strong>Stamping the Routing Slip:</strong> Department Action: "Create &amp; Launch New Shift (POST /session)" · Destination Building Wing: "Mall Suite Extension 4723" · Envelope Contents: "Standardized JSON Document" · Certified Weight Seal: "Payload Length = 154 Characters".</li>
+        <li>This guarantees that when the dispatch desk receives the package, they know instantly how heavy it is and which department must open it.</li>
+      </ul>
+    </section>
+
+    <!-- ====================== ACT V ====================== -->
+    <section class="space-y-4 leading-relaxed">
+      <h2 class="text-lg font-semibold text-gray-900">🎬 Act V: The Transport &amp; Network Machinery (The Active Role of TCP/IP)</h2>
+      <p>Here, software leaves user space and enters the realm of Operating System Kernel Networking.</p>
+      <pre class="diagram">
+┌────────────────────────────────────────────────────────────────────┐
+│ APPLICATION LAYER (HTTP Payload: 154 Bytes + Headers = ~320 Bytes) │
+└──────────────────────────────────┬─────────────────────────────────┘
+                                   ▼
+┌────────────────────────────────────────────────────────────────────┐
+│ TCP SUBSYSTEM (The Slicing, Sequencing, & Integrity Machinery)     │
+│  [ TCP Segment Header ]                                            │
+│  ├── Source Port: 54192 (Ephemeral) ──► Destination Port: 4723    │
+│  ├── Sequence Number: 0x3F8A1201    ──► Ack Number: 0x00000000    │
+│  ├── Flags: [PSH, ACK]              ──► Window Size: 65535        │
+│  └── 16-Bit Checksum: 0xE4A2 (Integrity Verification Seal)        │
+└──────────────────────────────────┬─────────────────────────────────┘
+                                   ▼
+┌────────────────────────────────────────────────────────────────────┐
+│ IP SUBSYSTEM (The Packet Addressing & Routing Machinery)           │
+│  [ IPv4 Datagram Header ]                                          │
+│  ├── Version: 4          ──► Header Length: 20 Bytes              │
+│  ├── Protocol: 0x06 (TCP)──► Total Length: 360 Bytes              │
+│  ├── Source IP: 127.0.0.1──► Destination IP: 127.0.0.1            │
+│  └── Time-to-Live (TTL): 64                                       │
+└────────────────────────────────────────────────────────────────────┘
+      </pre>
+      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Reality</h3>
+      <p>When Python invokes the POSIX system call send() (or write() to the file descriptor representing the open socket), the execution context transitions from User Space (Ring 3) to Kernel Space (Ring 0).</p>
+      <p><strong>1. The TCP Layer: Segmentation, Sequencing, &amp; Reliability</strong></p>
+      <ul class="list-disc pl-6 space-y-2">
+        <li><strong>Transmission Control Protocol (TCP):</strong> A connection-oriented, reliable byte-stream protocol.</li>
+        <li><strong>The 3-Way Handshake (SYN → SYN-ACK → ACK):</strong> Prior to data transfer, the kernel initiates a handshake between an OS-assigned ephemeral source port (e.g., 54192) and target port 4723 to synchronize sequence numbers and establish sliding window buffers.</li>
+        <li><strong>Segmentation &amp; Sequence Numbering:</strong> The TCP engine reads the HTTP data from the socket send buffer (SO_SNDBUF), divides the stream into chunks bounded by the Maximum Segment Size (MSS), and stamps each segment with an incrementing 32-bit Sequence Number so out-of-order segments can be reassembled correctly.</li>
+        <li><strong>Integrity Checksums:</strong> The TCP layer computes a mathematical 16-bit one's complement checksum over the header, payload, and a pseudo-IP header. If a single bit flips, the packet is discarded and retransmitted.</li>
+        <li><strong>The PUSH Flag (PSH):</strong> The kernel sets the PSH flag in the TCP header, instructing Appium's receiving socket buffer not to wait for more data, but to immediately push these bytes up to the Node.js application layer.</li>
+      </ul>
+      <p><strong>2. The IP Layer: Packet Encapsulation &amp; Addressing</strong></p>
+      <ul class="list-disc pl-6 space-y-2">
+        <li><strong>Internet Protocol (IP):</strong> The packet-routing protocol of the network layer.</li>
+        <li><strong>Header Encapsulation:</strong> The kernel wraps the TCP segment inside an IPv4 Datagram.</li>
+        <li><strong>Addressing:</strong> It attaches the 32-bit Source IP address (127.0.0.1) and Destination IP address (127.0.0.1).</li>
+        <li><strong>Protocol Demultiplexing Field:</strong> It sets the Protocol field to 0x06 (identifying the encapsulated payload as TCP).</li>
+      </ul>
+      <h3 class="font-semibold text-gray-800">🏬 Super Mall Analogy: The Pneumatic Dispatch Mechanics &amp; The Couriers</h3>
+      <ol class="list-decimal pl-6 space-y-2">
+        <li><strong>The Handshake Scout:</strong> Before launching the payload, Mr. TCP sends a tiny test bell ringing through the tube to Store 4723 — "Are you awake and accepting work orders?" (SYN) · "Yes, wide awake! Window is open for 64KB of orders!" (SYN-ACK) · "Understood! Sending the work order capsules right now!" (ACK).</li>
+        <li><strong>Slicing the Document:</strong> The mall's pneumatic tube lines are rigid; they cannot fit a bulky, irregular envelope. Mr. TCP takes Python's work order and slices it into uniform, rigid index cards.</li>
+        <li><strong>The Sequence Manifest:</strong> On each card, Mr. TCP writes in bold ink: "CAPSULE SEQUENCE: #1 OF 1 — BYTE RANGE 0 TO 320". (A 5-megabyte file upload would be sliced into 3,500 sequentially numbered cards.)</li>
+        <li><strong>The Hot-Wax Checksum Seal:</strong> Mr. TCP calculates the exact weight and character count of the card and stamps a hot-wax seal with the numeric signature 0xE4A2: "If this seal arrives cracked or smudged by a single dot of ink, discard it immediately and demand a replacement."</li>
+        <li><strong>Mr. IP Encapsulates into the Capsule:</strong> Mr. IP takes Mr. TCP's sealed index card and drops it inside an airtight Pneumatic Steel Cylinder (The IP Datagram).</li>
+        <li><strong>Stenciling the Destination:</strong> FROM: This Building (127.0.0.1), Desk #54192 · TO: This Building (127.0.0.1), Counter Slot #4723 · CARGO TYPE: Class 06 (Certified TCP Document).</li>
+      </ol>
+    </section>
+
+    <!-- ====================== ACT VI ====================== -->
+    <section class="space-y-4 leading-relaxed">
+      <h2 class="text-lg font-semibold text-gray-900">🎬 Act VI: The Loopback Driver (lo0) &amp; The Inbound Socket Queue</h2>
+      <pre class="diagram">
+                        THE LOOPBACK TRANSIT
+┌─────────────────────────┐              ┌─────────────────────────┐
+│ 🐍 PYTHON RUNTIME       │              │ 🏪 APPIUM SERVER        │
+│ Outbound Socket Buffer  │              │ Inbound Socket Buffer   │
+│ (SO_SNDBUF)             │              │ (SO_RCVBUF)             │
+└────────────┬────────────┘              └────────────▲────────────┘
+             │      ⚙️ macOS XNU KERNEL MEMORY SPACE   │
+             ▼                                        │
+┌─────────────────────────┐              ┌────────────┴────────────┐
+│  IP Output Processing   │              │  IP Input Processing    │
+│  (ip_output.c)          │              │  (ip_input.c)           │
+└────────────┬────────────┘              └────────────▲────────────┘
+             │                                        │
+             ▼                                        │
+┌─────────────────────────────────────────────────────┴──────────────┐
+│ 🌀 THE VIRTUAL LOOPBACK PSEUDO-DEVICE DRIVER (lo0: if_loop.c)      │
+│ Direct Memory DMA Pointer Swap: never touches physical Wi-Fi NICs  │
+└─────────────────────────────────────────────────────────────────────┘
+      </pre>
+      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Reality</h3>
+      <ol class="list-decimal pl-6 space-y-2">
+        <li><strong>Routing Table Lookup:</strong> The kernel network routing engine checks the Destination IP (127.0.0.1) against the host routing table: <code class="bg-gray-100 px-1">127.0.0.1 → 127.0.0.1 · UH · lo0</code>.</li>
+        <li><strong>The lo0 Pseudo-Device:</strong> The destination is identified as the local loopback interface (lo0).</li>
+        <li><strong>Bypassing Physical Hardware:</strong> The packet is not transmitted to a physical Network Interface Controller (NIC) such as Wi-Fi (en0) or Thunderbolt Ethernet. No radio transmission, no serialization across copper/fiber, and no ARP (Address Resolution Protocol) resolution.</li>
+        <li><strong>Memory Pointer Handoff in Kernel Space:</strong> The kernel's if_loop.c driver intercepts the packet's mbuf (memory buffer pointer) in kernel RAM and instantaneously loops the outbound packet back into the kernel's inbound network queue (ipintr()).</li>
+        <li><strong>Inbound Demultiplexing:</strong> The IP layer confirms the destination address and strips off the 20-byte IP header; it inspects the protocol field (0x06) and hands the payload to the TCP subsystem; the TCP subsystem validates the 16-bit checksum (0xE4A2), matches destination port 4723, and appends the raw byte payload into Appium's Inbound Socket Receive Buffer (SO_RCVBUF).</li>
+      </ol>
+      <h3 class="font-semibold text-gray-800">🏬 Super Mall Analogy</h3>
+      <ul class="list-disc pl-6 space-y-2">
+        <li><strong>The Mall's Internal Vacuum Loopback Tube System (lo0):</strong> The pneumatic steel capsule does not get loaded into an outdoor FedEx truck. It never exits the front revolving doors of the mall into the city streets (The Internet / Wi-Fi).</li>
+        <li><strong>The General Manager's Chute Switchboard:</strong> The Mall General Manager (Kernel) looks at the capsule's stencil: "Destination: 127.0.0.1? That's not across town — that's right here in the Southcenter Super Mall building!"</li>
+        <li><strong>The High-Speed Wall Chute (lo0):</strong> The General Manager flips a mechanical diverter inside the wall. The capsule drops into Tube Line 0 (lo0), a dedicated, low-friction vacuum pipeline running directly behind the mall drywall.</li>
+        <li><strong>Instantaneous Arrival:</strong> WHOOOOSH-POP! In a fraction of a millisecond, the capsule shoots through the wall and lands with a heavy metallic THUMP! inside the secure intake hopper at Mail Slot #4723 in the Appium Store.</li>
+      </ul>
+    </section>
+
+    <!-- ====================== ACT VII ====================== -->
+    <section class="space-y-4 leading-relaxed">
+      <h2 class="text-lg font-semibold text-gray-900">🎬 Act VII: The Appium Receiving Dock, kqueue, &amp; The Handshake to XCUITest</h2>
+      <pre class="diagram">
+┌──────────────────────────────────────────────────────────────────────┐
+│ 🏪 APPIUM STORE / NODE.JS PROCESS (Suite 400 — Port 4723)            │
+│                                                                      │
+│ 1. kqueue Event Notification  ──► libuv Event Loop wakes worker      │
+│ 2. Socket Buffer Read         ──► Ingests 320 bytes from SO_RCVBUF   │
+│ 3. TCP Stream Reassembly      ──► Strips headers, verifies checksum  │
+│ 4. HTTP Protocol Parser       ──► Identifies POST, route: /session   │
+│ 5. V8 JSON Engine Deserializer──► JSON string → live JS Object       │
+│                                                                      │
+│              IN-MEMORY MODULE INVOCATION                             │
+│              (Direct V8 Heap Function Call)                          │
+│                          │                                           │
+│                          ▼                                           │
+│ 6. 🔌 XCUITest DRIVER (The iOS Department Automation Manager)        │
+│    "Work order verified. I will now command Xcode to build WDA!"     │
+└──────────────────────────────────────────────────────────────────────┘
+      </pre>
+      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Reality</h3>
+      <p>The Appium server process (Node.js engine) is not running an active while(true) loop that burns CPU cycles polling the socket. It utilizes an asynchronous event-driven architecture.</p>
+      <ol class="list-decimal pl-6 space-y-2">
+        <li><strong>Event Demultiplexing via kqueue:</strong> The Node.js asynchronous I/O engine (libuv) registers the socket file descriptor with macOS's kernel-level kqueue event notification facility. The Appium main thread sleeps peacefully until data arrives.</li>
+        <li><strong>The Kernel Wakeup:</strong> The moment the loopback driver drops bytes into the socket buffer, the kernel signals kqueue. libuv intercepts the event and wakes up the Appium execution thread on the next tick of the event loop.</li>
+        <li><strong>Ingestion &amp; HTTP Parsing:</strong> Appium issues a read() syscall, pulls the raw byte stream into its user-space buffer, parses the HTTP envelope, validates Content-Length: 154, and confirms the endpoint path /session.</li>
+        <li><strong>V8 JSON Deserialization:</strong> The JavaScript V8 engine parses the UTF-8 JSON body string back into a live in-memory JavaScript object graph on the Node.js heap.</li>
+        <li><strong>In-Process Module Handoff:</strong> Appium's core router inspects capabilities.alwaysMatch["appium:automationName"], sees "XCUITest". <em>Crucial Systems Boundary:</em> there is NO network hop here — Appium makes a direct, in-memory function call to the instantiated XCUITestDriver plugin running inside the exact same Node.js process runtime.</li>
+        <li><strong>The Orchestration Begins:</strong> The XCUITest Driver manager takes control of the thread and begins coordinating with the Apple developer toolchain (xcodebuild, simctl).</li>
+      </ol>
+      <h3 class="font-semibold text-gray-800">🏬 Super Mall Analogy</h3>
+      <ul class="list-disc pl-6 space-y-2">
+        <li><strong>The Bell at Counter 4723:</strong> The Appium Store Front Desk isn't staring at the chute all day. When the steel capsule lands in the hopper, it trips a brass lever (kqueue Event Trap) that rings a bell above the desk.</li>
+        <li><strong>Unboxing the Delivery:</strong> The Front Desk Clerk drops their coffee, opens the steel capsule, inspects Mr. TCP's hot-wax seal (Checksum Verified), and lays out the index cards.</li>
+        <li><strong>Taping the Work Order Together:</strong> "Ah, an HTTP POST request for a new automation session!"</li>
+        <li><strong>Reading the Carbon-Copy Order:</strong> The clerk reads the W3C specifications into the store's active ledger (V8 Object Deserialization): Target Platform: iOS · Specialist Requested: XCUITest · Device: iPhone 16.</li>
+        <li><strong>Calling the Specialist:</strong> The clerk does not dial another phone or send another pneumatic tube. They turn around and shout directly into the back office: "Hey, Manager (XCUITest Driver)! Python just sent an official work order for an iPhone 16 session. Grab your blueprints and go talk to the Apple Workshop (Xcode) right now!"</li>
+      </ul>
+    </section>
+
+    <!-- ====================== MATRIX ====================== -->
+    <section class="space-y-4 leading-relaxed">
+      <h2 class="text-lg font-semibold text-gray-900">🧭 The Complete Systems &amp; Mall Translation Matrix</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm border border-gray-200">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-3 py-2 text-left font-semibold border-b">Stage</th>
+              <th class="px-3 py-2 text-left font-semibold border-b">Subsystem / Layer</th>
+              <th class="px-3 py-2 text-left font-semibold border-b">🛠 Technical Reality</th>
+              <th class="px-3 py-2 text-left font-semibold border-b">🏬 Super Mall Analogy</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <tr><td class="px-3 py-2 font-bold">0</td><td class="px-3 py-2">Host Platform</td><td class="px-3 py-2">macOS Kernel (XNU/Mach/BSD), Process Isolation via MMU.</td><td class="px-3 py-2"><strong>Mall General Manager:</strong> controls the building, enforces soundproof walls, runs internal utilities.</td></tr>
+            <tr><td class="px-3 py-2 font-bold">1</td><td class="px-3 py-2">Authoring Environment</td><td class="px-3 py-2">VS Code (Electron/V8) initiates POSIX fork()/execve().</td><td class="px-3 py-2"><strong>Architect's Drafting Bureau (Suite 101):</strong> sketches the blueprint and rings the General Manager.</td></tr>
+            <tr><td class="px-3 py-2 font-bold">2</td><td class="px-3 py-2">Syntax Compilation</td><td class="px-3 py-2">CPython builds Lexer Tokens → AST → Bytecode → PVM.</td><td class="px-3 py-2"><strong>Python Automation Worker (Suite 204):</strong> diagrams grammar on a chalkboard, creates a muscle checklist.</td></tr>
+            <tr><td class="px-3 py-2 font-bold">3</td><td class="px-3 py-2">Data Serialization</td><td class="px-3 py-2">PyDictObject heap pointers → contiguous W3C JSON string.</td><td class="px-3 py-2"><strong>Triplicate Work Order Form:</strong> private thoughts translated into universal trade language.</td></tr>
+            <tr><td class="px-3 py-2 font-bold">4</td><td class="px-3 py-2">Application Protocol</td><td class="px-3 py-2">Framed in HTTP/1.1 POST /session with metadata headers.</td><td class="px-3 py-2"><strong>Certified Dispatch Envelope:</strong> sealed and stamped with action, route, and weight.</td></tr>
+            <tr><td class="px-3 py-2 font-bold">5</td><td class="px-3 py-2">Transport Control (TCP)</td><td class="px-3 py-2">Sliced into TCP Segments, 32-bit Sequence IDs, 16-bit Checksums.</td><td class="px-3 py-2"><strong>Mr. TCP (Master Slicer):</strong> numbered index cards, hot-wax seals, tests the line.</td></tr>
+            <tr><td class="px-3 py-2 font-bold">6</td><td class="px-3 py-2">Network Protocol (IP)</td><td class="px-3 py-2">Packaged in IPv4 Datagrams (127.0.0.1 → 127.0.0.1).</td><td class="px-3 py-2"><strong>Mr. IP (Container Specialist):</strong> airtight steel capsules stamped for local delivery.</td></tr>
+            <tr><td class="px-3 py-2 font-bold">7</td><td class="px-3 py-2">Loopback Transit</td><td class="px-3 py-2">Handed to lo0 driver; kernel swaps memory pointers in RAM.</td><td class="px-3 py-2"><strong>Pneumatic Vacuum Wall Chute (lo0):</strong> capsule shoots through internal wall pipes without leaving the mall.</td></tr>
+            <tr><td class="px-3 py-2 font-bold">8</td><td class="px-3 py-2">Server Ingestion</td><td class="px-3 py-2">Kernel signals kqueue; Node.js libuv event loop reads socket buffer.</td><td class="px-3 py-2"><strong>Slot #4723 Intake Hopper:</strong> capsule lands, trips brass bell lever, wakes up the Front Desk Clerk.</td></tr>
+            <tr><td class="px-3 py-2 font-bold">9</td><td class="px-3 py-2">Route Handoff</td><td class="px-3 py-2">JSON parsed to V8 heap; direct in-memory call to XCUITest Driver.</td><td class="px-3 py-2"><strong>Front Desk to Back Office:</strong> clerk verifies seals and shouts to the iOS Manager.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Floating Analogy AI Tooltip -->
+  <div id="ai-tooltip" class="fixed hidden z-50 bg-gray-900 text-white rounded-lg shadow-2xl p-4 w-80 space-y-3 transition-all duration-150">
+    <div class="flex items-center justify-between border-b border-gray-700 pb-2">
+      <span class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1">✨ Analogy AI</span>
+      <span id="selected-preview" class="text-xs text-gray-400 truncate max-w-[120px]"></span>
+    </div>
+
+    <div id="prompt-state">
+      <p class="text-xs text-gray-300 mb-2">Unclear about this concept?</p>
+      <button id="btn-explain" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 px-3 rounded shadow transition">
+        💡 Explain to me using an analogy
+      </button>
+    </div>
+
+    <div id="loading-state" class="hidden text-center py-2">
+      <span class="text-xs text-gray-400 animate-pulse">Consulting the Super Mall Manager...</span>
+    </div>
+
+    <div id="result-state" class="hidden space-y-3">
+      <div id="analogy-text" class="text-xs text-gray-200 bg-gray-800 p-2.5 rounded border border-gray-700 leading-normal"></div>
+      <button id="btn-insert" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2 px-3 rounded shadow flex items-center justify-center gap-1 transition">
+        📌 Insert next to highlighted text
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let currentSelection = null;
+    let currentRange = null;
+    let generatedAnalogy = "";
+
+    const tooltip = document.getElementById('ai-tooltip');
+    const selectedPreview = document.getElementById('selected-preview');
+    const promptState = document.getElementById('prompt-state');
+    const loadingState = document.getElementById('loading-state');
+    const resultState = document.getElementById('result-state');
+    const analogyText = document.getElementById('analogy-text');
+    const btnExplain = document.getElementById('btn-explain');
+    const btnInsert = document.getElementById('btn-insert');
+
+    // 1. Detect text selection on mouseup
+    document.addEventListener('mouseup', (e) => {
+      if (tooltip.contains(e.target)) return;
+
+      const selection = window.getSelection();
+      const text = selection.toString().trim();
+
+      if (text.length > 0) {
+        currentSelection = text;
+        currentRange = selection.getRangeAt(0).cloneRange();
+
+        const rect = currentRange.getBoundingClientRect();
+        tooltip.style.left = `${Math.min(window.innerWidth - 340, Math.max(10, rect.left))}px`;
+        tooltip.style.top = `${rect.bottom + 8}px`;
+
+        selectedPreview.textContent = `"${text}"`;
+        resetTooltip();
+        tooltip.classList.remove('hidden');
+      } else {
+        tooltip.classList.add('hidden');
+      }
+    });
+
+    function resetTooltip() {
+      promptState.classList.remove('hidden');
+      loadingState.classList.add('hidden');
+      resultState.classList.add('hidden');
+    }
+
+    // 2. Trigger Analogy Generation
+    btnExplain.addEventListener('click', async () => {
+      promptState.classList.add('hidden');
+      loadingState.classList.remove('hidden');
+
+      const surroundingContext = currentRange.startContainer.parentElement.innerText;
+      generatedAnalogy = await fetchAnalogyFromAI(currentSelection, surroundingContext);
+
+      loadingState.classList.add('hidden');
+      analogyText.textContent = generatedAnalogy;
+      resultState.classList.remove('hidden');
+    });
+
+    // 3. Insert analogy right next to the selected text in DOM
+    btnInsert.addEventListener('click', () => {
+      if (!currentRange) return;
+
+      const annotationNode = document.createElement('span');
+      annotationNode.className = 'analogy-badge';
+      const label = document.createElement('strong');
+      label.textContent = '💡 [Analogy]: ';
+      annotationNode.appendChild(label);
+      annotationNode.appendChild(document.createTextNode(generatedAnalogy));
+
+      currentRange.collapse(false);
+      currentRange.insertNode(annotationNode);
+
+      tooltip.classList.add('hidden');
+      window.getSelection().removeAllRanges();
+    });
+
+    /**
+     * Analogy generation.
+     * If ANALOGY_API_URL is set, POSTs {term, context} and expects {analogy: "..."}.
+     * Otherwise falls back to the built-in Super Mall knowledge base.
+     */
+    const ANALOGY_API_URL = ""; // e.g. "http://localhost:3000/api/analogy"
+
+    async function fetchAnalogyFromAI(term, context) {
+      if (ANALOGY_API_URL) {
+        try {
+          const res = await fetch(ANALOGY_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ term, context })
+          });
+          const data = await res.json();
+          if (data.analogy) return data.analogy;
+        } catch (err) {
+          console.warn('Analogy API failed, using local knowledge base.', err);
+        }
+      }
+      return localAnalogy(term);
+    }
+
+    async function localAnalogy(term) {
+      await new Promise(r => setTimeout(r, 600)); // simulated thinking delay
+
+      const analogies = {
+        kernel: "The Kernel is the Super Mall General Manager who holds all the master keys, controls physical access to stores, and builds soundproof walls between tenants so they can't spy on each other.",
+        xnu: "XNU is the specific General Manager hired for this particular mall — a hybrid manager trained at two academies (Mach and BSD) who runs everything from suite leasing to the pneumatic tubes.",
+        fork: "fork() is like cloning a mall worker: the General Manager creates an identical twin standing in the same office with the same immediate clipboard.",
+        execve: "execve() takes that cloned worker, wipes their clipboard clean, and hands them a brand new job description and tools (e.g., swapping into a Python worker).",
+        posix: "POSIX is the standard city building code that all mall contractors and workers are legally required to understand and follow, so any certified worker can operate in any compliant building.",
+        mmu: "The MMU is the mall's automated badge-scanner system on every office door: it physically prevents a tenant from wandering into another suite's filing cabinets, no matter how hard they try.",
+        ast: "The AST is the worker's chalkboard family-tree sketch of the work order — every task drawn as branches and sub-branches so the structure can be validated before any hammer swings.",
+        bytecode: "Bytecode is the worker's step-by-step muscle checklist: tiny numbered physical actions ('walk to shelf', 'pick up clipboard') compiled from the big chalkboard diagram.",
+        pvm: "The PVM is the worker actually executing the muscle checklist one numbered step at a time, keeping their in-progress items stacked neatly on a small side tray (the evaluation stack).",
+        heap: "The heap is the worker's private workspace shelving in Suite 204 — sticky notes and boxes arranged only they can decipher, invisible and unreachable from any other suite.",
+        pydictobject: "A PyDictObject is the worker's personal shorthand notebook: a private index of labels pointing at boxes scattered around their own office shelves.",
+        serialization: "Serialization is copying your private shorthand notes onto the mall's official triplicate carbon-copy form in universal trade language, so any department can read them.",
+        json: "JSON is the mall's universal trade language on the triplicate form — every store, regardless of the language its staff speaks, can read and fill one out.",
+        http: "HTTP is the mall's certified dispatch envelope system: every package gets a stamped action verb, destination wing, contents label, and weight seal so the receiving desk knows exactly what to do.",
+        tcp: "Mr. TCP is the Master Document Slicer: he cuts your bulky envelope into rigid numbered index cards, hot-wax-seals each one, and demands replacements for any card that arrives damaged or out of order.",
+        ip: "Mr. IP is the Container Specialist: he packs each sealed card into an airtight steel pneumatic capsule and stencils the exact building and counter-slot address on the outside.",
+        checksum: "The checksum is the hot-wax integrity seal stamped on each index card — if the seal arrives cracked or smudged by even one dot of ink, the card is discarded and a replacement is demanded.",
+        syn: "SYN is Mr. TCP ringing a tiny test bell through the tube first: 'Are you awake and accepting work orders?' — no capsules launch until the other counter rings back.",
+        handshake: "The 3-way handshake is the bell-ringing ritual before any delivery: 'You awake?' (SYN) → 'Yes, window open!' (SYN-ACK) → 'Great, capsules incoming!' (ACK).",
+        socket: "A socket is a numbered mail slot installed in a suite's wall — the only officially sanctioned opening through which a tenant may send or receive pneumatic capsules.",
+        port: "A port is the specific counter-slot number painted on a mail slot (like Slot #4723) so the tube system knows exactly which desk inside the building should receive the capsule.",
+        loopback: "The loopback is the mall's internal wall chute: capsules addressed to the same building never leave through the front doors — they whoosh through a pipe behind the drywall straight to the destination slot.",
+        lo0: "lo0 is Tube Line 0 — a dedicated low-friction vacuum pipeline behind the mall's drywall used exclusively for same-building deliveries, so packages never touch the city streets.",
+        kqueue: "kqueue is the brass lever at the intake hopper: instead of a clerk staring at the chute all day, the landing capsule trips the lever, rings the bell, and only then does the clerk look up.",
+        libuv: "libuv is the store's front-desk paging system: it lets the clerk nap until the intake bell rings, then instantly routes them to whichever hopper has a fresh capsule.",
+        mbuf: "An mbuf is the reusable metal transit tray the mall's back-room staff slide capsules around on — the tray (pointer) moves between rooms, not the capsule contents being recopied.",
+        nic: "A NIC is the mall's outdoor loading dock where trucks connect to the city — for internal wall-chute (loopback) deliveries, the loading dock is never used at all.",
+        arp: "ARP is like the mall calling the city directory to ask which physical street dock belongs to an address — unnecessary for internal deliveries that never leave the building.",
+        v8: "V8 is the high-speed reading machine at the Appium front desk that converts the standardized paper form back into the clerk's live working ledger in one pass.",
+        webdriver: "The W3C WebDriver protocol is the mall-wide standardized triplicate form: any store, in any language, fills out and reads the exact same fields the exact same way.",
+        appium: "Appium is the Central Logistics & Dispatch Store (Suite 400): it receives work orders at its counter and routes each one to the correct in-house platform specialist.",
+        xcuitest: "The XCUITest Driver is the in-house iOS Department Manager sitting in Appium's back office — the front desk clerk just turns around and shouts the order to them, no new delivery needed.",
+        pid: "A PID is the suite number on an office door: a unique identifier the General Manager assigns so every memo, bill, and inspection is routed to exactly the right tenant.",
+        syscall: "A system call is a tenant pressing the official service button to summon the General Manager — the only legal way to request anything outside your own suite's walls.",
+        buffer: "A socket buffer is the intake hopper bolted beneath a mail slot: capsules pile up there safely until the clerk is ready to scoop them out in order.",
+        mss: "The MSS is the rigid diameter of the pneumatic tube: any document wider than the tube must be sliced into cards that individually fit."
+      };
+
+      const key = (currentSelection || term).toLowerCase().replace(/[^a-z0-9]/g, '');
+      // Try exact key, then look for any dictionary key contained in the selection
+      if (analogies[key]) return analogies[key];
+      for (const k of Object.keys(analogies)) {
+        if (key.includes(k)) return analogies[k];
+      }
+      return `Think of "${term}" as a specialized logistics operator in the Super Mall, strictly coordinating safe handoffs between closed store departments without crossing unauthorized security walls.`;
+    }
+  </script>
+</body>
+</html>
