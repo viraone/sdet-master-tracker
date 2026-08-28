@@ -561,16 +561,53 @@ Content-Length: 154
         pid: "A PID is the suite number on an office door: a unique identifier the General Manager assigns so every memo, bill, and inspection is routed to exactly the right tenant.",
         syscall: "A system call is a tenant pressing the official service button to summon the General Manager — the only legal way to request anything outside your own suite's walls.",
         buffer: "A socket buffer is the intake hopper bolted beneath a mail slot: capsules pile up there safely until the clerk is ready to scoop them out in order.",
-        mss: "The MSS is the rigid diameter of the pneumatic tube: any document wider than the tube must be sliced into cards that individually fit."
+        mss: "The MSS is the rigid diameter of the pneumatic tube: any document wider than the tube must be sliced into cards that individually fit.",
+        virtualaddressspace: "A Virtual Address Space is a tenant's private suite layout: every store believes it occupies the entire mall starting at Room 0, but the General Manager secretly maps those room numbers to totally different physical locations for each tenant.",
+        addressspace: "An address space is a tenant's private suite layout: the store sees its own room numbers 0 through N, while the General Manager quietly maps them onto real physical rooms no other tenant can reach.",
+        memorymanagementunit: "The Memory Management Unit is the badge-scanner hardware on every office door: when a worker asks for 'Room 5', it instantly translates that to the real physical room — and hard-locks the door if the room belongs to another tenant.",
+        processisolation: "Process isolation is the mall's soundproof-walls policy: every store operates in its own sealed suite and physically cannot peek at a neighbor's shelves — all sharing must go through official mall channels.",
+        process: "A process is one open store in the mall: its own suite, its own staff, its own private shelving, and its own suite number (PID) on the door.",
+        memory: "Memory (RAM) is the physical shelving inside each suite: fast to reach, but strictly private — the badge-scanner (MMU) ensures no tenant ever touches another tenant's shelves.",
+        ram: "RAM is the mall's physical shelving space: every tenant gets shelves inside their own locked suite, and the badge-scanner hardware keeps everyone out of everyone else's aisles.",
+        ipc: "IPC is the mall's official inter-store courier service: since suites are sealed off from each other, the only legal way to pass documents between stores is through manager-sanctioned channels like pneumatic tubes.",
+        networkstack: "The network stack is the mall's entire pneumatic tube department: the slicer (TCP), the capsule packer (IP), the tube lines, and the intake hoppers — a full in-house logistics division run by the General Manager.",
+        darpa: "The DARPA/Internet suite is the mall's four-floor logistics department: the customer counter (Application), the document slicer (Transport), the capsule packer (Internet), and the physical tube lines (Link).",
+        mach: "Mach is one of the two academies the General Manager trained at — the one that taught modern message-passing management: run the mall by routing memos between departments rather than micromanaging every task.",
+        freebsd: "FreeBSD is the General Manager's other alma mater — the old-school academy that taught the practical trades: filing systems, tube networks, and the standard forms tenants use to request services.",
+        thread: "A thread is one individual employee inside a store: several employees can share the same suite and shelves, so they must coordinate carefully to avoid grabbing the same box at once.",
+        python: "Python is the worker in Suite 204 who reads work orders from a chalkboard sketch, compiles them into a muscle checklist, and executes them one numbered step at a time.",
+        node: "Node.js is the Suite 400 dispatch clerk who never stands around waiting: they file every pending job with the paging system (libuv) and only act when a bell rings.",
+        interpreter: "An interpreter is a worker who executes the checklist one numbered step at a time, rather than shipping the whole job off to a factory to be pre-built (compiled) first.",
+        macos: "macOS is the whole mall complex — the building, the management office, the tube network, and the house rules — inside which every store (process) operates.",
+        simulator: "The iOS Simulator is a full model apartment built inside the mall: a real, working iPhone showroom staffed and powered by the mall itself rather than by an external building."
       };
 
-      const key = (currentSelection || term).toLowerCase().replace(/[^a-z0-9]/g, '');
-      // Try exact key, then look for any dictionary key contained in the selection
+      const raw = (currentSelection || term).toLowerCase();
+      const key = raw.replace(/[^a-z0-9]/g, '');
+      const words = raw.split(/[^a-z0-9]+/).filter(Boolean);
+
+      // 1. Exact match on the full selection
       if (analogies[key]) return analogies[key];
-      for (const k of Object.keys(analogies)) {
-        if (key.includes(k)) return analogies[k];
+      // 2. Longest dictionary key contained in the squashed selection (min length 4 to avoid false hits)
+      const keys = Object.keys(analogies).sort((a, b) => b.length - a.length);
+      for (const k of keys) {
+        if (k.length >= 4 && key.includes(k)) return analogies[k];
       }
-      return `Think of "${term}" as a specialized logistics operator in the Super Mall, strictly coordinating safe handoffs between closed store departments without crossing unauthorized security walls.`;
+      // 3. Whole-word match for short keys like "ip", "ast", "pid"
+      for (const k of keys) {
+        if (words.includes(k)) return analogies[k];
+      }
+      // 4. Varied generic fallback (deterministic per term, but different across terms)
+      const fallbacks = [
+        `"${term}" works like a department inside the Super Mall: it has one clear job, a counter where requests arrive, and it hands finished work to the next department down the hall.`,
+        `Picture "${term}" as a set of house rules posted by the mall's General Manager: every store must follow them so the whole building runs predictably.`,
+        `"${term}" is like a service window in the Super Mall: tenants line up, submit a standard form, and the mall handles the messy details behind the wall.`,
+        `Think of "${term}" as part of the mall's back-of-house machinery: shoppers never see it, but every delivery and every open store depends on it humming along.`,
+        `"${term}" plays the role of a mall coordinator: it doesn't do the work itself, it makes sure the right store gets the right package at the right time.`
+      ];
+      let hash = 0;
+      for (const ch of key) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+      return fallbacks[hash % fallbacks.length];
     }
   </script>
 </body>
