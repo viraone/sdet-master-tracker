@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StageTimePNW — Live Code Explainer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    ::selection { background-color: #fef08a; color: #1e293b; }
+    .code-shell {
+      background: #0f172a; border-radius: 0.75rem; overflow: hidden;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    }
+    .code-titlebar {
+      display: flex; align-items: center; gap: 8px;
+      background: #1e293b; padding: 10px 14px; font-size: 0.8rem; color: #94a3b8;
+    }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    pre.code {
+      margin: 0; padding: 1rem 0; overflow-x: auto; font-size: 0.85rem; line-height: 1.6;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: #e2e8f0; counter-reset: line;
+    }
+    pre.code .ln {
+      display: inline-block; width: 3ch; margin-right: 1.25ch; padding-right: 0.5ch;
+      text-align: right; color: #475569; user-select: none;
+      border-right: 1px solid #1e293b;
+    }
+    .tok-kw  { color: #c084fc; }
+    .tok-str { color: #fbbf24; }
+    .tok-fn  { color: #60a5fa; }
+    .tok-dec { color: #34d399; }
+    .tok-com { color: #64748b; font-style: italic; }
+    .note-card {
+      background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 6px;
+      padding: 10px 12px; font-size: 0.86rem; color: #1e3a8a;
+      animation: fadeIn 0.2s ease-in-out; white-space: pre-line;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-2px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased py-12 px-4 sm:px-6">
+
+  <main id="content" class="max-w-3xl mx-auto bg-white p-6 sm:p-10 rounded-xl shadow-md space-y-8">
+    <header class="border-b pb-5">
+      <h1 class="text-2xl font-bold text-gray-900">StageTimePNW Automation — Live Code Explainer</h1>
+      <p class="text-sm text-gray-500 mt-1">Project: iOS test automation for the StageTimePNW app (pytest + Appium + XCUITest)</p>
+      <p class="mt-3 text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded px-3 py-2">
+        ✨ <strong>Code AI is on:</strong> highlight anything in the code you don't understand
+        (e.g. <em>scope</em>, <em>fixture</em>, <em>XCUITestOptions</em>) and a tooltip will explain
+        what it does <strong>in this exact project</strong> — with an analogy.
+      </p>
+      <p id="ai-status" class="mt-2 text-xs text-gray-500"></p>
+    </header>
+
+    <!-- ====================== LIVE CODE ====================== -->
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold text-gray-900">📄 conftest.py <span class="text-xs font-normal text-gray-400">(live from GitHub)</span></h2>
+        <button id="btn-refresh" class="text-xs bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded px-3 py-1.5 text-gray-700">
+          🔄 Refresh code
+        </button>
+      </div>
+      <p class="text-xs text-gray-500">
+        This code is fetched directly from
+        <a class="text-blue-600 underline" href="https://github.com/viraone/StageTimePNW_Automation/blob/main/conftest.py" target="_blank" rel="noopener">viraone/StageTimePNW_Automation</a>.
+        Edit it in VS Code, <code class="bg-gray-100 px-1 rounded">git push</code>, then refresh — the site always shows the latest version.
+      </p>
+      <div class="code-shell">
+        <div class="code-titlebar">
+          <span class="dot" style="background:#ef4444"></span>
+          <span class="dot" style="background:#f59e0b"></span>
+          <span class="dot" style="background:#22c55e"></span>
+          <span class="ml-2">StageTimePNW_Automation / conftest.py</span>
+          <span id="fetch-status" class="ml-auto text-xs"></span>
+        </div>
+        <pre class="code" id="code-block">Loading conftest.py from GitHub…</pre>
+      </div>
+    </section>
+
+    <!-- ====================== PINNED EXPLANATIONS ====================== -->
+    <section class="space-y-3">
+      <h2 class="text-lg font-semibold text-gray-900">📌 Your Pinned Explanations</h2>
+      <p class="text-xs text-gray-500">Explanations you pin are saved in this browser and reappear on your next visit.</p>
+      <div id="notes-list" class="space-y-2">
+        <p id="notes-empty" class="text-sm text-gray-400 italic">Nothing pinned yet — highlight a term in the code above and pin its explanation.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ====================== AI TOOLTIP ====================== -->
+  <div id="ai-tooltip" class="hidden fixed z-50 w-80 bg-white border border-gray-300 rounded-lg shadow-xl text-sm transition-all duration-150">
+    <div id="tooltip-drag-handle" class="flex items-center justify-between bg-gray-100 border-b border-gray-200 rounded-t-lg px-3 py-2 cursor-move select-none">
+      <span class="font-semibold text-gray-700 text-xs">🤖 Code AI</span>
+      <button id="btn-settings" title="Set Gemini API key" class="text-gray-500 hover:text-gray-800">⚙️</button>
+    </div>
+    <div class="p-3 space-y-2">
+      <div id="selected-preview" class="font-mono text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1 text-gray-700 truncate"></div>
+      <div id="prompt-state">
+        <button id="btn-explain" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded px-3 py-1.5 text-xs font-semibold">
+          ✨ Explain this in my project
+        </button>
+      </div>
+      <div id="loading-state" class="hidden text-xs text-gray-500 animate-pulse">🧠 Thinking about your codebase…</div>
+      <div id="result-state" class="hidden space-y-2">
+        <p id="analogy-text" class="text-xs text-gray-700 leading-relaxed max-h-64 overflow-y-auto whitespace-pre-line"></p>
+        <button id="btn-insert" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded px-3 py-1.5 text-xs font-semibold">
+          📌 Pin below the code
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ================= LIVE CODE FETCH ================= */
+    const RAW_URL = "https://raw.githubusercontent.com/viraone/StageTimePNW_Automation/main/conftest.py";
+    const codeBlock = document.getElementById('code-block');
+    const fetchStatus = document.getElementById('fetch-status');
+    let currentCode = "";
+
+    const PY_KEYWORDS = /\b(import|from|def|return|yield|if|else|elif|for|while|with|as|class|try|except|finally|raise|pass|None|True|False|and|or|not|in|is|lambda|global|nonlocal|assert|del)\b/g;
+
+    function esc(s) {
+      return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function highlightLine(line) {
+      let html = esc(line);
+      // strings first (incl. triple-quoted fragments), then comments, decorators, keywords, calls
+      html = html.replace(/("""[\s\S]*?"""|"""|'''|"[^"]*"|'[^']*')/g, '\u0001$1\u0002');
+      html = html.replace(/(#.*)$/g, '<span class="tok-com">$1</span>');
+      html = html.replace(/^(\s*@\w[\w.]*)/, '<span class="tok-dec">$1</span>');
+      html = html.replace(PY_KEYWORDS, '<span class="tok-kw">$1</span>');
+      html = html.replace(/\b(\w+)(?=\()/g, '<span class="tok-fn">$1</span>');
+      html = html.replace(/\u0001([\s\S]*?)\u0002/g, '<span class="tok-str">$1</span>');
+      return html;
+    }
+
+    function renderCode(text) {
+      currentCode = text;
+      const lines = text.replace(/\n$/, '').split('\n');
+      codeBlock.innerHTML = lines
+        .map((line, i) => `<span class="ln">${i + 1}</span>${highlightLine(line) || ' '}`)
+        .join('\n');
+    }
+
+    async function loadCode() {
+      fetchStatus.textContent = "⏳ fetching…";
+      try {
+        const res = await fetch(`${RAW_URL}?t=${Date.now()}`, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        renderCode(await res.text());
+        fetchStatus.textContent = `✅ synced ${new Date().toLocaleTimeString()}`;
+      } catch (err) {
+        fetchStatus.textContent = "⚠️ fetch failed";
+        codeBlock.textContent = `Could not load code from GitHub (${err.message}).\nCheck your connection or that the repo is public.`;
+      }
+    }
+
+    document.getElementById('btn-refresh').addEventListener('click', loadCode);
+    loadCode();
+
+    /* ================= SELECTION TOOLTIP ================= */
+    let currentSelection = "";
+    let generatedAnalogy = "";
+
+    const tooltip = document.getElementById('ai-tooltip');
+    const selectedPreview = document.getElementById('selected-preview');
+    const promptState = document.getElementById('prompt-state');
+    const loadingState = document.getElementById('loading-state');
+    const resultState = document.getElementById('result-state');
+    const analogyText = document.getElementById('analogy-text');
+    const btnExplain = document.getElementById('btn-explain');
+    const btnInsert = document.getElementById('btn-insert');
+
+    // Draggable tooltip
+    const dragHandle = document.getElementById('tooltip-drag-handle');
+    let isDragging = false, justDragged = false, dragOffsetX = 0, dragOffsetY = 0;
+
+    dragHandle.addEventListener('mousedown', (e) => {
+      if (e.target.closest('button')) return;
+      isDragging = true;
+      const rect = tooltip.getBoundingClientRect();
+      dragOffsetX = e.clientX - rect.left;
+      dragOffsetY = e.clientY - rect.top;
+      tooltip.classList.remove('transition-all', 'duration-150');
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const w = tooltip.offsetWidth, h = tooltip.offsetHeight;
+      tooltip.style.left = `${Math.min(window.innerWidth - w - 4, Math.max(4, e.clientX - dragOffsetX))}px`;
+      tooltip.style.top = `${Math.min(window.innerHeight - h - 4, Math.max(4, e.clientY - dragOffsetY))}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      justDragged = true;
+      tooltip.classList.add('transition-all', 'duration-150');
+      setTimeout(() => { justDragged = false; }, 0);
+    }, true);
+
+    document.addEventListener('mouseup', (e) => {
+      if (tooltip.contains(e.target)) return;
+      if (justDragged) return;
+
+      const selection = window.getSelection();
+      const text = selection.toString().trim();
+
+      if (text.length > 0) {
+        currentSelection = text;
+        const rect = selection.getRangeAt(0).getBoundingClientRect();
+        tooltip.style.left = `${Math.min(window.innerWidth - 340, Math.max(10, rect.left))}px`;
+        tooltip.style.top = `${rect.bottom + 8}px`;
+        selectedPreview.textContent = `"${text}"`;
+        resetTooltip();
+        tooltip.classList.remove('hidden');
+      } else {
+        tooltip.classList.add('hidden');
+      }
+    });
+
+    function resetTooltip() {
+      promptState.classList.remove('hidden');
+      loadingState.classList.add('hidden');
+      resultState.classList.add('hidden');
+    }
+
+    btnExplain.addEventListener('click', async () => {
+      promptState.classList.add('hidden');
+      loadingState.classList.remove('hidden');
+      generatedAnalogy = await fetchExplanationFromAI(currentSelection);
+      loadingState.classList.add('hidden');
+      analogyText.textContent = generatedAnalogy;
+      resultState.classList.remove('hidden');
+      clampTooltipToViewport();
+    });
+
+    function clampTooltipToViewport() {
+      const rect = tooltip.getBoundingClientRect();
+      let left = rect.left, top = rect.top;
+      if (rect.right > window.innerWidth - 8) left = window.innerWidth - rect.width - 8;
+      if (rect.bottom > window.innerHeight - 8) top = window.innerHeight - rect.height - 8;
+      tooltip.style.left = `${Math.max(8, left)}px`;
+      tooltip.style.top = `${Math.max(8, top)}px`;
+    }
+
+    /* ================= PINNED NOTES (localStorage) ================= */
+    const NOTES_STORAGE = 'stagetime_code_notes';
+    const notesList = document.getElementById('notes-list');
+    const notesEmpty = document.getElementById('notes-empty');
+
+    function loadNotes() {
+      try { return JSON.parse(localStorage.getItem(NOTES_STORAGE)) || []; }
+      catch { return []; }
+    }
+    function saveNotes(list) {
+      localStorage.setItem(NOTES_STORAGE, JSON.stringify(list));
+      notesEmpty.style.display = list.length ? 'none' : '';
+    }
+
+    function buildNoteCard(note) {
+      const card = document.createElement('div');
+      card.className = 'note-card';
+      card.dataset.noteId = note.id;
+      const head = document.createElement('div');
+      head.className = 'flex items-center justify-between mb-1';
+      const term = document.createElement('strong');
+      term.textContent = `💡 ${note.term}`;
+      const del = document.createElement('button');
+      del.textContent = '🗑';
+      del.title = 'Remove';
+      del.className = 'text-gray-400 hover:text-red-600 text-xs';
+      del.addEventListener('click', () => {
+        card.remove();
+        saveNotes(loadNotes().filter(n => n.id !== note.id));
+      });
+      head.appendChild(term);
+      head.appendChild(del);
+      card.appendChild(head);
+      card.appendChild(document.createTextNode(note.text));
+      return card;
+    }
+
+    btnInsert.addEventListener('click', () => {
+      const note = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        term: currentSelection,
+        text: generatedAnalogy
+      };
+      notesList.appendChild(buildNoteCard(note));
+      const list = loadNotes();
+      list.push(note);
+      saveNotes(list);
+      tooltip.classList.add('hidden');
+      window.getSelection().removeAllRanges();
+    });
+
+    // Restore pinned notes
+    {
+      const saved = loadNotes();
+      for (const n of saved) notesList.appendChild(buildNoteCard(n));
+      notesEmpty.style.display = saved.length ? 'none' : '';
+    }
+
+    /* ================= AI (Gemini, key shared with cs198 page) ================= */
+    const GEMINI_KEY_STORAGE = "cs198_gemini_api_key";
+    const btnSettings = document.getElementById('btn-settings');
+    const aiStatus = document.getElementById('ai-status');
+
+    function getGeminiKey() { return localStorage.getItem(GEMINI_KEY_STORAGE) || ""; }
+
+    function updateAiStatus() {
+      aiStatus.textContent = getGeminiKey()
+        ? "🟢 Real AI enabled (Gemini)"
+        : "⚪ Using built-in explanations — click ⚙️ in the tooltip to add a free Gemini API key for real AI";
+    }
+    updateAiStatus();
+
+    btnSettings.addEventListener('click', () => {
+      const existing = getGeminiKey();
+      const input = window.prompt(
+        "Paste your free Google Gemini API key (get one at aistudio.google.com/apikey).\n" +
+        "It is stored ONLY in this browser's localStorage — never uploaded anywhere.\n\n" +
+        "Leave empty and press OK to remove the saved key.",
+        existing
+      );
+      if (input === null) return;
+      if (input.trim()) localStorage.setItem(GEMINI_KEY_STORAGE, input.trim());
+      else localStorage.removeItem(GEMINI_KEY_STORAGE);
+      updateAiStatus();
+    });
+
+    async function fetchGeminiExplanation(term) {
+      const key = getGeminiKey();
+      if (!key) return null;
+
+      const systemPrompt =
+        "You are 'Code AI', a teaching assistant for a student building StageTimePNW_Automation: " +
+        "an iOS mobile test automation project for the StageTimePNW app, using Python, pytest, Appium " +
+        "(Python client), the XCUITest driver, and the iOS Simulator on a MacBook. The project structure: " +
+        "conftest.py (shared pytest fixtures), pages/ (page objects), tests/ (test cases), requirements.txt, venv/.\n\n" +
+        "The student is reading the project's actual conftest.py (provided below) and highlighted a piece " +
+        "of the code they don't understand. Reply with EXACTLY three parts, plain text:\n" +
+        "1. WHAT IT IS: 1-2 sentences defining the highlighted term/code in general Python/pytest/Appium terms.\n" +
+        "2. On a new line starting with '🔗 In this project: ', 2-4 sentences explaining precisely what it does " +
+        "in THIS conftest.py and this project — reference the actual code lines, the driver fixture, when it runs " +
+        "during a pytest run against the iOS Simulator, and what would break or change if it were removed or altered.\n" +
+        "3. On a new line starting with '🏬 Analogy: ', a vivid 2-3 sentence real-world analogy (theater/stage " +
+        "production themed when natural — the app is called StageTimePNW — or any everyday analogy that fits best).\n\n" +
+        "Be specific and technical, never generic filler. Plain text only. No markdown, no headers, no bullets.";
+
+      const makeBody = (withThinkingCap) => JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{
+          role: 'user',
+          parts: [{ text: `Highlighted code: "${term}"\n\nFull current conftest.py:\n${currentCode.slice(0, 6000)}` }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 8000,
+          ...(withThinkingCap ? { thinkingConfig: { thinkingBudget: 1024 } } : {})
+        }
+      });
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(key)}`;
+      let res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: makeBody(true) });
+      if (!res.ok && res.status === 400) {
+        res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: makeBody(false) });
+      }
+      if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.filter(p => !p.thought && p.text).map(p => p.text).join('').trim();
+      return text || null;
+    }
+
+    async function fetchExplanationFromAI(term) {
+      if (getGeminiKey()) {
+        try {
+          const aiText = await fetchGeminiExplanation(term);
+          if (aiText) return aiText;
+        } catch (err) {
+          console.warn('Gemini failed, falling back.', err);
+        }
+      }
+      return localExplanation(term);
+    }
+
+    /* ================= OFFLINE FALLBACK ================= */
+    async function localExplanation(term) {
+      await new Promise(r => setTimeout(r, 500));
+
+      const kb = {
+        scope: "WHAT IT IS: scope tells pytest how long a fixture lives before it is torn down and rebuilt.\n🔗 In this project: scope=\"function\" means the driver fixture creates a brand-new iOS Simulator session for EVERY test function and closes it afterwards — maximum isolation, but slower runs. Changing it to scope=\"session\" would reuse one Simulator session for the whole run.\n🏬 Analogy: it's like resetting the stage between acts. \"function\" scope strikes the whole set and rebuilds it for every single scene; \"session\" scope leaves the set standing for the entire show.",
+        fixture: "WHAT IT IS: a pytest fixture is a reusable setup/teardown function that tests receive automatically by naming it as a parameter.\n🔗 In this project: @pytest.fixture turns driver() into shared plumbing — any test in tests/ that takes a 'driver' argument gets a ready-to-use Appium session without repeating setup code.\n🏬 Analogy: the fixture is the stage crew: before each performer (test) goes on, the crew sets the props, and when the scene ends they clear everything away.",
+        "@pytest.fixture": "WHAT IT IS: a decorator that registers the function below it as a pytest fixture.\n🔗 In this project: it marks driver() so pytest knows to call it and inject its result into any test that asks for 'driver'. Without it, tests would get NameError/fixture-not-found.\n🏬 Analogy: it's the name on the crew roster — without being on the list, the stage crew (driver) never gets called to set up the show.",
+        pytest: "WHAT IT IS: pytest is the Python test framework that discovers, runs, and reports your tests.\n🔗 In this project: pytest finds conftest.py automatically, registers the driver fixture, then collects and runs everything in tests/ against the iOS Simulator.\n🏬 Analogy: pytest is the show's director — it decides which scenes run, in what order, cues the crew (fixtures), and writes the review (test report) at the end.",
+        conftest: "WHAT IT IS: conftest.py is a special pytest file for fixtures and hooks shared across a whole directory of tests.\n🔗 In this project: it holds the driver fixture so every test file in tests/ can use it with zero imports — pytest loads it automatically.\n🏬 Analogy: it's the backstage supply room every performer can grab props from, without anyone having to carry their own.",
+        driver: "WHAT IT IS: 'driver' here is a fixture that will yield an Appium WebDriver — the remote control for the iOS app.\n🔗 In this project: tests receive this driver to tap buttons, type text, and read screen elements of the StageTimePNW app running in the iOS Simulator. Its docstring says it will handle setup AND teardown of the Simulator session.\n🏬 Analogy: the driver is the puppeteer's control bar — every string that makes the app move on stage runs through it.",
+        webdriver: "WHAT IT IS: the Appium Python client's module for creating remote driver sessions using the W3C WebDriver protocol.\n🔗 In this project: webdriver.Remote(...) (to be called inside driver()) opens an HTTP connection to the Appium server, which launches the StageTimePNW app in the iOS Simulator.\n🏬 Analogy: webdriver is the telephone line to the stage manager — you speak standard commands into it, and things happen on stage.",
+        appium: "WHAT IT IS: Appium is an open-source automation server that translates WebDriver commands into native mobile actions.\n🔗 In this project: your Python tests send commands to the Appium server, which uses the XCUITest driver to actually control the StageTimePNW app on the iOS Simulator.\n🏬 Analogy: Appium is the interpreter standing between the director (your tests) and a foreign-speaking stage crew (iOS) — translating every instruction both ways.",
+        xcuitestoptions: "WHAT IT IS: XCUITestOptions is a typed capabilities object for configuring an iOS XCUITest Appium session.\n🔗 In this project: inside driver() you'll set options like platform_name='iOS', device_name (e.g. 'iPhone 16'), and the app bundle, then pass it to webdriver.Remote so Appium knows exactly which Simulator and app to launch.\n🏬 Analogy: it's the show's tech rider — the exact stage, lighting, and equipment specs handed to the venue before the performance can start.",
+        import: "WHAT IT IS: import loads another Python module so this file can use its functions and classes.\n🔗 In this project: conftest.py imports pytest (for the fixture decorator), webdriver (to open Appium sessions), and XCUITestOptions (to configure iOS capabilities).\n🏬 Analogy: importing is calling specialist contractors to the venue — you don't build the lighting rig yourself, you bring in the crew that already knows how.",
+        yield: "WHAT IT IS: in a pytest fixture, yield hands the value to the test, then everything after yield runs as teardown.\n🔗 In this project: driver() will 'yield driver' to give tests the live Appium session; after the test ends, code after yield (driver.quit()) closes the Simulator session so nothing leaks.\n🏬 Analogy: yield is the moment the crew hands the stage to the performer — and everything after it is the cleanup crew that strikes the set when the scene ends.",
+        function: "WHAT IT IS: 'function' is the narrowest pytest fixture scope — one fixture instance per test function.\n🔗 In this project: every single test gets its own fresh iOS Simulator session, so a crashed app in one test can never contaminate the next.\n🏬 Analogy: it's a fresh, made-up stage for every scene — slower to run the show, but no scene ever inherits the previous scene's mess.",
+        docstring: "WHAT IT IS: the triple-quoted string right under a def is a docstring — human-readable documentation for the function.\n🔗 In this project: \"\"\"setup and teardown for iOS simulator session.\"\"\" tells readers (and tools like help()) what the driver fixture is responsible for.\n🏬 Analogy: it's the program note in the playbill — it doesn't affect the performance, but it tells the audience what this act is about."
+      };
+
+      const clean = term.toLowerCase().replace(/[^a-z0-9_@.]/g, '');
+      for (const [key, text] of Object.entries(kb)) {
+        if (clean.includes(key.toLowerCase().replace(/[^a-z0-9_@.]/g, '')) ||
+            key.toLowerCase().includes(clean)) {
+          return text;
+        }
+      }
+      return `I don't have a built-in explanation for "${term}" yet. Click the ⚙️ icon and add a free Gemini API key to get real AI explanations for any code you highlight.`;
+    }
+  </script>
+</body>
+</html>
