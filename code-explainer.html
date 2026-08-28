@@ -323,6 +323,18 @@
     const DRAFTS_STORAGE = "stagetime_drafts";
     const IGNORED = new Set(["venv", ".git", "__pycache__", ".pytest_cache", ".gitignore", "pyvenv.cfg"]);
 
+    // If the browser cleared localStorage, keys can be re-installed from a bookmarked URL:
+    //   code-explainer.html#gkey=GEMINI_KEY&ghtok=GITHUB_TOKEN  (either param optional)
+    // The hash never leaves the browser (not sent to any server) and is scrubbed from the address bar.
+    (function installKeysFromUrl() {
+      const h = new URLSearchParams(location.hash.replace(/^#/, ""));
+      const gkey = (h.get("gkey") || "").trim();
+      const ghtok = (h.get("ghtok") || "").trim();
+      if (gkey) localStorage.setItem(GEMINI_KEY_STORAGE, gkey);
+      if (ghtok) localStorage.setItem(GH_TOKEN_STORAGE, ghtok);
+      if (gkey || ghtok) history.replaceState(null, "", location.pathname + location.search);
+    })();
+
     const $ = (id) => document.getElementById(id);
     let editor = null;
     let currentFile = { path: "conftest.py", sha: null, original: "" };
