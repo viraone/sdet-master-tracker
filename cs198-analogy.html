@@ -1141,7 +1141,7 @@ Content-Length: 154
         `Highlighted term: "${term}"\n\nSurrounding lecture context:\n${(context || '').slice(0, 1500)}`);
     }
 
-// Shared Gemini call with free-tier-friendly output limits and retry backoff.
+// Shared Gemini call with free-tier-friendly output limits and retry backofffsadfsd.
     async function geminiCall(systemPrompt, userText) {
       const key = getGeminiKey().trim();
       if (!key) throw new Error("No API key configured. Click ⚙️ to add your Gemini API key.");
