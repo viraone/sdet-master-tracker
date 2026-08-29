@@ -448,7 +448,7 @@
   <main id="content">
   <header class="hero"><div class="hero-inner"><div class="eyebrow">Advanced systems lecture · Module 01</div><h1>CS 198: Advanced Mobile Test Infrastructure &amp; Systems Architecture</h1><p class="subtitle">Module 1: The Client Runtime, OS Kernel Boundaries, Protocol Serialization, and Transport Mechanics</p></div></header>
   <div class="shell">
-    <nav aria-label="Course chapters"><h2>Course map</h2><a href="#full-systems-topology-the-m5-max-mega-mall"><span>01</span>🗺️ FULL SYSTEMS TOPOLOGY: THE M5 MAX MEGA-MALL</a><a href="#prologue-the-foundational-ecosystem"><span>02</span>🏛️ PROLOGUE: THE FOUNDATIONAL ECOSYSTEM</a><a href="#act-i-the-blueprint-inception-in-vs-code"><span>03</span>🎬 ACT I: THE BLUEPRINT INCEPTION IN VS CODE</a><a href="#act-ii-parsing-abstract-syntax-trees-ast-bytecode-compilation"><span>04</span>🎬 ACT II: PARSING, ABSTRACT SYNTAX TREES (AST), &amp; BYTECODE COMPILATION</a><a href="#act-iii-the-virtual-memory-heap-w3c-serialization"><span>05</span>🎬 ACT III: THE VIRTUAL MEMORY HEAP &amp; W3C SERIALIZATION</a><a href="#memory-boundary-deep-dive-mmu-tlb-unified-memory"><span>06</span>🛡️ MEMORY BOUNDARY DEEP DIVE: MMU, TLB, &amp; UNIFIED MEMORY</a><a href="#act-iv-application-layer-framing-http-1-1-post-session"><span>07</span>🎬 ACT IV: APPLICATION LAYER FRAMING (HTTP/1.1 POST /session)</a><a href="#act-v-the-transport-network-machinery-tcp-ip"><span>08</span>🎬 ACT V: THE TRANSPORT &amp; NETWORK MACHINERY (TCP/IP)</a><a href="#act-vi-the-loopback-driver-lo0-zero-wire-transit"><span>09</span>🎬 ACT VI: THE LOOPBACK DRIVER (lo0) &amp; ZERO-WIRE TRANSIT</a><a href="#act-vii-appium-receiving-dock-kqueue-xcuitest-dispatch"><span>10</span>🎬 ACT VII: APPIUM RECEIVING DOCK, kqueue, &amp; XCUITest DISPATCH</a><a href="#act-viii-complete-systems-mall-translation-matrix"><span>11</span>📋 ACT VIII: COMPLETE SYSTEMS &amp; MALL TRANSLATION MATRIX</a></nav>
+    <nav aria-label="Course chapters"><h2>Course map</h2><a href="#full-systems-topology-the-m5-max-mega-mall"><span>01</span>🗺️ FULL SYSTEMS TOPOLOGY: THE M5 MAX MEGA-MALL</a><a href="#prologue-the-foundational-ecosystem"><span>02</span>🏛️ PROLOGUE: THE FOUNDATIONAL ECOSYSTEM</a><a href="#act-0-5-the-missing-step-the-dispatch-radio-the-custom-tool-locker-venv"><span>03</span>🎬 ACT 0.5: THE MISSING STEP — THE DISPATCH RADIO &amp; THE CUSTOM TOOL LOCKER (venv)</a><a href="#act-ii-parsing-abstract-syntax-trees-ast-bytecode-compilation"><span>04</span>🎬 ACT II: PARSING, ABSTRACT SYNTAX TREES (AST), &amp; BYTECODE COMPILATION</a><a href="#act-iii-the-virtual-memory-heap-w3c-serialization"><span>05</span>🎬 ACT III: THE VIRTUAL MEMORY HEAP &amp; W3C SERIALIZATION</a><a href="#memory-boundary-deep-dive-mmu-tlb-unified-memory"><span>06</span>🛡️ MEMORY BOUNDARY DEEP DIVE: MMU, TLB, &amp; UNIFIED MEMORY</a><a href="#act-iv-application-layer-framing-http-1-1-post-session"><span>07</span>🎬 ACT IV: APPLICATION LAYER FRAMING (HTTP/1.1 POST /session)</a><a href="#act-v-the-transport-network-machinery-tcp-ip"><span>08</span>🎬 ACT V: THE TRANSPORT &amp; NETWORK MACHINERY (TCP/IP)</a><a href="#act-vi-the-loopback-driver-lo0-zero-wire-transit"><span>09</span>🎬 ACT VI: THE LOOPBACK DRIVER (lo0) &amp; ZERO-WIRE TRANSIT</a><a href="#act-vii-appium-receiving-dock-kqueue-xcuitest-dispatch"><span>10</span>🎬 ACT VII: APPIUM RECEIVING DOCK, kqueue, &amp; XCUITest DISPATCH</a><a href="#act-viii-complete-systems-mall-translation-matrix"><span>11</span>📋 ACT VIII: COMPLETE SYSTEMS &amp; MALL TRANSLATION MATRIX</a></nav>
     <article><section id="full-systems-topology-the-m5-max-mega-mall" class="chapter"><div class="chapter-kicker">Chapter 01</div><h2>🗺️ FULL SYSTEMS TOPOLOGY: THE M5 MAX MEGA-MALL</h2>
 <figure class="code-panel"><figcaption>System map</figcaption><pre><code>==================================================================================================
                  🏢 THE 16.2-INCH M5 MAX MEGA-MALL &amp; LOGISTICS COMPLEX 🏢
@@ -496,33 +496,55 @@
 <div class="insight silicon"><span>Silicon reality</span><p>The host runs macOS on Apple Silicon (M5 Max SoC). The kernel integrates Carnegie Mellon’s Mach microkernel (thread scheduling, IPC, tasks), FreeBSD (POSIX compliance, networking, file systems), and IOKit/DriverKit (hardware driver frameworks). Compute resources are divided into performance and efficiency core clusters alongside a massive unified memory architecture (UMA).</p></div>
 <div class="insight why"><span>Why it matters</span><p>High-Throughput Parallelism. Combining Mach’s lightweight message-passing primitives with FreeBSD's battle-tested POSIX network stack allows macOS to schedule thousands of concurrent threads across asymmetric CPU core clusters while maintaining sub-millisecond I/O response times.</p></div>
 </section>
-<section id="act-i-the-blueprint-inception-in-vs-code" class="chapter"><div class="chapter-kicker">Chapter 03</div><h2>🎬 ACT I: THE BLUEPRINT INCEPTION IN VS CODE</h2>
-<figure class="code-panel"><figcaption>Python</figcaption><pre><code># test_login.py
-from appium import webdriver
-from appium.options.ios import XCUITestOptions
+<section id="act-0-5-the-missing-step-the-dispatch-radio-the-custom-tool-locker-venv" class="chapter">
+<div class="chapter-kicker">Chapter 03</div>
+<h2>🎬 ACT 0.5: THE MISSING STEP — THE DISPATCH RADIO &amp; THE CUSTOM TOOL LOCKER (venv)</h2>
+<figure class="code-panel"><figcaption>Text</figcaption><pre><code>┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│ VS CODE (Suite 101) ──► Spawns Terminal Shell (`zsh`)                                   │
+│                                │                                                         │
+│                                ▼                                                         │
+│                     `source venv/bin/activate`                                           │
+│                                │                                                         │
+│                                ▼                                                         │
+│        Modifies `$PATH` ──► Points to Project's Private `venv/bin/python`                │
+│                                │                                                         │
+│                                ▼                                                         │
+│   Loads Isolated Tooling: `pytest`, `Appium-Python-Client`, `XCUITestOptions`            │
+└──────────────────────────────────────────────────────────────────────────────────────────┘</code></pre></figure>
+<h3>1. Opening the Terminal: The Dispatch Intercom (zsh)</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Before anyone is hired, the architect in Suite 101 (VS Code) doesn't just click a magical button in the air. They flip open a rugged, two-way intercom radio built into their drafting desk (The zsh Terminal Shell). This radio gives them a direct, interactive line to the Mall General Manager's scheduling desk.</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>VS Code spawns a pseudo-terminal (pty) running an interactive shell process (macOS's default /bin/zsh). The shell provides a command-line interface that listens for user keystrokes, manages environment variables, and coordinates process launching.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Decoupled Execution Control. An IDE is just a text editor and graphical interface; it shouldn't have hardcoded execution logic. The shell provides a standardized, programmable interface to configure environments, pass flags, and launch binaries.</p></div>
+<h3>2. Activating the Virtual Environment: The Private Tool Locker (venv)</h3>
+<div class="insight mall"><span>Mall metaphor</span><p></p></div>
+<p>The Mall has a dusty, ancient community toolbox sitting down in the basement (System Python: /usr/bin/python3). It only contains basic screwdrivers and hammers provided by the building owners (Apple). It does not have the specialized calipers (pytest) or the laser-guided iPhone alignment scopes (Appium-Python-Client) needed for this specific job.</p>
+<p>If Monty tries to use the generic basement toolbox, the job fails immediately.</p>
+<p>So, before giving Monty his work order, the architect keys the dispatch radio:</p>
+<p>source</p>
+<p>venv/bin/activate</p>
+<p>source venv/bin/activate</p>
+<p>This does something critical:</p>
+<p>The Project Tool Locker: It unlocks a specialized, padlocked storage locker right inside the project suite: StageTimePNW_Automation/venv/.</p>
+<p>The Priority Tool Belt ($PATH Redirection): It clips a new instruction badge to Monty's belt: "Whenever you need a tool (like python or pytest), DO NOT walk down to the generic mall basement! Grab the custom tools stored in locker StageTimePNW_Automation/venv/bin/!"</p>
+<p>The Certified Toolset (site-packages): Inside this private locker sits the exact versions of pytest and Appium-Python-Client installed specifically for this project.</p>
+<div class="insight silicon"><span>Silicon reality</span><p>When you activate a virtual environment, the shell runs a script that modifies the current process's $PATH environment variable. It places the local project's virtual environment directory at the very beginning of the search path:</p></div>
+<figure class="code-panel"><figcaption>Bash</figcaption><pre><code># Before activation:
+PATH="/usr/bin:/bin:/usr/sbin:/sbin"
 
-options = XCUITestOptions()
-options.platform_name = "iOS"
-options.automation_name = "XCUITest"
-options.device_name = "iPhone 16"
-
-driver = webdriver.Remote(
-    command_executor="http://127.0.0.1:4723",
-    options=options
-)</code></pre></figure>
-<figure class="code-panel"><figcaption>System map</figcaption><pre><code>[ 2TB NVMe SSD Vault ] ──► [ VS Code: Suite 101 ] ──► [ XNU: fork()/execve() ] ──► [ Suite 204: PID 24088 ]</code></pre></figure>
-<h3>1. File Storage on NVMe Disk</h3>
-<div class="insight mall"><span>Mall metaphor</span><p>Down in the mall's 2TB Deep Archival Vault, our automation script (test_login.py) rests completely inert, like a rolled-up blueprint in a steel safety deposit box. The ink is dry; nothing is moving.</p></div>
-<div class="insight silicon"><span>Silicon reality</span><p>The script exists as non-volatile UTF-8 encoded text on an APFS (Apple File System) partition within the high-speed NVMe flash storage array.</p></div>
-<div class="insight why"><span>Why it matters</span><p>Non-Volatile Persistence. System memory (RAM) is volatile and loses all stored charges when powered off. The NVMe SSD permanently stores file bytes using solid-state NAND flash cells until the operating system explicitly pages them into active memory.</p></div>
-<h3>2. The Execution System Call (fork() / execve())</h3>
-<div class="insight mall"><span>Mall metaphor</span><p>In Suite 101 (The Architectural Drafting Bureau / VS Code), our lead designer looks at the blueprint and clicks "Run." But Suite 101 is purely a design studio; the architects don't do physical field labor. The architect picks up the red emergency hotline directly to Commander XNU (The Mall GM): "Commander! We need a licensed Python contractor hired, assigned an office, and put to work immediately on this blueprint!"</p></div>
-<div class="insight silicon"><span>Silicon reality</span><p>VS Code (running within an Electron/Node.js runtime) executes a POSIX system call: fork() (or posix_spawn()) clones the calling process, and execve() overlays the child process image with the compiled Mach-O binary of the /usr/local/bin/python3 runtime.</p></div>
-<div class="insight why"><span>Why it matters</span><p>Privilege Separation and Process Lifecycle Management. User applications cannot spawn processes out of thin air. Only the OS Kernel possesses the Ring 0 architectural privileges required to register process table entries, allocate thread execution states, and assign hardware time slices.</p></div>
-<h3>3. Suite 204 Allocation (Process Space Creation)</h3>
-<div class="insight mall"><span>Mall metaphor</span><p>Commander XNU takes a master key from his belt, marches down the hall, and unlocks Suite 204 (Process ID 24088). He pours thick, soundproof concrete walls around the room, rolls in a fresh set of empty desks, chalkboards, and filing cabinets (Virtual Memory Allocation), and hires Monty, an energetic Python field worker, assigning him to report to one of the 18 CPU Floor Managers.</p></div>
-<div class="insight silicon"><span>Silicon reality</span><p>The XNU Kernel instantiates a new Mach task, creates an isolated virtual address space (Page Tables, Stack, Heap, Text Segment), assigns a unique Process ID (PID 24088), loads the dynamic linker (dyld), and points the ARM64 Program Counter (PC register) to CPython’s entry point.</p></div>
-<div class="insight why"><span>Why it matters</span><p>Fault Containment and Blast Radius Control. By giving Suite 204 its own isolated memory map and PID, the operating system guarantees that if Monty makes a fatal error or crashes, only Suite 204 collapses. The rest of the mall—VS Code, Appium, and macOS—remains completely unaffected.</p></div>
+# After activation (venv):
+PATH="/Users/you/StageTimePNW_Automation/venv/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+When you execute pytest, the shell searches $PATH from left to right. It finds the local venv/bin/pytest and venv/bin/python (version 3.14.5), completely ignoring the system Python. It also sets sys.prefix, directing Python to look for imported libraries inside venv/lib/python3.14/site-packages/.</code></pre></figure>
+<div class="insight why"><span>Why it matters</span><p>Dependency Isolation &amp; Preventing System Pollution.</p></div>
+<p>macOS Protection (PEP 668): Modern macOS versions mark the system Python as "externally managed" and strictly forbid installing packages into it. If every project installed its own libraries into the system Python, version conflicts would quickly break macOS system scripts.</p>
+<p>Deterministic Builds: Project A might need Appium-Python-Client 3.0, while Project B needs Appium-Python-Client 4.0. Virtual environments keep all third-party dependencies hermetically sealed inside the project folder, preventing dependency collisions across different automation test suites.</p>
+<h3>3. Reading conftest.py: The Pre-Shift Checklist &amp; Clean-up Protocol (@pytest.fixture)</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>In your image, Monty doesn't immediately start running test steps. First, he reads the Standard Operating Procedure (SOP) Board (conftest.py).</p></div>
+<p>The SOP Board contains a master rule: @pytest.fixture(scope="function") def driver():.</p>
+<p>This tells Monty:</p>
+<p>Before the Shift (Setup): "Before you test a single button, you must contact Suite 400 (Appium), request an iPhone 16 Simulator, and establish the session link."</p>
+<p>After the Shift (Teardown / Cleanup): "The second the test is finished (pass or fail), you must clean up your work area, tell Appium to close the app, and tear down the session so you don't leave rogue simulators burning electricity in the mall."</p>
+<div class="insight silicon"><span>Silicon reality</span><p>pytest automatically discovers conftest.py files in the root directory. Fixtures with scope="function" define setup and teardown lifecycle hooks that execute before and after each individual test function runs.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Test Independence and State Reset. If a previous test crashes, you don't want its leftover state (e.g., half-filled text boxes, open modal alerts, or stale session tokens) corrupting the next test. The fixture enforces a pristine, reproducible testing environment for every single execution cycle.</p></div>
 </section>
 <section id="act-ii-parsing-abstract-syntax-trees-ast-bytecode-compilation" class="chapter"><div class="chapter-kicker">Chapter 04</div><h2>🎬 ACT II: PARSING, ABSTRACT SYNTAX TREES (AST), &amp; BYTECODE COMPILATION</h2>
 <figure class="code-panel"><figcaption>System map</figcaption><pre><code>┌─────────────────┐       ┌─────────────────┐       ┌────────────────┐       ┌──────────────────┐
