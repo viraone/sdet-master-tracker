@@ -40,6 +40,81 @@
       transition: transform 0.15s;
     }
     #chat-fab:hover { transform: scale(1.08); }
+
+    /* ── Quiz Explorer (VS Code-style left sidebar) ── */
+    #quiz-fab {
+      position: fixed; bottom: 22px; left: 22px; z-index: 60;
+      width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
+      background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; font-size: 22px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3); transition: transform 0.15s;
+    }
+    #quiz-fab:hover { transform: scale(1.08); }
+    #quiz-panel {
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 69;
+      width: 260px; max-width: 88vw;
+      background: linear-gradient(180deg, #16161d 0%, #101014 100%);
+      color: #cccccc;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 12px 0 40px rgba(0,0,0,0.4);
+      display: flex; flex-direction: column; overflow: hidden;
+      transform: translateX(-100%); transition: transform 0.2s ease-out;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 12.5px;
+    }
+    #quiz-panel.open { transform: translateX(0); }
+    #quiz-panel-resizer {
+      position: absolute; right: 0; top: 0; bottom: 0; width: 5px;
+      cursor: col-resize; z-index: 71;
+    }
+    #quiz-panel-resizer:hover, #quiz-panel-resizer.dragging { background: #6366f1; }
+    .qz-head {
+      height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 14px;
+      flex-shrink: 0; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em;
+      color: #8b8b96; text-transform: uppercase;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .qz-head .spacer { flex: 1; }
+    .qz-head button {
+      background: none; border: none; color: #8b8b96; cursor: pointer; font-size: 13px;
+      width: 24px; height: 24px; border-radius: 6px; display: inline-flex;
+      align-items: center; justify-content: center;
+    }
+    .qz-head button:hover { color: #fff; background: rgba(255,255,255,0.08); }
+    .qz-tree { flex: 1; overflow-y: auto; padding: 6px 0 10px; }
+    .qz-tree::-webkit-scrollbar { width: 8px; }
+    .qz-tree::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    .qz-folder {
+      display: flex; align-items: center; gap: 5px; padding: 4px 10px;
+      font-size: 11px; font-weight: 700; color: #b8b8c2; letter-spacing: 0.02em;
+      cursor: default; user-select: none;
+    }
+    .qz-folder .chev { font-size: 9px; color: #8b8b96; }
+    .qz-row {
+      display: flex; align-items: center; gap: 7px;
+      padding: 4px 10px 4px 26px; cursor: pointer; border-left: 2px solid transparent;
+      color: #c4c4ce; user-select: none;
+    }
+    .qz-row:hover { background: rgba(255,255,255,0.05); }
+    .qz-row.active { background: rgba(99,102,241,0.15); border-left-color: #6366f1; color: #e0e7ff; }
+    .qz-row .qz-icon { font-size: 12px; flex-shrink: 0; width: 16px; text-align: center; }
+    .qz-row .qz-name {
+      flex: 1; font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .qz-row .qz-badge {
+      font-size: 9.5px; font-weight: 800; padding: 1px 7px; border-radius: 99px; flex-shrink: 0;
+      background: rgba(255,255,255,0.07); color: #8b8b96;
+    }
+    .qz-row .qz-badge.good { background: rgba(52,211,153,0.15); color: #34d399; }
+    .qz-row .qz-badge.mid { background: rgba(251,191,36,0.15); color: #fbbf24; }
+    .qz-row .qz-badge.low { background: rgba(248,113,113,0.15); color: #f87171; }
+    .qz-foot {
+      flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 8px 12px; font-size: 10.5px; color: #8b8b96; line-height: 1.6;
+    }
+    .qz-foot .qz-foot-title {
+      font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      font-size: 9.5px; margin-bottom: 3px; color: #a5b4fc;
+    }
     #chat-panel {
       position: fixed; top: 0; right: 0; bottom: 0; z-index: 70;
       width: 380px; max-width: 92vw;
@@ -58,8 +133,9 @@
       cursor: col-resize; z-index: 71;
     }
     #chat-resizer:hover, #chat-resizer.dragging { background: #6366f1; }
-    body { transition: margin-right 0.2s ease-out; }
-    body.resizing-chat, body.resizing-chat #chat-panel { transition: none; }
+    body { transition: margin-right 0.2s ease-out, margin-left 0.2s ease-out; }
+    body.resizing-chat, body.resizing-chat #chat-panel,
+    body.resizing-quiz, body.resizing-quiz #quiz-panel { transition: none; }
 
     /* ── Header ── */
     .chat-head {
@@ -650,6 +726,18 @@ Content-Length: 154
 
   <!-- Mobile SDET Tutor chat -->
   <button id="chat-fab" title="Open Mobile SDET Tutor">🎓</button>
+
+  <button id="quiz-fab" title="Open Quiz Explorer">🧠</button>
+  <div id="quiz-panel">
+    <div class="qz-head">
+      <span>Quiz Explorer</span>
+      <span class="spacer"></span>
+      <button id="btn-quiz-close" title="Hide Quiz Explorer">✕</button>
+    </div>
+    <div class="qz-tree" id="qz-tree"></div>
+    <div class="qz-foot" id="qz-foot"></div>
+    <div id="quiz-panel-resizer" title="Drag to resize"></div>
+  </div>
   <div id="chat-panel">
     <div id="chat-resizer" title="Drag to resize"></div>
     <div class="chat-head">
@@ -1430,40 +1518,99 @@ Content-Length: 154
       return out;
     }
 
-    function showQuizPicker() {
-      openChat();
-      document.getElementById('chat-empty')?.remove();
-      const msg = document.createElement('div');
-      msg.className = 'msg assistant';
-      const body = document.createElement('div');
-      body.className = 'msg-body';
-      body.textContent = '🧠 Quiz Me — pick a section. I\'ll ask 3 active-recall questions and grade your answers.';
-      msg.appendChild(body);
-      const pick = document.createElement('div');
-      pick.className = 'quiz-pick';
-      const sections = quizSections();
-      sections.forEach((s, i) => {
-        const b = document.createElement('button');
-        b.textContent = s.title;
-        b.addEventListener('click', () => { msg.remove(); startQuiz(s); });
-        pick.appendChild(b);
+    // ── Quiz Explorer sidebar (VS Code style) ──
+    const quizPanel = document.getElementById('quiz-panel');
+    let quizPanelWidth = 260;
+
+    function sectionIcon(title) {
+      const m = title.match(/^\p{Extended_Pictographic}/u);
+      return m ? m[0] : '📄';
+    }
+    function buildQuizTree() {
+      const tree = document.getElementById('qz-tree');
+      tree.innerHTML = '';
+      const stats = loadQuizStats();
+      const folder = document.createElement('div');
+      folder.className = 'qz-folder';
+      folder.innerHTML = '<span class="chev">▼</span><span>CS 198 — LECTURE SECTIONS</span>';
+      tree.appendChild(folder);
+      const rows = [...quizSections().map(s => ({ section: s, label: s.title })),
+                    { section: null, label: '🎲 Mixed review' }];
+      rows.forEach(({ section, label }) => {
+        const statKey = section ? section.title : '🎲 Mixed review';
+        const row = document.createElement('div');
+        row.className = 'qz-row';
+        if (quiz && quiz.title === statKey) row.classList.add('active');
+        const icon = sectionIcon(label);
+        const name = label.replace(/^\p{Extended_Pictographic}\s*/u, '');
+        const e = stats[statKey];
+        const pct = e && e.asked ? Math.round((e.score / e.asked) * 100) : null;
+        const badgeCls = pct === null ? '' : pct >= 70 ? 'good' : pct >= 40 ? 'mid' : 'low';
+        row.innerHTML = `<span class="qz-icon"></span><span class="qz-name"></span>` +
+          `<span class="qz-badge ${badgeCls}"></span>`;
+        row.querySelector('.qz-icon').textContent = icon;
+        row.querySelector('.qz-name').textContent = name;
+        row.querySelector('.qz-badge').textContent = pct === null ? '—' : pct + '%';
+        row.title = `Quiz me: ${statKey}`;
+        row.addEventListener('click', () => {
+          if (quiz) { addMsg('assistant', '🧠 Finish or stop the current quiz first!'); openChat(); return; }
+          openChat();
+          startQuiz(section);
+          buildQuizTree();
+        });
+        tree.appendChild(row);
       });
-      const mix = document.createElement('button');
-      mix.textContent = '🎲 Mix — one question from random sections';
-      mix.addEventListener('click', () => { msg.remove(); startQuiz(null); });
-      pick.appendChild(mix);
-      msg.appendChild(pick);
+      const foot = document.getElementById('qz-foot');
       const report = weakSpotReport();
       if (report) {
-        const rep = document.createElement('div');
-        rep.className = 'msg-body';
-        rep.style.marginTop = '8px';
-        rep.textContent = report.trim();
-        msg.appendChild(rep);
+        foot.style.display = '';
+        foot.innerHTML = '<div class="qz-foot-title">📈 Progress</div>';
+        const txt = document.createElement('div');
+        txt.textContent = report.replace(/\n?📈 Your section scores:\n/, '').trim();
+        txt.style.whiteSpace = 'pre-line';
+        foot.appendChild(txt);
+      } else {
+        foot.innerHTML = '<div class="qz-foot-title">📈 Progress</div>Click a section to start a 3-question quiz. Scores show up here.';
       }
-      chatMessages.appendChild(msg);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
     }
+
+    function openQuizPanel() {
+      buildQuizTree();
+      quizPanel.classList.add('open');
+      document.body.style.marginLeft = `${quizPanelWidth}px`;
+      localStorage.setItem('cs198_quiz_open', '1');
+    }
+    function closeQuizPanel() {
+      quizPanel.classList.remove('open');
+      document.body.style.marginLeft = '0';
+      localStorage.setItem('cs198_quiz_open', '0');
+    }
+    document.getElementById('quiz-fab').addEventListener('click', () => {
+      quizPanel.classList.contains('open') ? closeQuizPanel() : openQuizPanel();
+    });
+    document.getElementById('btn-quiz-close').addEventListener('click', closeQuizPanel);
+
+    // resizer (drag right edge)
+    const quizResizer = document.getElementById('quiz-panel-resizer');
+    let resizingQuiz = false;
+    quizResizer.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      resizingQuiz = true;
+      quizResizer.classList.add('dragging');
+      document.body.classList.add('resizing-quiz');
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (!resizingQuiz) return;
+      quizPanelWidth = Math.min(420, Math.max(200, e.clientX));
+      quizPanel.style.width = `${quizPanelWidth}px`;
+      document.body.style.marginLeft = `${quizPanelWidth}px`;
+    });
+    document.addEventListener('mouseup', () => {
+      if (!resizingQuiz) return;
+      resizingQuiz = false;
+      quizResizer.classList.remove('dragging');
+      document.body.classList.remove('resizing-quiz');
+    });
 
     async function startQuiz(section) {
       if (!getGeminiKey()) {
@@ -1523,7 +1670,7 @@ Content-Length: 154
       });
     }
     document.getElementById('quiz-stop').addEventListener('click', () => { if (quiz) endQuiz(true); });
-    document.getElementById('chip-quiz').addEventListener('click', showQuizPicker);
+    document.getElementById('chip-quiz').addEventListener('click', openQuizPanel);
     document.getElementById('chip-learn').addEventListener('click', () => {
       const input = document.getElementById('chat-input');
       input.value = 'What should I learn today?';
@@ -1594,6 +1741,7 @@ Content-Length: 154
       quiz.score += points;
       quiz.results.push(points);
       recordQuizResult(quiz.title, points);
+      buildQuizTree();
       addMsg('assistant', feedback);
       quiz.idx += 1;
       if (quiz.idx < quiz.questions.length) {
@@ -1613,10 +1761,16 @@ Content-Length: 154
         `\n\nHit 🧠 again anytime for another round.`);
       quiz = null;
       updateQuizBar();
+      buildQuizTree();
       document.getElementById('chat-input').placeholder = "Ask your tutor… (e.g. 'what should I learn today?')";
     }
 
-    document.getElementById('btn-quiz').addEventListener('click', showQuizPicker);
+    document.getElementById('btn-quiz').addEventListener('click', () => {
+      quizPanel.classList.contains('open') ? closeQuizPanel() : openQuizPanel();
+    });
+    // Quiz Explorer restores open by default (stays closed only if user closed it)
+    if (localStorage.getItem('cs198_quiz_open') !== '0') openQuizPanel();
+    else buildQuizTree();
     // ==================== end quiz mode ====================
 
 
