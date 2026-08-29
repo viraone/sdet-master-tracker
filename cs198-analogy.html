@@ -272,9 +272,19 @@
     pre { width:100%; max-width:100%; margin:0; padding:1.4rem; overflow-x:auto; color:#afd4ff; line-height:1.45; }
     .code-panel pre,
     .code-panel pre code { font-size:var(--course-map-font-size) !important; }
-    .insight { margin:1rem 0; padding:1.1rem 1.25rem; border:1px solid var(--line); border-left-width:4px; border-radius:0 12px 12px 0; background:rgba(17,24,39,.72); }
+    .insight { position:relative; margin:1rem 0; padding:1.1rem 4.4rem 1.1rem 1.25rem; border:1px solid var(--line); border-left-width:4px; border-radius:0 12px 12px 0; background:rgba(17,24,39,.72); }
     .insight span { display:block; margin-bottom:.3rem; text-transform:uppercase; letter-spacing:.13em; font:800 .65rem/1.2 ui-monospace,monospace; }
     .insight p { margin:0; color:#d2d9e5; }
+    .insight-actions { position:absolute; top:.8rem; right:.8rem; display:flex; gap:.35rem; }
+    .insight-action { width:1.8rem; height:1.8rem; display:grid; place-items:center; padding:0; border:1px solid #34425a; border-radius:7px; background:#111a29; color:#aab5c6; cursor:pointer; font:800 .9rem/1 system-ui,sans-serif; transition:border-color .15s,background .15s,color .15s,transform .15s; }
+    .insight-action:hover { color:#fff; border-color:#60718f; transform:translateY(-1px); }
+    .insight-action.cancel { color:#ff7777; border-color:#71373d; background:#24151a; }
+    .insight-action.cancel:hover { color:#fff; background:#a32f3a; border-color:#dd4f5b; }
+    .insight-action.save { color:#63df9a; border-color:#286444; background:#10231a; }
+    .insight-action.save:hover { color:#07150d; background:#63df9a; border-color:#63df9a; }
+    .insight-action[hidden] { display:none; }
+    .insight.editing { border-color:#526887; box-shadow:0 0 0 3px rgba(101,167,255,.1); }
+    .insight.editing p { min-height:4rem; padding:.7rem .8rem; border:1px dashed #60718f; border-radius:8px; background:#09111d; color:#fff; outline:none; white-space:pre-wrap; }
     .mall { border-left-color:var(--gold) } .mall span { color:var(--gold) }
     .silicon { border-left-color:var(--blue) } .silicon span { color:var(--blue) }
     .why { border-left-color:var(--purple) } .why span { color:var(--purple) }
@@ -1484,6 +1494,72 @@ Content-Length: 154
       const input = document.getElementById('chat-input');
       input.value = 'What should I learn today?';
       sendChat();
+    });
+
+    // Inline editing for lecture insight cards. Changes stay in this browser only.
+    const INSIGHT_EDITS_STORAGE = 'cs198_insight_card_edits_v1';
+    function loadInsightEdits() {
+      try { return JSON.parse(localStorage.getItem(INSIGHT_EDITS_STORAGE)) || {}; }
+      catch { return {}; }
+    }
+    function saveInsightEdits(edits) {
+      localStorage.setItem(INSIGHT_EDITS_STORAGE, JSON.stringify(edits));
+    }
+    const savedInsightEdits = loadInsightEdits();
+    document.querySelectorAll('#content .insight').forEach((card, index) => {
+      const body = card.querySelector('p');
+      if (!body) return;
+      const kind = card.classList.contains('mall') ? 'mall' : card.classList.contains('silicon') ? 'silicon' : 'why';
+      const key = `${kind}-${index}`;
+      if (Object.prototype.hasOwnProperty.call(savedInsightEdits, key)) body.textContent = savedInsightEdits[key];
+
+      const actions = document.createElement('div');
+      actions.className = 'insight-actions';
+      const edit = document.createElement('button');
+      edit.type = 'button'; edit.className = 'insight-action edit'; edit.textContent = '✎';
+      edit.title = 'Edit this card'; edit.setAttribute('aria-label', 'Edit this card');
+      const cancel = document.createElement('button');
+      cancel.type = 'button'; cancel.className = 'insight-action cancel'; cancel.textContent = '✕'; cancel.hidden = true;
+      cancel.title = 'Cancel editing'; cancel.setAttribute('aria-label', 'Cancel editing');
+      const save = document.createElement('button');
+      save.type = 'button'; save.className = 'insight-action save'; save.textContent = '✓'; save.hidden = true;
+      save.title = 'Save changes'; save.setAttribute('aria-label', 'Save changes');
+      actions.append(edit, cancel, save); card.appendChild(actions);
+
+      let beforeEdit = body.textContent;
+      function finishEditing() {
+        body.removeAttribute('contenteditable');
+        card.classList.remove('editing');
+        edit.hidden = false; cancel.hidden = true; save.hidden = true;
+      }
+      edit.addEventListener('click', () => {
+        beforeEdit = body.textContent;
+        body.setAttribute('contenteditable', 'plaintext-only');
+        card.classList.add('editing');
+        edit.hidden = true; cancel.hidden = false; save.hidden = false;
+        body.focus();
+        const range = document.createRange();
+        range.selectNodeContents(body); range.collapse(false);
+        const selection = window.getSelection();
+        selection.removeAllRanges(); selection.addRange(range);
+      });
+      cancel.addEventListener('click', () => {
+        body.textContent = beforeEdit;
+        finishEditing();
+      });
+      save.addEventListener('click', () => {
+        const text = body.textContent.trim();
+        body.textContent = text;
+        const edits = loadInsightEdits();
+        edits[key] = text;
+        saveInsightEdits(edits);
+        beforeEdit = text;
+        finishEditing();
+      });
+      body.addEventListener('keydown', (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); save.click(); }
+        if (event.key === 'Escape') { event.preventDefault(); cancel.click(); }
+      });
     });
 
 
