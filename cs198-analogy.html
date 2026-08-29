@@ -165,30 +165,80 @@
     .chat-head button:hover { color: #fff; background: rgba(255,255,255,0.08); }
 
     /* ── Quiz progress bar ── */
-    #quiz-bar {
-      display: none; align-items: center; gap: 10px; padding: 8px 14px;
+    /* ── Quiz view (inside left panel) ── */
+    #qz-quiz { display: none; flex-direction: column; flex: 1; min-height: 0; }
+    #quiz-panel.quizzing #qz-quiz { display: flex; }
+    #quiz-panel.quizzing .qz-tree, #quiz-panel.quizzing .qz-foot { display: none; }
+    .qzq-bar {
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px;
       background: linear-gradient(90deg, rgba(99,102,241,0.12), rgba(168,85,247,0.12));
       border-bottom: 1px solid rgba(99,102,241,0.25);
       font-size: 11.5px; flex-shrink: 0; color: #c7d2fe;
     }
-    #quiz-bar.active { display: flex; }
-    #quiz-bar .quiz-bar-title {
+    .qzq-bar button {
+      background: none; border: 1px solid rgba(255,255,255,0.15); color: #a5b4fc;
+      font-size: 12px; width: 24px; height: 24px; border-radius: 8px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .qzq-bar button:hover { border-color: #f87171; color: #f87171; }
+    #qzq-title {
       font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
     }
-    #quiz-bar .quiz-dots { display: flex; gap: 5px; }
-    #quiz-bar .qdot {
+    .quiz-dots { display: flex; gap: 5px; }
+    .qdot {
       width: 8px; height: 8px; border-radius: 50%;
       background: rgba(255,255,255,0.15); transition: all 0.2s;
     }
-    #quiz-bar .qdot.done-full { background: #34d399; }
-    #quiz-bar .qdot.done-half { background: #fbbf24; }
-    #quiz-bar .qdot.done-zero { background: #f87171; }
-    #quiz-bar .qdot.current { background: #818cf8; box-shadow: 0 0 8px #6366f1; }
-    #quiz-bar .quiz-stop {
-      background: none; border: 1px solid rgba(255,255,255,0.15); color: #a5b4fc;
-      font-size: 10px; padding: 3px 9px; border-radius: 99px; cursor: pointer; font-weight: 600;
+    .qdot.done-full { background: #34d399; }
+    .qdot.done-half { background: #fbbf24; }
+    .qdot.done-zero { background: #f87171; }
+    .qdot.current { background: #818cf8; box-shadow: 0 0 8px #6366f1; }
+    #qz-feed { flex: 1; overflow-y: auto; padding: 12px 10px; display: flex; flex-direction: column; gap: 10px; }
+    #qz-feed::-webkit-scrollbar { width: 8px; }
+    #qz-feed::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    .qz-card {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px; padding: 9px 12px; font-size: 11.5px; line-height: 1.6;
+      color: #dcdce4; white-space: pre-line; word-wrap: break-word;
+      animation: msgIn 0.25s ease-out;
     }
-    #quiz-bar .quiz-stop:hover { border-color: #f87171; color: #f87171; }
+    .qz-card.q { border-left: 3px solid #818cf8; background: rgba(129,140,248,0.08); font-weight: 500; }
+    .qz-card.you {
+      align-self: flex-end; max-width: 90%;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff;
+      border: none; border-radius: 12px 12px 4px 12px;
+    }
+    .qz-card.think { color: #8b8b96; animation: chatpulse 1.2s infinite; }
+    .qz-card.good { border-left: 3px solid #34d399; background: rgba(52,211,153,0.07); }
+    .qz-card.mid { border-left: 3px solid #fbbf24; background: rgba(251,191,36,0.07); }
+    .qz-card.bad { border-left: 3px solid #f87171; background: rgba(248,113,113,0.07); }
+    .qz-card.summary { border: 1px solid rgba(99,102,241,0.4); background: rgba(99,102,241,0.1); }
+    .qzq-input {
+      display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0;
+      margin: 8px 10px 10px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px; padding: 5px 5px 5px 12px; transition: border-color 0.15s;
+    }
+    .qzq-input:focus-within { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+    #qz-answer {
+      flex: 1; background: transparent; border: none; color: #e2e2e8;
+      font-size: 12px; padding: 5px 0; resize: none; height: 40px;
+      font-family: inherit; outline: none; line-height: 1.5;
+    }
+    #qz-answer::placeholder { color: #5c5c66; }
+    #qz-submit {
+      flex-shrink: 0; width: 30px; height: 30px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border: none; border-radius: 10px; color: #fff; cursor: pointer; font-size: 13px;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    #qz-submit:hover { transform: translateY(-1px); }
+    .qz-btn-row { display: flex; gap: 6px; }
+    .qz-again {
+      background: rgba(99,102,241,0.15); border: 1px solid #6366f1; color: #c7d2fe;
+      font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 99px; cursor: pointer;
+    }
+    .qz-again:hover { background: rgba(99,102,241,0.3); }
 
     /* ── Messages ── */
     .chat-messages {
@@ -736,6 +786,18 @@ Content-Length: 154
     </div>
     <div class="qz-tree" id="qz-tree"></div>
     <div class="qz-foot" id="qz-foot"></div>
+    <div id="qz-quiz">
+      <div class="qzq-bar">
+        <button id="qzq-back" title="Stop quiz & back to sections">←</button>
+        <span id="qzq-title"></span>
+        <span class="quiz-dots" id="qz-dots"></span>
+      </div>
+      <div id="qz-feed"></div>
+      <div class="qzq-input">
+        <textarea id="qz-answer" placeholder="Type your answer…"></textarea>
+        <button id="qz-submit" title="Submit answer">➤</button>
+      </div>
+    </div>
     <div id="quiz-panel-resizer" title="Drag to resize"></div>
   </div>
   <div id="chat-panel">
@@ -749,11 +811,6 @@ Content-Length: 154
       <button id="btn-quiz" title="Quiz me on a lecture section">🧠</button>
       <button id="btn-chat-clear" title="Clear chat history">🗑</button>
       <button id="btn-chat-close" title="Hide chat">✕</button>
-    </div>
-    <div id="quiz-bar">
-      <span class="quiz-bar-title" id="quiz-bar-title"></span>
-      <span class="quiz-dots" id="quiz-dots"></span>
-      <button class="quiz-stop" id="quiz-stop">Stop</button>
     </div>
     <div class="chat-messages" id="chat-messages">
       <div class="chat-empty" id="chat-empty">🎓 I'm your personal Mobile SDET tutor. My mission: get you to mid-level Mobile SDET. Highlight anything in the lecture and hit "Explain", or ask me anything — pytest, Appium, XCUITest, networking, CI/CD. Try: "what should I learn today?"</div>
@@ -1468,7 +1525,6 @@ Content-Length: 154
       const q = input.value.trim();
       if (!q) return;
       input.value = '';
-      if (quiz) { addMsg('user', q); gradeQuizAnswer(q); return; }
       const chip = document.getElementById('chat-selection').classList.contains('active') ? currentSelection : null;
       clearChatSelection();
       addMsg('user', q, { chip });
@@ -1553,10 +1609,7 @@ Content-Length: 154
         row.querySelector('.qz-badge').textContent = pct === null ? '—' : pct + '%';
         row.title = `Quiz me: ${statKey}`;
         row.addEventListener('click', () => {
-          if (quiz) { addMsg('assistant', '🧠 Finish or stop the current quiz first!'); openChat(); return; }
-          openChat();
           startQuiz(section);
-          buildQuizTree();
         });
         tree.appendChild(row);
       });
@@ -1612,9 +1665,47 @@ Content-Length: 154
       document.body.classList.remove('resizing-quiz');
     });
 
+    // Quiz UI helpers (left panel)
+    function qzCard(kind, text) {
+      const c = document.createElement('div');
+      c.className = 'qz-card' + (kind ? ' ' + kind : '');
+      c.textContent = text;
+      const feed = document.getElementById('qz-feed');
+      feed.appendChild(c);
+      feed.scrollTop = feed.scrollHeight;
+      return c;
+    }
+    function updateQzHead() {
+      if (!quiz) return;
+      document.getElementById('qzq-title').textContent =
+        `${quiz.title} · Q${Math.min(quiz.idx + 1, quiz.questions.length)}/${quiz.questions.length}`;
+      const dots = document.getElementById('qz-dots');
+      dots.innerHTML = '';
+      quiz.questions.forEach((_, i) => {
+        const d = document.createElement('span');
+        d.className = 'qdot';
+        if (i < quiz.idx) {
+          const p = quiz.results?.[i] ?? 0;
+          d.classList.add(p >= 0.75 ? 'done-full' : p > 0 ? 'done-half' : 'done-zero');
+        } else if (i === quiz.idx) d.classList.add('current');
+        dots.appendChild(d);
+      });
+    }
+    function enterQuizView() {
+      quizPanel.classList.add('quizzing');
+      document.getElementById('qz-feed').innerHTML = '';
+      document.getElementById('qz-answer').value = '';
+      document.getElementById('qz-answer').disabled = false;
+    }
+    function exitQuizView() {
+      quizPanel.classList.remove('quizzing');
+      buildQuizTree();
+    }
+
     async function startQuiz(section) {
+      enterQuizView();
       if (!getGeminiKey()) {
-        addMsg('assistant', '⚪ Quiz Me needs a Gemini API key — highlight any text, click ⚙️ in the tooltip, and paste a free key from aistudio.google.com/apikey.');
+        qzCard('bad', '⚪ Quiz Me needs a Gemini API key — highlight any lecture text, click ⚙️ in the tooltip, and paste a free key from aistudio.google.com/apikey.');
         return;
       }
       const sections = quizSections();
@@ -1626,8 +1717,9 @@ Content-Length: 154
         title = '🎲 Mixed review';
         sourceText = sections.map(s => `## ${s.title}\n${s.text.slice(0, 1200)}`).join('\n\n');
       }
-      addMsg('user', 'Quiz me:', { chip: title });
-      const th = addMsg('assistant', 'Writing your quiz…', { save: false, thinking: true });
+      document.getElementById('qzq-title').textContent = title;
+      document.getElementById('qz-dots').innerHTML = '';
+      const th = qzCard('think', 'Writing your quiz…');
       try {
         const systemPrompt = TUTOR_MISSION + '\n\nTASK: Write exactly 3 active-recall quiz questions from the lecture section below. ' +
           'Mix difficulty: 1 recall, 1 conceptual "why/how", 1 applied scenario a Mobile SDET would face. ' +
@@ -1641,55 +1733,27 @@ Content-Length: 154
         if (!Array.isArray(questions) || !questions.length || !questions[0].q) throw new Error('bad quiz format');
         th.remove();
         quiz = { title, sectionText: sourceText.slice(0, 6000), questions, idx: 0, score: 0, hintsUsed: 0, results: [] };
-        addMsg('assistant', `🧠 Quiz started! Answer in the box below — or grab a hint if you're stuck. Type "stop" anytime.`);
         askQuizQuestion();
-        document.getElementById('chat-input').placeholder = 'Type your answer…';
       } catch (err) {
         th.remove();
-        addMsg('assistant', `❌ Couldn't build the quiz (${err.message}). Try again or check your Gemini key via ⚙️.`);
+        qzCard('bad', `❌ Couldn't build the quiz (${err.message}). Go back and try again, or check your Gemini key via ⚙️.`);
       }
     }
-
-    // Quiz progress bar
-    function updateQuizBar() {
-      const bar = document.getElementById('quiz-bar');
-      if (!quiz) { bar.classList.remove('active'); document.getElementById('quick-row').style.display = ''; return; }
-      bar.classList.add('active');
-      document.getElementById('quick-row').style.display = 'none';
-      document.getElementById('quiz-bar-title').textContent = `🧠 ${quiz.title} · Q${Math.min(quiz.idx + 1, quiz.questions.length)}/${quiz.questions.length}`;
-      const dots = document.getElementById('quiz-dots');
-      dots.innerHTML = '';
-      quiz.questions.forEach((_, i) => {
-        const d = document.createElement('span');
-        d.className = 'qdot';
-        if (i < quiz.idx) {
-          const p = quiz.results?.[i] ?? 0;
-          d.classList.add(p >= 0.75 ? 'done-full' : p > 0 ? 'done-half' : 'done-zero');
-        } else if (i === quiz.idx) d.classList.add('current');
-        dots.appendChild(d);
-      });
-    }
-    document.getElementById('quiz-stop').addEventListener('click', () => { if (quiz) endQuiz(true); });
-    document.getElementById('chip-quiz').addEventListener('click', openQuizPanel);
-    document.getElementById('chip-learn').addEventListener('click', () => {
-      const input = document.getElementById('chat-input');
-      input.value = 'What should I learn today?';
-      sendChat();
-    });
 
     // Khan Academy-style question card with progressive hints
     function askQuizQuestion() {
       const q = quiz.questions[quiz.idx];
       quiz.hintsUsed = 0;
-      updateQuizBar();
-      addMsg('assistant', `Q${quiz.idx + 1}/${quiz.questions.length}: ${q.q}`);
+      updateQzHead();
+      qzCard('q', `Q${quiz.idx + 1}/${quiz.questions.length}: ${q.q}`);
       const hints = Array.isArray(q.hints) ? q.hints.filter(h => typeof h === 'string' && h.trim()) : [];
       if (!hints.length) return;
-      const msg = document.createElement('div');
-      msg.className = 'msg assistant quiz-hint-msg';
+      const feed = document.getElementById('qz-feed');
+      const wrap = document.createElement('div');
+      wrap.className = 'quiz-hint-msg';
       const list = document.createElement('div');
       list.className = 'hint-list';
-      msg.appendChild(list);
+      wrap.appendChild(list);
       const btn = document.createElement('button');
       btn.className = 'hint-btn';
       btn.textContent = `＋ Get a hint (0/${hints.length})`;
@@ -1704,21 +1768,22 @@ Content-Length: 154
         if (quiz) quiz.hintsUsed = n + 1;
         if (n + 1 >= hints.length) { btn.disabled = true; btn.textContent = 'All hints shown — give it your best answer!'; }
         else btn.textContent = `＋ Get another hint (${n + 1}/${hints.length})`;
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+        feed.scrollTop = feed.scrollHeight;
       });
-      msg.appendChild(btn);
-      chatMessages.appendChild(msg);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+      wrap.appendChild(btn);
+      feed.appendChild(wrap);
+      feed.scrollTop = feed.scrollHeight;
     }
 
     async function gradeQuizAnswer(answer) {
       const q = quiz.questions[quiz.idx];
       if (/^(stop|quit|exit|end)$/i.test(answer.trim())) { endQuiz(true); return; }
       // freeze hint buttons for this question
-      document.querySelectorAll('.quiz-hint-msg .hint-btn:not(:disabled)').forEach(b => { b.disabled = true; b.style.display = 'none'; });
+      document.querySelectorAll('#qz-feed .hint-btn:not(:disabled)').forEach(b => { b.disabled = true; b.style.display = 'none'; });
       const hintsUsed = quiz.hintsUsed || 0;
-      const th = addMsg('assistant', 'Grading…', { save: false, thinking: true });
-      let points = 0, feedback;
+      qzCard('you', answer);
+      const th = qzCard('think', 'Grading…');
+      let points = 0, cls, feedback;
       try {
         const systemPrompt = TUTOR_MISSION + '\n\nTASK: Grade the student\'s quiz answer. First line must be exactly one of: ' +
           'VERDICT: correct | VERDICT: partial | VERDICT: incorrect. Then 2-4 sentences of feedback: what they got right, ' +
@@ -1729,20 +1794,20 @@ Content-Length: 154
         points = verdict === 'correct' ? 1 : verdict === 'partial' ? 0.5 : 0;
         // Khan-style: hints reduce credit a little, never below 0
         if (hintsUsed > 0 && points > 0) points = Math.max(0.25, points - 0.2 * hintsUsed);
+        cls = verdict === 'correct' ? 'good' : verdict === 'partial' ? 'mid' : 'bad';
         const icon = verdict === 'correct' ? '✅' : verdict === 'partial' ? '🟡' : '❌';
         const hintNote = hintsUsed > 0 ? ` (💡 ${hintsUsed} hint${hintsUsed > 1 ? 's' : ''} used)` : '';
         feedback = `${icon} ${verdict.toUpperCase()}${hintNote}\n${raw.replace(/VERDICT:.*(\n|$)/i, '').trim()}`;
       } catch (err) {
         th.remove();
-        addMsg('assistant', `❌ Grading failed (${err.message}). Your answer wasn't counted — try again.`);
+        qzCard('bad', `❌ Grading failed (${err.message}). Your answer wasn't counted — try again.`);
         return;
       }
       th.remove();
       quiz.score += points;
       quiz.results.push(points);
       recordQuizResult(quiz.title, points);
-      buildQuizTree();
-      addMsg('assistant', feedback);
+      qzCard(cls, feedback);
       quiz.idx += 1;
       if (quiz.idx < quiz.questions.length) {
         askQuizQuestion();
@@ -1754,16 +1819,46 @@ Content-Length: 154
     function endQuiz(early) {
       const pct = quiz.idx ? Math.round((quiz.score / quiz.idx) * 100) : 0;
       const grade = pct >= 90 ? '🏆 Outstanding' : pct >= 70 ? '💪 Solid' : pct >= 40 ? '📚 Getting there' : '🔁 Re-read this section';
-      addMsg('assistant',
-        `🏁 QUIZ COMPLETE${early ? ' (ended early)' : ''}: ${quiz.title}\n` +
+      updateQzHead();
+      qzCard('summary',
+        `🏁 QUIZ COMPLETE${early ? ' (ended early)' : ''}\n` +
         `Score: ${quiz.score}/${quiz.idx} (${pct}%) — ${grade}` +
-        weakSpotReport() +
-        `\n\nHit 🧠 again anytime for another round.`);
+        weakSpotReport());
+      const lastTitle = quiz.title;
+      const lastSection = quizSections().find(s => s.title === lastTitle) || null;
       quiz = null;
-      updateQuizBar();
-      buildQuizTree();
-      document.getElementById('chat-input').placeholder = "Ask your tutor… (e.g. 'what should I learn today?')";
+      document.getElementById('qz-answer').disabled = true;
+      const feed = document.getElementById('qz-feed');
+      const row = document.createElement('div');
+      row.className = 'qz-btn-row';
+      const again = document.createElement('button');
+      again.className = 'qz-again';
+      again.textContent = '🔁 Quiz again';
+      again.addEventListener('click', () => startQuiz(lastTitle === '🎲 Mixed review' ? null : lastSection));
+      const back = document.createElement('button');
+      back.className = 'qz-again';
+      back.textContent = '← All sections';
+      back.addEventListener('click', exitQuizView);
+      row.appendChild(again); row.appendChild(back);
+      feed.appendChild(row);
+      feed.scrollTop = feed.scrollHeight;
     }
+
+    function submitQuizAnswer() {
+      const input = document.getElementById('qz-answer');
+      const a = input.value.trim();
+      if (!a || !quiz) return;
+      input.value = '';
+      gradeQuizAnswer(a);
+    }
+    document.getElementById('qz-submit').addEventListener('click', submitQuizAnswer);
+    document.getElementById('qz-answer').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitQuizAnswer(); }
+    });
+    document.getElementById('qzq-back').addEventListener('click', () => {
+      if (quiz) endQuiz(true);
+      exitQuizView();
+    });
 
     document.getElementById('btn-quiz').addEventListener('click', () => {
       quizPanel.classList.contains('open') ? closeQuizPanel() : openQuizPanel();
@@ -1771,6 +1866,12 @@ Content-Length: 154
     // Quiz Explorer restores open by default (stays closed only if user closed it)
     if (localStorage.getItem('cs198_quiz_open') !== '0') openQuizPanel();
     else buildQuizTree();
+    document.getElementById('chip-quiz').addEventListener('click', openQuizPanel);
+    document.getElementById('chip-learn').addEventListener('click', () => {
+      const input = document.getElementById('chat-input');
+      input.value = 'What should I learn today?';
+      sendChat();
+    });
     // ==================== end quiz mode ====================
 
 
