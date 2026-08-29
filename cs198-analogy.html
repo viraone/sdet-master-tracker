@@ -108,6 +108,16 @@
       overflow-x: auto; border: 1px solid #3c3c3c;
     }
     .mermaid-box svg { max-width: 100%; height: auto; }
+    .quiz-pick { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+    .quiz-pick button {
+      text-align: left; background: #2d2d2d; border: 1px solid #3c3c3c; color: #d4d4d4;
+      font-size: 12px; padding: 6px 9px; border-radius: 5px; cursor: pointer;
+    }
+    .quiz-pick button:hover { background: #37373d; border-color: #2563eb; }
+    .quiz-banner {
+      background: #1e3a5f; border: 1px solid #2563eb; border-radius: 6px;
+      padding: 8px 10px; margin-top: 6px; font-size: 12px; color: #dbeafe;
+    }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-2px); }
       to { opacity: 1; transform: translateY(0); }
@@ -519,6 +529,7 @@ Content-Length: 154
     <div class="chat-head">
       <span class="chat-title">🎓 MOBILE SDET TUTOR</span>
       <span class="spacer"></span>
+      <button id="btn-quiz" title="Quiz me on a lecture section">🧠</button>
       <button id="btn-chat-clear" title="Clear chat history">🗑</button>
       <button id="btn-chat-close" title="Hide chat">✕</button>
     </div>
@@ -1231,6 +1242,7 @@ Content-Length: 154
       const q = input.value.trim();
       if (!q) return;
       input.value = '';
+      if (quiz) { addMsg('user', q); gradeQuizAnswer(q); return; }
       const chip = document.getElementById('chat-selection').classList.contains('active') ? currentSelection : null;
       clearChatSelection();
       addMsg('user', q, { chip });
@@ -1249,7 +1261,157 @@ Content-Length: 154
       chatMessages.innerHTML = '<div class="chat-empty" id="chat-empty">🎓 History cleared. Highlight lecture text or ask me anything.</div>';
     });
 
-    // Restore chat history
+    // ==================== 🧠 QUIZ ME MODE ====================
+    const QUIZ_STATS = 'cs198_quiz_stats';
+    let quiz = null; // { title, sectionText, questions: [{q, key}], idx, score }
+
+    function quizSections() {
+      return [...document.querySelectorAll('#content section')].map(s => {
+        const h = s.querySelector('h2');
+        return h ? { title: h.textContent.trim(), text: s.textContent.replace(/\s+/g, ' ').trim() } : null;
+      }).filter(Boolean);
+    }
+    function loadQuizStats() { try { return JSON.parse(localStorage.getItem(QUIZ_STATS)) || {}; } catch { return {}; } }
+    function saveQuizStats(s) { localStorage.setItem(QUIZ_STATS, JSON.stringify(s)); }
+    function recordQuizResult(title, points) {
+      const stats = loadQuizStats();
+      const e = stats[title] || { asked: 0, score: 0 };
+      e.asked += 1; e.score += points;
+      stats[title] = e; saveQuizStats(stats);
+    }
+    function weakSpotReport() {
+      const stats = loadQuizStats();
+      const rows = Object.entries(stats)
+        .filter(([, e]) => e.asked >= 2)
+        .map(([t, e]) => ({ t, pct: Math.round((e.score / e.asked) * 100) }))
+        .sort((a, b) => a.pct - b.pct);
+      if (!rows.length) return '';
+      const weak = rows.filter(r => r.pct < 70);
+      let out = '\n📈 Your section scores:\n' + rows.map(r => `${r.pct >= 70 ? '🟢' : '🔴'} ${r.pct}% — ${r.t}`).join('\n');
+      if (weak.length) out += `\n\n🎯 Weak spots to re-read: ${weak.map(r => r.t).join(' · ')}`;
+      return out;
+    }
+
+    function showQuizPicker() {
+      openChat();
+      document.getElementById('chat-empty')?.remove();
+      const msg = document.createElement('div');
+      msg.className = 'msg assistant';
+      const body = document.createElement('div');
+      body.className = 'msg-body';
+      body.textContent = '🧠 Quiz Me — pick a section. I\'ll ask 3 active-recall questions and grade your answers.';
+      msg.appendChild(body);
+      const pick = document.createElement('div');
+      pick.className = 'quiz-pick';
+      const sections = quizSections();
+      sections.forEach((s, i) => {
+        const b = document.createElement('button');
+        b.textContent = s.title;
+        b.addEventListener('click', () => { msg.remove(); startQuiz(s); });
+        pick.appendChild(b);
+      });
+      const mix = document.createElement('button');
+      mix.textContent = '🎲 Mix — one question from random sections';
+      mix.addEventListener('click', () => { msg.remove(); startQuiz(null); });
+      pick.appendChild(mix);
+      msg.appendChild(pick);
+      const report = weakSpotReport();
+      if (report) {
+        const rep = document.createElement('div');
+        rep.className = 'msg-body';
+        rep.style.marginTop = '8px';
+        rep.textContent = report.trim();
+        msg.appendChild(rep);
+      }
+      chatMessages.appendChild(msg);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    async function startQuiz(section) {
+      if (!getGeminiKey()) {
+        addMsg('assistant', '⚪ Quiz Me needs a Gemini API key — highlight any text, click ⚙️ in the tooltip, and paste a free key from aistudio.google.com/apikey.');
+        return;
+      }
+      const sections = quizSections();
+      let title, sourceText;
+      if (section) {
+        title = section.title;
+        sourceText = section.text;
+      } else {
+        title = '🎲 Mixed review';
+        sourceText = sections.map(s => `## ${s.title}\n${s.text.slice(0, 1200)}`).join('\n\n');
+      }
+      addMsg('user', 'Quiz me:', { chip: title });
+      const th = addMsg('assistant', 'Writing your quiz…', { save: false, thinking: true });
+      try {
+        const systemPrompt = TUTOR_MISSION + '\n\nTASK: Write exactly 3 active-recall quiz questions from the lecture section below. ' +
+          'Mix difficulty: 1 recall, 1 conceptual "why/how", 1 applied scenario a Mobile SDET would face. ' +
+          'Questions must be answerable from the section content. Reply with ONLY a JSON array, no fences, no commentary: ' +
+          '[{"q":"question text","key":"the key points a correct answer must include"}]';
+        const raw = await geminiCall(systemPrompt, `Section: ${title}\n\n${sourceText.slice(0, 6000)}`);
+        const jsonText = (raw || '').replace(/```(?:json)?/gi, '').trim();
+        const questions = JSON.parse(jsonText.slice(jsonText.indexOf('['), jsonText.lastIndexOf(']') + 1));
+        if (!Array.isArray(questions) || !questions.length || !questions[0].q) throw new Error('bad quiz format');
+        th.remove();
+        quiz = { title, sectionText: sourceText.slice(0, 6000), questions, idx: 0, score: 0 };
+        addMsg('assistant',
+          `🧠 QUIZ STARTING: ${title}\n${questions.length} questions · answer in the box below · type "stop" to end early.\n\n` +
+          `Q1/${questions.length}: ${questions[0].q}`);
+        document.getElementById('chat-input').placeholder = 'Type your answer…';
+      } catch (err) {
+        th.remove();
+        addMsg('assistant', `❌ Couldn't build the quiz (${err.message}). Try again or check your Gemini key via ⚙️.`);
+      }
+    }
+
+    async function gradeQuizAnswer(answer) {
+      const q = quiz.questions[quiz.idx];
+      if (/^(stop|quit|exit|end)$/i.test(answer.trim())) { endQuiz(true); return; }
+      const th = addMsg('assistant', 'Grading…', { save: false, thinking: true });
+      let points = 0, feedback;
+      try {
+        const systemPrompt = TUTOR_MISSION + '\n\nTASK: Grade the student\'s quiz answer. First line must be exactly one of: ' +
+          'VERDICT: correct | VERDICT: partial | VERDICT: incorrect. Then 2-4 sentences of feedback: what they got right, ' +
+          'what they missed (using the key points), and one crisp takeaway. Be encouraging but honest — this student is training to be a mid-level Mobile SDET.';
+        const raw = await geminiCall(systemPrompt,
+          `Question: ${q.q}\n\nKey points for a correct answer: ${q.key}\n\nStudent's answer: ${answer}\n\nLecture excerpt:\n${quiz.sectionText.slice(0, 2500)}`);
+        const verdict = (raw.match(/VERDICT:\s*(correct|partial|incorrect)/i) || [])[1]?.toLowerCase() || 'partial';
+        points = verdict === 'correct' ? 1 : verdict === 'partial' ? 0.5 : 0;
+        const icon = verdict === 'correct' ? '✅' : verdict === 'partial' ? '🟡' : '❌';
+        feedback = `${icon} ${verdict.toUpperCase()}\n${raw.replace(/VERDICT:.*(\n|$)/i, '').trim()}`;
+      } catch (err) {
+        th.remove();
+        addMsg('assistant', `❌ Grading failed (${err.message}). Your answer wasn't counted — try again.`);
+        return;
+      }
+      th.remove();
+      quiz.score += points;
+      recordQuizResult(quiz.title, points);
+      addMsg('assistant', feedback);
+      quiz.idx += 1;
+      if (quiz.idx < quiz.questions.length) {
+        addMsg('assistant', `Q${quiz.idx + 1}/${quiz.questions.length}: ${quiz.questions[quiz.idx].q}`);
+      } else {
+        endQuiz(false);
+      }
+    }
+
+    function endQuiz(early) {
+      const pct = quiz.idx ? Math.round((quiz.score / quiz.idx) * 100) : 0;
+      const grade = pct >= 90 ? '🏆 Outstanding' : pct >= 70 ? '💪 Solid' : pct >= 40 ? '📚 Getting there' : '🔁 Re-read this section';
+      addMsg('assistant',
+        `🏁 QUIZ COMPLETE${early ? ' (ended early)' : ''}: ${quiz.title}\n` +
+        `Score: ${quiz.score}/${quiz.idx} (${pct}%) — ${grade}` +
+        weakSpotReport() +
+        `\n\nHit 🧠 again anytime for another round.`);
+      quiz = null;
+      document.getElementById('chat-input').placeholder = "Ask your tutor… (e.g. 'what should I learn today?')";
+    }
+
+    document.getElementById('btn-quiz').addEventListener('click', showQuizPicker);
+    // ==================== end quiz mode ====================
+
+
     for (const m of loadChat()) {
       addMsg(m.role, m.text, { chip: m.chip, save: false, insertTerm: m.insertTerm ?? null, insertOcc: m.insertOcc ?? null, mermaidCode: m.mermaidCode ?? null });
     }
