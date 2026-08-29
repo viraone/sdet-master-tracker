@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CS 198: Advanced Mobile Test Infrastructure — Interactive Lecture</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <style>
     ::selection { background-color: #fef08a; }
     pre.diagram {
@@ -102,6 +103,11 @@
       color: #fff; cursor: pointer; font-size: 13px; padding: 6px 10px;
     }
     #btn-send:hover { background: #1d4ed8; }
+    .mermaid-box {
+      background: #fff; border-radius: 6px; padding: 10px; margin-top: 6px;
+      overflow-x: auto; border: 1px solid #3c3c3c;
+    }
+    .mermaid-box svg { max-width: 100%; height: auto; }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-2px); }
       to { opacity: 1; transform: translateY(0); }
@@ -499,6 +505,9 @@ Content-Length: 154
       <button id="btn-explain" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 px-3 rounded shadow transition">
         💡 Explain to me using an analogy
       </button>
+      <button id="btn-diagram" class="w-full mt-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold py-2 px-3 rounded shadow transition">
+        📊 Diagram it
+      </button>
       <p id="ai-status" class="text-[10px] text-gray-500 mt-2 text-center"></p>
     </div>
   </div>
@@ -529,6 +538,8 @@ Content-Length: 154
   </div>
 
   <script>
+    if (window.mermaid) mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' });
+
     let currentSelection = null;
     let currentRange = null;
 
@@ -576,6 +587,20 @@ Content-Length: 154
       clearChatSelection();
       openChat();
       runExplain(term, surroundingContext, occ);
+    });
+
+    // 2b. "Diagram it" — the tutor draws the concept as a rendered diagram in chat
+    document.getElementById('btn-diagram').addEventListener('click', () => {
+      const term = currentSelection;
+      const anchorEl = currentRange.startContainer.parentElement;
+      const block = anchorEl.closest('p, li, td, pre, h1, h2, h3, section, div') || anchorEl;
+      const surroundingContext = block.innerText;
+
+      tooltip.classList.add('hidden');
+      window.getSelection().removeAllRanges();
+      clearChatSelection();
+      openChat();
+      runDiagram(term, surroundingContext);
     });
 
     // 3. Insert analogy right next to the selected text in DOM (persisted in localStorage)
@@ -1104,7 +1129,7 @@ Content-Length: 154
     }
     function saveChat(list) { localStorage.setItem(CHAT_STORAGE, JSON.stringify(list.slice(-60))); }
 
-    function addMsg(role, text, { chip = null, save = true, thinking = false, insertTerm = null, insertOcc = null } = {}) {
+    function addMsg(role, text, { chip = null, save = true, thinking = false, insertTerm = null, insertOcc = null, mermaidCode = null } = {}) {
       document.getElementById('chat-empty')?.remove();
       const msg = document.createElement('div');
       msg.className = 'msg' + (thinking ? ' thinking' : '');
@@ -1121,6 +1146,18 @@ Content-Length: 154
       const body = document.createElement('div');
       body.className = 'msg-body'; body.textContent = text;
       msg.appendChild(body);
+      if (mermaidCode) {
+        const box = document.createElement('div');
+        box.className = 'mermaid-box';
+        box.textContent = 'Rendering diagram…';
+        msg.appendChild(box);
+        const mid = 'mmd' + Date.now().toString(36) + Math.floor(Math.random() * 1e6);
+        try {
+          window.mermaid.render(mid, mermaidCode)
+            .then(r => { box.innerHTML = r.svg; chatMessages.scrollTop = chatMessages.scrollHeight; })
+            .catch(() => { box.textContent = mermaidCode; });
+        } catch { box.textContent = mermaidCode; }
+      }
       if (role === 'assistant' && !thinking) {
         const actions = document.createElement('div');
         actions.className = 'msg-actions';
@@ -1143,7 +1180,7 @@ Content-Length: 154
       }
       chatMessages.appendChild(msg);
       chatMessages.scrollTop = chatMessages.scrollHeight;
-      if (save) { const h = loadChat(); h.push({ role, text, chip, insertTerm, insertOcc }); saveChat(h); }
+      if (save) { const h = loadChat(); h.push({ role, text, chip, insertTerm, insertOcc, mermaidCode }); saveChat(h); }
       return msg;
     }
 
@@ -1153,6 +1190,40 @@ Content-Length: 154
       const answer = await fetchAnalogyFromAI(term, context);
       th.remove();
       addMsg('assistant', answer, { insertTerm: term, insertOcc: occ });
+    }
+
+    async function fetchGeminiDiagram(term, context) {
+      const systemPrompt =
+        TUTOR_MISSION + "\n\n" +
+        "TASK: The student wants a DIAGRAM of the highlighted concept. Reply with ONLY valid Mermaid " +
+        "diagram code — no markdown fences, no commentary, no explanation. Choose the best type: " +
+        "'sequenceDiagram' for protocols/handshakes/interactions, 'flowchart TD' or 'flowchart LR' for " +
+        "structures, layers, and pipelines. Keep it focused: 6-14 nodes maximum, short clear labels " +
+        "(emoji welcome). Ground it in the iOS test automation pipeline (Python → Appium → XCUITest → " +
+        "iOS Simulator) and the lecture context. Use only basic flowchart/sequence syntax — no advanced " +
+        "Mermaid features. Quote node labels that contain parentheses or special characters.";
+      let code = await geminiCall(systemPrompt,
+        `Concept to diagram: "${term}"\n\nLecture context:\n${(context || '').slice(0, 1500)}`);
+      if (!code) return null;
+      return code.replace(/```(?:mermaid)?/gi, '').trim();
+    }
+
+    async function runDiagram(term, context) {
+      addMsg('user', 'Diagram:', { chip: term });
+      if (!getGeminiKey()) {
+        addMsg('assistant', "⚪ Diagrams need a Gemini API key — highlight any text, click ⚙️ in the tooltip, and paste a free key from aistudio.google.com/apikey.");
+        return;
+      }
+      const th = addMsg('assistant', 'Drawing the blueprint…', { save: false, thinking: true });
+      try {
+        const code = await fetchGeminiDiagram(term, context);
+        th.remove();
+        if (code) addMsg('assistant', `📊 ${term}`, { mermaidCode: code });
+        else addMsg('assistant', 'Hmm, I could not draw that one — try highlighting a more specific concept.');
+      } catch (err) {
+        th.remove();
+        addMsg('assistant', `❌ Diagram failed (${err.message}). Check your Gemini key via ⚙️.`);
+      }
     }
 
     async function sendChat() {
@@ -1180,7 +1251,7 @@ Content-Length: 154
 
     // Restore chat history
     for (const m of loadChat()) {
-      addMsg(m.role, m.text, { chip: m.chip, save: false, insertTerm: m.insertTerm ?? null, insertOcc: m.insertOcc ?? null });
+      addMsg(m.role, m.text, { chip: m.chip, save: false, insertTerm: m.insertTerm ?? null, insertOcc: m.insertOcc ?? null, mermaidCode: m.mermaidCode ?? null });
     }
 
     // Chat is open by default (stays closed only if the user closed it last time)
