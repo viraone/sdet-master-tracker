@@ -118,6 +118,19 @@
       background: #1e3a5f; border: 1px solid #2563eb; border-radius: 6px;
       padding: 8px 10px; margin-top: 6px; font-size: 12px; color: #dbeafe;
     }
+    .quiz-hint-msg { padding-top: 0; }
+    .hint-btn {
+      background: none; border: none; color: #4f9cf9; cursor: pointer;
+      font-size: 12px; font-weight: 600; padding: 4px 0; text-align: left;
+    }
+    .hint-btn:hover:not(:disabled) { text-decoration: underline; }
+    .hint-btn:disabled { color: #6b7280; cursor: default; }
+    .hint-item {
+      display: flex; gap: 8px; align-items: flex-start;
+      border-left: 3px solid #4f9cf9; padding: 5px 0 5px 10px; margin: 4px 0;
+      font-size: 12px; color: #d4d4d4;
+    }
+    .hint-num { color: #4f9cf9; font-weight: 700; font-size: 11px; white-space: nowrap; margin-top: 1px; }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-2px); }
       to { opacity: 1; transform: translateY(0); }
@@ -1346,17 +1359,19 @@ Content-Length: 154
       try {
         const systemPrompt = TUTOR_MISSION + '\n\nTASK: Write exactly 3 active-recall quiz questions from the lecture section below. ' +
           'Mix difficulty: 1 recall, 1 conceptual "why/how", 1 applied scenario a Mobile SDET would face. ' +
-          'Questions must be answerable from the section content. Reply with ONLY a JSON array, no fences, no commentary: ' +
-          '[{"q":"question text","key":"the key points a correct answer must include"}]';
+          'Questions must be answerable from the section content. For each question also write 3 progressively revealing hints ' +
+          '(Khan Academy style): hint 1 = a gentle nudge pointing where to think, hint 2 = a partial step toward the answer, ' +
+          'hint 3 = nearly the full answer. Reply with ONLY a JSON array, no fences, no commentary: ' +
+          '[{"q":"question text","key":"the key points a correct answer must include","hints":["nudge","partial","almost full answer"]}]';
         const raw = await geminiCall(systemPrompt, `Section: ${title}\n\n${sourceText.slice(0, 6000)}`);
         const jsonText = (raw || '').replace(/```(?:json)?/gi, '').trim();
         const questions = JSON.parse(jsonText.slice(jsonText.indexOf('['), jsonText.lastIndexOf(']') + 1));
         if (!Array.isArray(questions) || !questions.length || !questions[0].q) throw new Error('bad quiz format');
         th.remove();
-        quiz = { title, sectionText: sourceText.slice(0, 6000), questions, idx: 0, score: 0 };
+        quiz = { title, sectionText: sourceText.slice(0, 6000), questions, idx: 0, score: 0, hintsUsed: 0 };
         addMsg('assistant',
-          `🧠 QUIZ STARTING: ${title}\n${questions.length} questions · answer in the box below · type "stop" to end early.\n\n` +
-          `Q1/${questions.length}: ${questions[0].q}`);
+          `🧠 QUIZ STARTING: ${title}\n${questions.length} questions · answer in the box below · type "stop" to end early.`);
+        askQuizQuestion();
         document.getElementById('chat-input').placeholder = 'Type your answer…';
       } catch (err) {
         th.remove();
@@ -1364,9 +1379,45 @@ Content-Length: 154
       }
     }
 
+    // Khan Academy-style question card with progressive hints
+    function askQuizQuestion() {
+      const q = quiz.questions[quiz.idx];
+      quiz.hintsUsed = 0;
+      addMsg('assistant', `Q${quiz.idx + 1}/${quiz.questions.length}: ${q.q}`);
+      const hints = Array.isArray(q.hints) ? q.hints.filter(h => typeof h === 'string' && h.trim()) : [];
+      if (!hints.length) return;
+      const msg = document.createElement('div');
+      msg.className = 'msg assistant quiz-hint-msg';
+      const list = document.createElement('div');
+      list.className = 'hint-list';
+      msg.appendChild(list);
+      const btn = document.createElement('button');
+      btn.className = 'hint-btn';
+      btn.textContent = `＋ Get a hint (0/${hints.length})`;
+      btn.addEventListener('click', () => {
+        const n = quiz ? quiz.hintsUsed : hints.length;
+        if (n >= hints.length) return;
+        const row = document.createElement('div');
+        row.className = 'hint-item';
+        row.innerHTML = `<span class="hint-num">${n + 1} / ${hints.length}</span><span class="hint-text"></span>`;
+        row.querySelector('.hint-text').textContent = hints[n];
+        list.appendChild(row);
+        if (quiz) quiz.hintsUsed = n + 1;
+        if (n + 1 >= hints.length) { btn.disabled = true; btn.textContent = 'All hints shown — give it your best answer!'; }
+        else btn.textContent = `＋ Get another hint (${n + 1}/${hints.length})`;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      });
+      msg.appendChild(btn);
+      chatMessages.appendChild(msg);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
     async function gradeQuizAnswer(answer) {
       const q = quiz.questions[quiz.idx];
       if (/^(stop|quit|exit|end)$/i.test(answer.trim())) { endQuiz(true); return; }
+      // freeze hint buttons for this question
+      document.querySelectorAll('.quiz-hint-msg .hint-btn:not(:disabled)').forEach(b => { b.disabled = true; b.style.display = 'none'; });
+      const hintsUsed = quiz.hintsUsed || 0;
       const th = addMsg('assistant', 'Grading…', { save: false, thinking: true });
       let points = 0, feedback;
       try {
@@ -1377,8 +1428,11 @@ Content-Length: 154
           `Question: ${q.q}\n\nKey points for a correct answer: ${q.key}\n\nStudent's answer: ${answer}\n\nLecture excerpt:\n${quiz.sectionText.slice(0, 2500)}`);
         const verdict = (raw.match(/VERDICT:\s*(correct|partial|incorrect)/i) || [])[1]?.toLowerCase() || 'partial';
         points = verdict === 'correct' ? 1 : verdict === 'partial' ? 0.5 : 0;
+        // Khan-style: hints reduce credit a little, never below 0
+        if (hintsUsed > 0 && points > 0) points = Math.max(0.25, points - 0.2 * hintsUsed);
         const icon = verdict === 'correct' ? '✅' : verdict === 'partial' ? '🟡' : '❌';
-        feedback = `${icon} ${verdict.toUpperCase()}\n${raw.replace(/VERDICT:.*(\n|$)/i, '').trim()}`;
+        const hintNote = hintsUsed > 0 ? ` (💡 ${hintsUsed} hint${hintsUsed > 1 ? 's' : ''} used)` : '';
+        feedback = `${icon} ${verdict.toUpperCase()}${hintNote}\n${raw.replace(/VERDICT:.*(\n|$)/i, '').trim()}`;
       } catch (err) {
         th.remove();
         addMsg('assistant', `❌ Grading failed (${err.message}). Your answer wasn't counted — try again.`);
@@ -1390,7 +1444,7 @@ Content-Length: 154
       addMsg('assistant', feedback);
       quiz.idx += 1;
       if (quiz.idx < quiz.questions.length) {
-        addMsg('assistant', `Q${quiz.idx + 1}/${quiz.questions.length}: ${quiz.questions[quiz.idx].q}`);
+        askQuizQuestion();
       } else {
         endQuiz(false);
       }
