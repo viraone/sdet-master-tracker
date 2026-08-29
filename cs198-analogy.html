@@ -423,6 +423,9 @@
 │    ├── 4. W3C WebDriver Protocol Serialization (Heap Dict ──► JSON String)
 │    └── 5. Application Layer Framing (HTTP POST /session)
 │
+├── 🛡️ HARDWARE MMU (Memory Boundary Gatekeeper)
+│    └── Translates virtual addresses through the TLB/page tables and enforces access permissions
+│
 ├── ⚙️ HOST OS KERNEL: XNU / MACH / BSD SUBSYSTEM (Mall GM & Infrastructure)
 │    ├── 6. POSIX Socket Layer & Kernel Space Transition
 │    ├── 7. TCP Layer: Segmentation, 32-bit Sequence Numbering, Checksum Seals
@@ -439,7 +442,12 @@
     <!-- ====================== PROLOGUE ====================== -->
     <section class="space-y-4 leading-relaxed">
       <h2 class="text-lg font-semibold text-gray-900">🏛 Prologue: Defining the Actors in Our Mall Ecosystem</h2>
-      <p>Before tracing a single byte across the bus, we must establish the physical and logical boundaries of our operating environment.</p>
+      <p>Before tracing a single byte across the bus, start with the reason this pipeline exists: a Python test cannot directly touch an iOS screen or call into another process's private memory. Its human-readable intent must cross runtime, process, kernel, protocol, and Apple security boundaries before XCTest can produce a native interaction.</p>
+      <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 space-y-2 text-sm">
+        <p><strong>The problem:</strong> The app and Simulator are protected environments. A person can touch the screen; a Python script has no finger and no privileged access to Apple's UI framework.</p>
+        <p><strong>The goal:</strong> Translate an instruction such as <code class="bg-white px-1">click Login</code> into a vendor-neutral command that eventually reaches Apple's native XCTest machinery.</p>
+        <p><strong>The bridge:</strong> CPython, W3C WebDriver, HTTP/TCP, the XNU kernel, Appium, and the XCUITest driver each solve one boundary. The rest of this module follows that handoff in order.</p>
+      </div>
       <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Architecture</h3>
       <ul class="list-disc pl-6 space-y-2">
         <li><strong>The Host System:</strong> A Unix-based operating system running on Apple Silicon or Intel hardware powered by the XNU Kernel (a hybrid of Carnegie Mellon's Mach microkernel and FreeBSD).</li>
@@ -576,6 +584,25 @@ driver = webdriver.Remote(
         <li><strong>The Process Isolation Problem:</strong> The Mall General Manager (macOS) has poured 3 feet of solid, reinforced soundproof concrete between Suite 204 (Python) and Suite 400 (Appium). The Python worker cannot shout through the wall, and the Node.js clerk cannot read Python's shorthand notebook.</li>
         <li><strong>The Standardized Triplicate Work Order (W3C JSON Serialization):</strong> The Python Worker pulls out the official Super Mall Triplicate Carbon-Copy Form (W3C WebDriver Protocol) and writes: Property: iOS · Framework Specialist: XCUITest · Target Unit: iPhone 16. Now any department in the mall — whether they speak JavaScript, Java, Go, or Rust — can read and execute the exact same form.</li>
       </ul>
+
+      <h3 class="font-semibold text-gray-800">🛡️ Memory Boundary Checkpoint: MMU, TLB, and Page Permissions</h3>
+      <p>The process heap above is private because isolation is enforced in hardware, not merely by a convention between Python and Node.js.</p>
+      <pre class="diagram">
+🐍 Python virtual address
+          │
+          ▼
+🛡️ MMU checks TLB ──► page tables on a cache miss
+          │
+          ├── permitted ──► mapped physical page in unified memory
+          └── forbidden ──► page-fault exception ──► kernel response
+      </pre>
+      <ul class="list-disc pl-6 space-y-2">
+        <li><strong>Address translation:</strong> Each process uses virtual addresses. The Memory Management Unit (MMU) translates them to physical memory pages, first checking the Translation Lookaside Buffer (TLB), a small cache of recent translations.</li>
+        <li><strong>Protection:</strong> Page-table entries carry read, write, and execute permissions. An invalid access triggers a page fault; an unrecoverable protection violation can terminate the process with <code class="bg-gray-100 px-1">EXC_BAD_ACCESS</code>/<code class="bg-gray-100 px-1">SIGSEGV</code>.</li>
+        <li><strong>Why serialization is necessary:</strong> Python and Appium can use identical-looking virtual addresses that map to entirely different physical pages. JSON plus IPC/network transport moves meaning across that boundary without exposing either heap.</li>
+        <li><strong>Apple unified memory:</strong> CPU and GPU share one physical memory architecture, reducing some data copies for workloads such as Simulator rendering. Unified physical memory does <em>not</em> remove process isolation; MMU permissions still keep Python, Appium, the kernel, and the Simulator logically separate.</li>
+      </ul>
+      <p class="text-sm bg-blue-50 border border-blue-200 rounded-lg px-4 py-3"><strong>🏬 Mall checkpoint:</strong> Every tenant writes familiar shelf numbers in a private catalog. The MMU is the security desk that translates each catalog entry to a real warehouse locker. The TLB is its fast-pass clipboard; page permissions are the badge rules. Sharing one basement warehouse never gives tenants access to one another's lockers.</p>
     </section>
 
     <!-- ====================== ACT IV ====================== -->
@@ -755,7 +782,7 @@ Content-Length: 154
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
-            <tr><td class="px-3 py-2 font-bold">0</td><td class="px-3 py-2">Host Platform</td><td class="px-3 py-2">macOS Kernel (XNU/Mach/BSD), Process Isolation via MMU.</td><td class="px-3 py-2"><strong>Mall General Manager:</strong> controls the building, enforces soundproof walls, runs internal utilities.</td></tr>
+            <tr><td class="px-3 py-2 font-bold">0</td><td class="px-3 py-2">Host &amp; Memory Boundary</td><td class="px-3 py-2">XNU manages processes; the MMU and TLB translate addresses and enforce page permissions over unified physical memory.</td><td class="px-3 py-2"><strong>Mall GM + Security Desk:</strong> manage the shared warehouse while keeping every tenant's locker catalog private.</td></tr>
             <tr><td class="px-3 py-2 font-bold">1</td><td class="px-3 py-2">Authoring Environment</td><td class="px-3 py-2">VS Code (Electron/V8) initiates POSIX fork()/execve().</td><td class="px-3 py-2"><strong>Architect's Drafting Bureau (Suite 101):</strong> sketches the blueprint and rings the General Manager.</td></tr>
             <tr><td class="px-3 py-2 font-bold">2</td><td class="px-3 py-2">Syntax Compilation</td><td class="px-3 py-2">CPython builds Lexer Tokens → AST → Bytecode → PVM.</td><td class="px-3 py-2"><strong>Python Automation Worker (Suite 204):</strong> diagrams grammar on a chalkboard, creates a muscle checklist.</td></tr>
             <tr><td class="px-3 py-2 font-bold">3</td><td class="px-3 py-2">Data Serialization</td><td class="px-3 py-2">PyDictObject heap pointers → contiguous W3C JSON string.</td><td class="px-3 py-2"><strong>Triplicate Work Order Form:</strong> private thoughts translated into universal trade language.</td></tr>
