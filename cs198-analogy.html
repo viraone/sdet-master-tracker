@@ -33,6 +33,21 @@
     .badge-text[contenteditable="true"] { outline: none; }
 
     /* ---------- Mobile SDET Tutor chat (Copilot-style) ---------- */
+    /* ── Dark workspace: blend page with side panels ── */
+    body {
+      background:
+        radial-gradient(1100px 500px at 60% -10%, rgba(99,102,241,0.10), transparent 60%),
+        radial-gradient(900px 500px at 10% 110%, rgba(168,85,247,0.06), transparent 60%),
+        linear-gradient(180deg, #1b1b23 0%, #121217 100%) !important;
+      background-attachment: fixed !important;
+      min-height: 100vh;
+    }
+    #content {
+      border-radius: 20px !important;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 24px 70px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.3) !important;
+    }
+
     #chat-fab {
       position: fixed; bottom: 22px; right: 22px; z-index: 60;
       width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
