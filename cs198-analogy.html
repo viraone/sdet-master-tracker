@@ -22,6 +22,14 @@
       user-select: none; font-size: 0.8rem;
     }
     .badge-del:hover { color: #dc2626; }
+    .badge-ctl {
+      margin-left: 8px; cursor: pointer; color: #94a3b8;
+      user-select: none; font-size: 0.8rem;
+    }
+    .badge-ctl:hover { color: #2563eb; }
+    .badge-save:hover { color: #16a34a; }
+    .analogy-badge.editing { outline: 2px solid #22c55e; background: #f0fdf4; }
+    .badge-text[contenteditable="true"] { outline: none; }
 
     /* ---------- Mobile SDET Tutor chat (Copilot-style) ---------- */
     #chat-fab {
@@ -536,6 +544,9 @@ Content-Length: 154
       const selection = window.getSelection();
       const text = selection.toString().trim();
 
+      // Don't pop the tooltip while editing a badge
+      if (selection.anchorNode?.parentElement?.closest('.analogy-badge.editing')) return;
+
       if (text.length > 0) {
         currentSelection = text;
         currentRange = selection.getRangeAt(0).cloneRange();
@@ -637,15 +648,61 @@ Content-Length: 154
       const label = document.createElement('strong');
       label.textContent = '💡 [Analogy]: ';
       badge.appendChild(label);
-      badge.appendChild(document.createTextNode(text));
+      const body = document.createElement('span');
+      body.className = 'badge-text';
+      body.textContent = text;
+      badge.appendChild(body);
+
+      const edit = document.createElement('span');
+      edit.className = 'badge-ctl badge-edit';
+      edit.title = 'Edit this analogy — type or paste a better one, then hit ✅ to save';
+      edit.textContent = '✏️';
+
+      const save = document.createElement('span');
+      save.className = 'badge-ctl badge-save';
+      save.title = 'Save changes';
+      save.textContent = '✅';
+      save.style.display = 'none';
+
       const del = document.createElement('span');
       del.className = 'badge-del';
       del.title = 'Remove this analogy';
       del.textContent = '🗑';
+
+      // Paste as plain text while editing
+      body.addEventListener('paste', (e) => {
+        if (body.contentEditable !== 'true') return;
+        e.preventDefault();
+        const t = (e.clipboardData || window.clipboardData).getData('text/plain');
+        document.execCommand('insertText', false, t);
+      });
+
+      edit.addEventListener('click', () => {
+        badge.classList.add('editing');
+        body.contentEditable = 'true';
+        edit.style.display = 'none';
+        del.style.display = 'none';
+        save.style.display = '';
+        body.focus();
+      });
+
+      save.addEventListener('click', () => {
+        badge.classList.remove('editing');
+        body.contentEditable = 'false';
+        save.style.display = 'none';
+        edit.style.display = '';
+        del.style.display = '';
+        const newText = body.textContent.trim();
+        saveAnnotations(loadAnnotations().map(a => a.id === id ? { ...a, text: newText } : a));
+      });
+
       del.addEventListener('click', () => {
         badge.remove();
         saveAnnotations(loadAnnotations().filter(a => a.id !== id));
       });
+
+      badge.appendChild(edit);
+      badge.appendChild(save);
       badge.appendChild(del);
       return badge;
     }
