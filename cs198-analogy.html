@@ -1,471 +1,105 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CS 198: Advanced Mobile Test Infrastructure — Interactive Lecture</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="CS 198 advanced mobile test infrastructure and systems architecture">
+  <title>CS 198: Advanced Mobile Test Infrastructure &amp; Systems Architecture</title>
   <style>
-    ::selection { background-color: #fef08a; }
-    pre.diagram {
-      background: #0f172a; color: #93c5fd; font-size: 0.72rem; line-height: 1.35;
-      padding: 1rem; border-radius: 0.5rem; overflow-x: auto; white-space: pre;
-    }
-    .analogy-badge {
-      display: inline-block; margin: 0 4px; padding: 4px 8px;
-      background: #eff6ff; border-left: 3px solid #3b82f6; border-radius: 4px;
-      font-size: 0.85rem; color: #1e3a8a; animation: fadeIn 0.2s ease-in-out;
-      white-space: pre-line;
-    }
-    .badge-del {
-      margin-left: 8px; cursor: pointer; color: #94a3b8; font-weight: bold;
-      user-select: none; font-size: 0.8rem;
-    }
-    .badge-del:hover { color: #dc2626; }
-    .badge-ctl {
-      margin-left: 8px; cursor: pointer; color: #94a3b8;
-      user-select: none; font-size: 0.8rem;
-    }
-    .badge-ctl:hover { color: #2563eb; }
-    .badge-save:hover { color: #16a34a; }
-    .analogy-badge.editing { outline: 2px solid #22c55e; background: #f0fdf4; }
-    .badge-text[contenteditable="true"] { outline: none; }
-
-    /* ---------- Mobile SDET Tutor chat (Copilot-style) ---------- */
-    /* ── Dark workspace: blend page with side panels ── */
-    body {
-      background:
-        radial-gradient(1100px 500px at 60% -10%, rgba(99,102,241,0.10), transparent 60%),
-        radial-gradient(900px 500px at 10% 110%, rgba(168,85,247,0.06), transparent 60%),
-        linear-gradient(180deg, #1b1b23 0%, #121217 100%) !important;
-      background-attachment: fixed !important;
-      min-height: 100vh;
-    }
-    #content {
-      border-radius: 20px !important;
-      border: 1px solid rgba(255,255,255,0.08);
-      box-shadow: 0 24px 70px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.3) !important;
-    }
-
-    #chat-fab {
-      position: fixed; bottom: 22px; right: 22px; z-index: 60;
-      width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
-      background: #2563eb; color: #fff; font-size: 22px; box-shadow: 0 4px 14px rgba(0,0,0,0.3);
-      transition: transform 0.15s;
-    }
-    #chat-fab:hover { transform: scale(1.08); }
-
-    /* ── Quiz Explorer (VS Code-style left sidebar) ── */
-    #quiz-fab {
-      position: fixed; bottom: 22px; left: 22px; z-index: 60;
-      width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
-      background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; font-size: 22px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.3); transition: transform 0.15s;
-    }
-    #quiz-fab:hover { transform: scale(1.08); }
-    #quiz-panel {
-      position: fixed; top: 0; left: 0; bottom: 0; z-index: 69;
-      width: 260px; max-width: 88vw;
-      background: linear-gradient(180deg, #16161d 0%, #101014 100%);
-      color: #cccccc;
-      border-right: 1px solid rgba(255,255,255,0.06);
-      box-shadow: 12px 0 40px rgba(0,0,0,0.4);
-      display: flex; flex-direction: column; overflow: hidden;
-      transform: translateX(-100%); transition: transform 0.2s ease-out;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 12.5px;
-    }
-    #quiz-panel.open { transform: translateX(0); }
-    #quiz-panel-resizer {
-      position: absolute; right: 0; top: 0; bottom: 0; width: 5px;
-      cursor: col-resize; z-index: 71;
-    }
-    #quiz-panel-resizer:hover, #quiz-panel-resizer.dragging { background: #6366f1; }
-    .qz-head {
-      height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 14px;
-      flex-shrink: 0; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em;
-      color: #8b8b96; text-transform: uppercase;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    .qz-head .spacer { flex: 1; }
-    .qz-head button {
-      background: none; border: none; color: #8b8b96; cursor: pointer; font-size: 13px;
-      width: 24px; height: 24px; border-radius: 6px; display: inline-flex;
-      align-items: center; justify-content: center;
-    }
-    .qz-head button:hover { color: #fff; background: rgba(255,255,255,0.08); }
-    .qz-tree { flex: 1; overflow-y: auto; padding: 6px 0 10px; }
-    .qz-tree::-webkit-scrollbar { width: 8px; }
-    .qz-tree::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-    .qz-folder {
-      display: flex; align-items: center; gap: 5px; padding: 4px 10px;
-      font-size: 11px; font-weight: 700; color: #b8b8c2; letter-spacing: 0.02em;
-      cursor: default; user-select: none;
-    }
-    .qz-folder .chev { font-size: 9px; color: #8b8b96; }
-    .qz-row {
-      display: flex; align-items: center; gap: 7px;
-      padding: 4px 10px 4px 26px; cursor: pointer; border-left: 2px solid transparent;
-      color: #c4c4ce; user-select: none;
-    }
-    .qz-row:hover { background: rgba(255,255,255,0.05); }
-    .qz-row.active { background: rgba(99,102,241,0.15); border-left-color: #6366f1; color: #e0e7ff; }
-    .qz-row .qz-icon { font-size: 12px; flex-shrink: 0; width: 16px; text-align: center; }
-    .qz-row .qz-name {
-      flex: 1; font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .qz-row .qz-badge {
-      font-size: 9.5px; font-weight: 800; padding: 1px 7px; border-radius: 99px; flex-shrink: 0;
-      background: rgba(255,255,255,0.07); color: #8b8b96;
-    }
-    .qz-row .qz-badge.good { background: rgba(52,211,153,0.15); color: #34d399; }
-    .qz-row .qz-badge.mid { background: rgba(251,191,36,0.15); color: #fbbf24; }
-    .qz-row .qz-badge.low { background: rgba(248,113,113,0.15); color: #f87171; }
-    .qz-foot {
-      flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.06);
-      padding: 8px 12px; font-size: 10.5px; color: #8b8b96; line-height: 1.6;
-    }
-    .qz-foot .qz-foot-title {
-      font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-      font-size: 9.5px; margin-bottom: 3px; color: #a5b4fc;
-    }
-    #chat-panel {
-      position: fixed; top: 0; right: 0; bottom: 0; z-index: 70;
-      width: 380px; max-width: 92vw;
-      background: linear-gradient(180deg, #16161d 0%, #101014 100%);
-      color: #e2e2e8;
-      border-left: 1px solid rgba(255,255,255,0.06);
-      box-shadow: -12px 0 40px rgba(0,0,0,0.5);
-      display: flex; flex-direction: column; overflow: hidden;
-      transform: translateX(100%); transition: transform 0.2s ease-out;
-      font-size: 13px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    }
-    #chat-panel.open { transform: translateX(0); }
-    #chat-resizer {
-      position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
-      cursor: col-resize; z-index: 71;
-    }
-    #chat-resizer:hover, #chat-resizer.dragging { background: #6366f1; }
-    body { transition: margin-right 0.2s ease-out, margin-left 0.2s ease-out; }
-    body.resizing-chat, body.resizing-chat #chat-panel,
-    body.resizing-quiz, body.resizing-quiz #quiz-panel { transition: none; }
-
-    /* ── Header ── */
-    .chat-head {
-      height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 14px;
-      flex-shrink: 0; font-size: 12px;
-      background: rgba(255,255,255,0.02);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      position: relative;
-    }
-    .chat-head::after {
-      content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
-      background: linear-gradient(90deg, transparent, #6366f1 30%, #a855f7 70%, transparent);
-      opacity: 0.7;
-    }
-    .chat-head .chat-title {
-      font-weight: 800; letter-spacing: 0.06em; font-size: 12px;
-      background: linear-gradient(90deg, #818cf8, #c084fc);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
-    .chat-head .chat-sub { font-size: 10px; color: #6b6b76; font-weight: 500; letter-spacing: 0.03em; }
-    .chat-head .spacer { flex: 1; }
-    .chat-head button {
-      background: none; border: none; color: #8b8b96; cursor: pointer; font-size: 14px;
-      width: 28px; height: 28px; border-radius: 8px; display: inline-flex;
-      align-items: center; justify-content: center; transition: all 0.15s;
-    }
-    .chat-head button:hover { color: #fff; background: rgba(255,255,255,0.08); }
-
-    /* ── Quiz progress bar ── */
-    /* ── Quiz view (inside left panel) ── */
-    #qz-quiz { display: none; flex-direction: column; flex: 1; min-height: 0; }
-    #quiz-panel.quizzing #qz-quiz { display: flex; }
-    #quiz-panel.quizzing .qz-tree, #quiz-panel.quizzing .qz-foot { display: none; }
-    .qzq-bar {
-      display: flex; align-items: center; gap: 8px; padding: 8px 12px;
-      background: linear-gradient(90deg, rgba(99,102,241,0.12), rgba(168,85,247,0.12));
-      border-bottom: 1px solid rgba(99,102,241,0.25);
-      font-size: 11.5px; flex-shrink: 0; color: #c7d2fe;
-    }
-    .qzq-bar button {
-      background: none; border: 1px solid rgba(255,255,255,0.15); color: #a5b4fc;
-      font-size: 12px; width: 24px; height: 24px; border-radius: 8px; cursor: pointer;
-      display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .qzq-bar button:hover { border-color: #f87171; color: #f87171; }
-    #qzq-title {
-      font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
-    }
-    .quiz-dots { display: flex; gap: 5px; }
-    .qdot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: rgba(255,255,255,0.15); transition: all 0.2s;
-    }
-    .qdot.done-full { background: #34d399; }
-    .qdot.done-half { background: #fbbf24; }
-    .qdot.done-zero { background: #f87171; }
-    .qdot.current { background: #818cf8; box-shadow: 0 0 8px #6366f1; }
-    #qz-feed { flex: 1; overflow-y: auto; padding: 12px 10px; display: flex; flex-direction: column; gap: 10px; }
-    #qz-feed::-webkit-scrollbar { width: 8px; }
-    #qz-feed::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-    .qz-card {
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 12px; padding: 9px 12px; font-size: 11.5px; line-height: 1.6;
-      color: #dcdce4; white-space: pre-line; word-wrap: break-word;
-      animation: msgIn 0.25s ease-out;
-    }
-    .qz-card.q { border-left: 3px solid #818cf8; background: rgba(129,140,248,0.08); font-weight: 500; }
-    .qz-card.you {
-      align-self: flex-end; max-width: 90%;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff;
-      border: none; border-radius: 12px 12px 4px 12px;
-    }
-    .qz-card.think { color: #8b8b96; animation: chatpulse 1.2s infinite; }
-    .qz-card.good { border-left: 3px solid #34d399; background: rgba(52,211,153,0.07); }
-    .qz-card.mid { border-left: 3px solid #fbbf24; background: rgba(251,191,36,0.07); }
-    .qz-card.bad { border-left: 3px solid #f87171; background: rgba(248,113,113,0.07); }
-    .qz-card.summary { border: 1px solid rgba(99,102,241,0.4); background: rgba(99,102,241,0.1); }
-    .qzq-input {
-      display: flex; gap: 8px; align-items: flex-end; flex-shrink: 0;
-      margin: 8px 10px 10px;
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 14px; padding: 5px 5px 5px 12px; transition: border-color 0.15s;
-    }
-    .qzq-input:focus-within { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
-    #qz-answer {
-      flex: 1; background: transparent; border: none; color: #e2e2e8;
-      font-size: 12px; padding: 5px 0; resize: none; height: 40px;
-      font-family: inherit; outline: none; line-height: 1.5;
-    }
-    #qz-answer::placeholder { color: #5c5c66; }
-    #qz-submit {
-      flex-shrink: 0; width: 30px; height: 30px;
-      background: linear-gradient(135deg, #6366f1, #a855f7);
-      border: none; border-radius: 10px; color: #fff; cursor: pointer; font-size: 13px;
-      display: inline-flex; align-items: center; justify-content: center;
-    }
-    #qz-submit:hover { transform: translateY(-1px); }
-    .qz-btn-row { display: flex; gap: 6px; }
-    .qz-again {
-      background: rgba(99,102,241,0.15); border: 1px solid #6366f1; color: #c7d2fe;
-      font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 99px; cursor: pointer;
-    }
-    .qz-again:hover { background: rgba(99,102,241,0.3); }
-
-    /* ── Messages ── */
-    .chat-messages {
-      flex: 1; overflow-y: auto; padding: 16px 14px;
-      display: flex; flex-direction: column; gap: 12px;
-    }
-    .chat-messages::-webkit-scrollbar { width: 8px; }
-    .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-    .chat-messages::-webkit-scrollbar-track { background: transparent; }
-    .msg { font-size: 12.5px; line-height: 1.6; max-width: 100%; animation: msgIn 0.25s ease-out; }
-    @keyframes msgIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-    .msg .msg-author { display: none; }
-    .msg.assistant .msg-author {
-      display: flex; align-items: center; gap: 6px;
-      font-weight: 700; font-size: 10px; margin-bottom: 5px;
-      color: #a5b4fc; letter-spacing: 0.08em; text-transform: uppercase;
-    }
-    .msg.user { align-self: flex-end; max-width: 88%; }
-    .msg.user .msg-body {
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: #fff; padding: 9px 13px; border-radius: 16px 16px 4px 16px;
-      box-shadow: 0 4px 14px rgba(99,102,241,0.25);
-    }
-    .msg.assistant .msg-body {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.07);
-      padding: 10px 13px; border-radius: 4px 16px 16px 16px;
-      color: #dcdce4;
-    }
-    .msg .msg-body { white-space: pre-line; word-wrap: break-word; }
-    .msg .code-chip {
-      display: inline-block; font-family: 'SF Mono', Menlo, monospace; font-size: 10.5px;
-      background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.15); border-radius: 99px;
-      padding: 3px 10px; color: #fde68a; max-width: 100%; overflow: hidden;
-      text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; margin-bottom: 5px;
-    }
-    .msg.user .code-chip { background: rgba(0,0,0,0.25); border-color: rgba(255,255,255,0.25); }
-    .msg .msg-actions { margin-top: 6px; display: flex; gap: 4px; }
-    .msg .msg-actions button {
-      background: none; border: none; color: #71717c; cursor: pointer; font-size: 10.5px;
-      padding: 3px 8px; border-radius: 6px; transition: all 0.15s;
-    }
-    .msg .msg-actions button:hover { color: #fff; background: rgba(255,255,255,0.07); }
-    .msg.thinking .msg-body {
-      color: #8b8b96; background: rgba(255,255,255,0.02);
-      animation: chatpulse 1.2s infinite;
-    }
-    @keyframes chatpulse { 50% { opacity: 0.35; } }
-    .chat-empty {
-      color: #dcdce4; font-size: 12.5px; line-height: 1.6; text-align: left;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.07);
-      padding: 10px 13px; border-radius: 4px 16px 16px 16px;
-      align-self: flex-start;
-    }
-
-    /* ── Footer / composer ── */
-    .chat-footer {
-      border-top: 1px solid rgba(255,255,255,0.06); padding: 10px 12px 12px; flex-shrink: 0;
-      background: rgba(255,255,255,0.015);
-    }
-    .quick-row { display: flex; gap: 6px; margin-bottom: 8px; }
-    .quick-chip {
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-      color: #b8b8c2; font-size: 10.5px; font-weight: 600; padding: 4px 11px;
-      border-radius: 99px; cursor: pointer; transition: all 0.15s;
-    }
-    .quick-chip:hover { border-color: #6366f1; color: #c7d2fe; background: rgba(99,102,241,0.12); }
-    #chat-selection {
-      display: none; align-items: center; gap: 6px; margin-bottom: 8px;
-      background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px; padding: 6px 10px;
-    }
-    #chat-selection.active { display: flex; }
-    #chat-selection .sel-text {
-      flex: 1; font-family: 'SF Mono', Menlo, monospace; font-size: 10.5px; color: #fde68a;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    #chat-selection button { background: none; border: none; cursor: pointer; font-size: 11px; color: #8b8b96; }
-    .chat-input-row {
-      display: flex; gap: 8px; align-items: flex-end;
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px; padding: 6px 6px 6px 14px; transition: border-color 0.15s;
-    }
-    .chat-input-row:focus-within { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
-    #chat-input {
-      flex: 1; background: transparent; border: none; border-radius: 0;
-      color: #e2e2e8; font-size: 12.5px; padding: 6px 0; resize: none; height: 44px;
-      font-family: inherit; outline: none; line-height: 1.5;
-    }
-    #chat-input::placeholder { color: #5c5c66; }
-    #btn-send {
-      flex-shrink: 0; width: 34px; height: 34px;
-      background: linear-gradient(135deg, #6366f1, #a855f7);
-      border: none; border-radius: 12px;
-      color: #fff; cursor: pointer; font-size: 14px;
-      display: inline-flex; align-items: center; justify-content: center;
-      transition: all 0.15s; box-shadow: 0 3px 10px rgba(99,102,241,0.35);
-    }
-    #btn-send:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(99,102,241,0.5); }
-
-    /* ── Diagram / quiz cards ── */
-    .mermaid-box {
-      background: #fff; border-radius: 12px; padding: 12px; margin-top: 8px;
-      overflow-x: auto; border: 1px solid rgba(255,255,255,0.1);
-    }
-    .mermaid-box svg { max-width: 100%; height: auto; }
-    .quiz-pick { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-    .quiz-pick button {
-      text-align: left; background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08); color: #d0d0da;
-      font-size: 11.5px; font-weight: 500; padding: 8px 12px; border-radius: 10px;
-      cursor: pointer; transition: all 0.15s;
-    }
-    .quiz-pick button:hover {
-      background: rgba(99,102,241,0.14); border-color: #6366f1;
-      color: #e0e7ff; transform: translateX(2px);
-    }
-    .quiz-hint-msg { padding-top: 0; }
-    .hint-btn {
-      background: none; border: none; color: #818cf8; cursor: pointer;
-      font-size: 11.5px; font-weight: 700; padding: 4px 0; text-align: left;
-    }
-    .hint-btn:hover:not(:disabled) { text-decoration: underline; }
-    .hint-btn:disabled { color: #5c5c66; cursor: default; }
-    .hint-item {
-      display: flex; gap: 8px; align-items: flex-start;
-      border-left: 3px solid #818cf8;
-      background: rgba(129,140,248,0.06);
-      border-radius: 0 8px 8px 0;
-      padding: 6px 10px; margin: 5px 0;
-      font-size: 11.5px; color: #d0d0da;
-      animation: msgIn 0.25s ease-out;
-    }
-    .hint-num { color: #818cf8; font-weight: 800; font-size: 10.5px; white-space: nowrap; margin-top: 1px; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-2px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    :root { --ink:#e8edf6; --muted:#95a1b5; --panel:#111827; --line:#283449; --blue:#65a7ff; --cyan:#56d5d0; --gold:#f5c86b; --purple:#b89cff; }
+    * { box-sizing:border-box }
+    html { scroll-behavior:smooth }
+    body { margin:0; color:var(--ink); background:#07101d; font:16px/1.72 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    body:before { content:""; position:fixed; inset:0; z-index:-1; background:radial-gradient(circle at 78% 4%,rgba(53,111,187,.22),transparent 33rem),radial-gradient(circle at 5% 50%,rgba(64,184,174,.1),transparent 28rem); }
+    .hero { min-height:72vh; display:grid; place-items:center; border-bottom:1px solid var(--line); padding:7rem 1.5rem; overflow:hidden; position:relative; }
+    .hero:after { content:"M5 MAX  /  XNU  /  W3C  /  TCP-IP  /  APPIUM"; position:absolute; bottom:1.5rem; color:#516079; font:700 .66rem/1 ui-monospace,monospace; letter-spacing:.22em; }
+    .hero-inner { width:min(1040px,100%); }
+    .eyebrow,.chapter-kicker { color:var(--cyan); text-transform:uppercase; letter-spacing:.18em; font:800 .72rem/1.4 ui-monospace,monospace; }
+    h1 { max-width:980px; margin:.7rem 0 1.2rem; font-size:clamp(2.7rem,7vw,6.8rem); line-height:.93; letter-spacing:-.065em; }
+    .subtitle { color:var(--muted); max-width:760px; font-size:clamp(1.05rem,2vw,1.35rem); }
+    .shell { width:min(1440px,100%); margin:auto; display:grid; grid-template-columns:300px minmax(0,860px); gap:5rem; padding:5rem 2rem 9rem; justify-content:center; }
+    nav { position:sticky; top:2rem; align-self:start; max-height:calc(100vh - 4rem); overflow:auto; padding-right:1rem; }
+    nav h2 { font-size:.72rem; color:#708098; text-transform:uppercase; letter-spacing:.18em; margin:0 0 1rem; }
+    nav a { display:grid; grid-template-columns:2rem 1fr; gap:.5rem; color:#9ba8bb; text-decoration:none; font-size:.78rem; line-height:1.35; padding:.62rem 0; border-bottom:1px solid rgba(255,255,255,.055); }
+    nav a:hover { color:white } nav a span { color:#4f6788; font-family:ui-monospace,monospace; }
+    article { min-width:0 }
+    .chapter { padding:0 0 5.5rem; scroll-margin-top:2rem; }
+    .chapter + .chapter { border-top:1px solid var(--line); padding-top:5.5rem; }
+    h2 { font-size:clamp(1.8rem,4vw,3.2rem); line-height:1.07; letter-spacing:-.04em; margin:.8rem 0 2rem; }
+    h3 { margin:2.7rem 0 1rem; font-size:1.25rem; line-height:1.3; color:#fff; }
+    p { color:#c3cbd8; margin:.9rem 0; }
+    code,pre { font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace; }
+    .code-panel { margin:2rem 0; background:#060b13; border:1px solid #26334a; border-radius:16px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,.22); }
+    .code-panel figcaption { padding:.65rem 1rem; border-bottom:1px solid #26334a; color:#6f819d; text-transform:uppercase; letter-spacing:.14em; font:700 .65rem/1 ui-monospace,monospace; }
+    pre { margin:0; padding:1.4rem; overflow:auto; color:#afd4ff; font-size:.78rem; line-height:1.45; }
+    .insight { margin:1rem 0; padding:1.1rem 1.25rem; border:1px solid var(--line); border-left-width:4px; border-radius:0 12px 12px 0; background:rgba(17,24,39,.72); }
+    .insight span { display:block; margin-bottom:.3rem; text-transform:uppercase; letter-spacing:.13em; font:800 .65rem/1.2 ui-monospace,monospace; }
+    .insight p { margin:0; color:#d2d9e5; }
+    .mall { border-left-color:var(--gold) } .mall span { color:var(--gold) }
+    .silicon { border-left-color:var(--blue) } .silicon span { color:var(--blue) }
+    .why { border-left-color:var(--purple) } .why span { color:var(--purple) }
+    .matrix { overflow:auto; margin-top:2rem; border:1px solid var(--line); border-radius:14px; }
+    table { border-collapse:collapse; min-width:980px; font-size:.82rem; line-height:1.5; }
+    th,td { padding:.9rem; text-align:left; vertical-align:top; border:1px solid var(--line); }
+    th { color:#fff; background:#172236; } td { color:#b9c3d2; }
+    .top { position:fixed; right:1.25rem; bottom:1.25rem; width:44px; height:44px; display:grid; place-items:center; border:1px solid #33445f; border-radius:50%; color:white; background:#111c2d; text-decoration:none; box-shadow:0 8px 30px #0008; }
+    @media(max-width:980px) { .shell { display:block; padding:3rem 1.2rem 7rem } nav { position:relative; top:auto; max-height:none; margin-bottom:4rem; padding:1.2rem; border:1px solid var(--line); border-radius:14px; } }
+    @media(max-width:600px) { .hero { min-height:64vh; padding:5rem 1.2rem } h1 { font-size:2.65rem } pre { font-size:.68rem } .chapter { padding-bottom:4rem } .chapter+.chapter { padding-top:4rem } }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-800 antialiased py-12 px-4 sm:px-6">
-
-  <main id="content" class="max-w-3xl mx-auto bg-white p-6 sm:p-10 rounded-xl shadow-md space-y-8">
-    <header class="border-b pb-5">
-      <h1 class="text-2xl font-bold text-gray-900">CS 198: Advanced Mobile Test Infrastructure &amp; Systems Architecture</h1>
-      <p class="text-sm text-gray-500 mt-1">Lecture Series: Deconstructing the iOS Test Automation Pipeline</p>
-      <p class="text-sm text-gray-500">Module 1: The Client Runtime, OS Kernel Boundaries, Protocol Serialization, and Transport Mechanics</p>
-      <p class="mt-3 text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded px-3 py-2">
-        ✨ <strong>Analogy AI is on:</strong> highlight any term you don't understand (e.g. <em>kernel</em>, <em>kqueue</em>, <em>lo0</em>, <em>AST</em>, <em>checksum</em>) and a tooltip will offer a Super&nbsp;Mall analogy you can insert inline.
-      </p>
-    </header>
-
-    <!-- ====================== TOPOLOGY ====================== -->
-    <section class="space-y-3">
-      <h2 class="text-lg font-semibold text-gray-900">Full Systems Topology Overview</h2>
-      <pre class="diagram">
-🏬 THE MACBOOK PRO (SUPER MALL) ── Managed by the macOS Kernel (Mall General Manager)
+<body id="top">
+  <header class="hero"><div class="hero-inner"><div class="eyebrow">Advanced systems lecture · Module 01</div><h1>CS 198: Advanced Mobile Test Infrastructure &amp; Systems Architecture</h1><p class="subtitle">Module 1: The Client Runtime, OS Kernel Boundaries, Protocol Serialization, and Transport Mechanics</p></div></header>
+  <div class="shell">
+    <nav aria-label="Course chapters"><h2>Course map</h2><a href="#full-systems-topology-the-m5-max-mega-mall"><span>01</span>🗺️ FULL SYSTEMS TOPOLOGY: THE M5 MAX MEGA-MALL</a><a href="#prologue-the-foundational-ecosystem"><span>02</span>🏛️ PROLOGUE: THE FOUNDATIONAL ECOSYSTEM</a><a href="#act-i-the-blueprint-inception-in-vs-code"><span>03</span>🎬 ACT I: THE BLUEPRINT INCEPTION IN VS CODE</a><a href="#act-ii-parsing-abstract-syntax-trees-ast-bytecode-compilation"><span>04</span>🎬 ACT II: PARSING, ABSTRACT SYNTAX TREES (AST), &amp; BYTECODE COMPILATION</a><a href="#act-iii-the-virtual-memory-heap-w3c-serialization"><span>05</span>🎬 ACT III: THE VIRTUAL MEMORY HEAP &amp; W3C SERIALIZATION</a><a href="#memory-boundary-deep-dive-mmu-tlb-unified-memory"><span>06</span>🛡️ MEMORY BOUNDARY DEEP DIVE: MMU, TLB, &amp; UNIFIED MEMORY</a><a href="#act-iv-application-layer-framing-http-1-1-post-session"><span>07</span>🎬 ACT IV: APPLICATION LAYER FRAMING (HTTP/1.1 POST /session)</a><a href="#act-v-the-transport-network-machinery-tcp-ip"><span>08</span>🎬 ACT V: THE TRANSPORT &amp; NETWORK MACHINERY (TCP/IP)</a><a href="#act-vi-the-loopback-driver-lo0-zero-wire-transit"><span>09</span>🎬 ACT VI: THE LOOPBACK DRIVER (lo0) &amp; ZERO-WIRE TRANSIT</a><a href="#act-vii-appium-receiving-dock-kqueue-xcuitest-dispatch"><span>10</span>🎬 ACT VII: APPIUM RECEIVING DOCK, kqueue, &amp; XCUITest DISPATCH</a><a href="#act-viii-complete-systems-mall-translation-matrix"><span>11</span>📋 ACT VIII: COMPLETE SYSTEMS &amp; MALL TRANSLATION MATRIX</a></nav>
+    <article><section id="full-systems-topology-the-m5-max-mega-mall" class="chapter"><div class="chapter-kicker">Chapter 01</div><h2>🗺️ FULL SYSTEMS TOPOLOGY: THE M5 MAX MEGA-MALL</h2>
+<figure class="code-panel"><figcaption>System map</figcaption><pre><code>==================================================================================================
+                 🏢 THE 16.2-INCH M5 MAX MEGA-MALL &amp; LOGISTICS COMPLEX 🏢
+==================================================================================================
+ [ 🖥️ FRONT GLASS PAVILION ] ── 16.2-inch Liquid Retina XDR Display (Visual Front)
+ [ 🗄️ DEEP ARCHIVE VAULT   ] ── 2TB NVMe SSD (Permanent Blueprint &amp; OS Storage)
+ [ 👷 OPERATIONS CREW     ] ── 18-Core CPU (18 General Floor Managers executing tasks)
+ [ 🎨 DIGITAL SIGNAGE CREW ] ── 40-Core GPU (40 High-Speed Visual Simulation Renderers)
+ [ 📦 THE CENTRAL BASEMENT ] ── 128-Acre Unified Warehouse (128GB Unified Memory / RAM)
+==================================================================================================</code></pre></figure>
+<figure class="code-panel"><figcaption>System map</figcaption><pre><code>🏬 THE M5 MAX MACBOOK PRO (THE MEGA-MALL)
 │
-├── 💻 SUITE 101: VS CODE (The Architectural Drafting Bureau)
-│    │  Spawns POSIX Subprocess via Kernel fork()/execve()
+├── 💻 SUITE 101: VS CODE (Architectural Drafting Bureau)
+│    │  Spawns POSIX Subprocess via Kernel fork() / execve()
 │    ▼
-├── 🐍 SUITE 204: CPYTHON RUNTIME PROCESS (The Python Automation Worker)
-│    ├── 1. Source Lexing & AST (Abstract Syntax Tree) Generation
-│    ├── 2. Bytecode Compilation & PVM (Python Virtual Machine) Execution
+├── 🐍 SUITE 204: CPYTHON RUNTIME (The Python Automation Worker: Monty)
+│    ├── 1. Source Lexing &amp; AST Generation
+│    ├── 2. Bytecode Compilation &amp; PVM Execution
 │    ├── 3. Memory Heap Allocation (PyDictObject Capabilities)
-│    ├── 4. W3C WebDriver Protocol Serialization (Heap Dict ──► JSON String)
+│    ├── 4. W3C WebDriver Protocol Serialization (Dict ──► JSON String)
 │    └── 5. Application Layer Framing (HTTP POST /session)
 │
-├── 🛡️ HARDWARE MMU (Memory Boundary Gatekeeper)
-│    └── Translates virtual addresses through the TLB/page tables and enforces access permissions
+├── 🛡️ THE HARDWARE MMU (The Silicon Centurion &amp; Security Gatekeeper)
+│    └── Translates Virtual Addresses via TLB/Page Tables to 128GB Unified Memory
 │
-├── ⚙️ HOST OS KERNEL: XNU / MACH / BSD SUBSYSTEM (Mall GM & Infrastructure)
-│    ├── 6. POSIX Socket Layer & Kernel Space Transition
-│    ├── 7. TCP Layer: Segmentation, 32-bit Sequence Numbering, Checksum Seals
-│    ├── 8. IP Layer: Routing Header Encapsulation (127.0.0.1 ─► 127.0.0.1)
-│    └── 9. The lo0 Loopback Driver: Internal Virtual Vacuum Pipeline
+├── ⚙️ HOST OS KERNEL: XNU / MACH / BSD (Commander XNU: Mall General Manager)
+│    ├── 6. POSIX Socket Layer Transition (`sys_socket.c`)
+│    ├── 7. TCP Layer: Mr. TCP (Segmentation, 32-bit Sequence IDs, Checksum Seals)
+│    ├── 8. IP Layer: Mr. IP (Routing Header Encapsulation: 127.0.0.1 ─► 127.0.0.1)
+│    └── 9. The lo0 Loopback Driver: Internal Pneumatic Vacuum Wall Chute
 │
-└── 🏪 SUITE 400: APPIUM SERVER / NODE.JS (Central Logistics & Dispatch Store)
-     ├── 10. kqueue / Event Demultiplexing & Inbound Socket Buffer Ingestion
-     ├── 11. TCP Stream Reassembly, Checksum Verification, & HTTP Frame Parsing
-     └── 12. In-Memory Route Handoff to XCUITest Driver (iOS Dept. Manager)
-      </pre>
-    </section>
-
-    <!-- ====================== PROLOGUE ====================== -->
-    <section class="space-y-4 leading-relaxed">
-      <h2 class="text-lg font-semibold text-gray-900">🏛 Prologue: Defining the Actors in Our Mall Ecosystem</h2>
-      <p>Before tracing a single byte across the bus, start with the reason this pipeline exists: a Python test cannot directly touch an iOS screen or call into another process's private memory. Its human-readable intent must cross runtime, process, kernel, protocol, and Apple security boundaries before XCTest can produce a native interaction.</p>
-      <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 space-y-2 text-sm">
-        <p><strong>The problem:</strong> The app and Simulator are protected environments. A person can touch the screen; a Python script has no finger and no privileged access to Apple's UI framework.</p>
-        <p><strong>The goal:</strong> Translate an instruction such as <code class="bg-white px-1">click Login</code> into a vendor-neutral command that eventually reaches Apple's native XCTest machinery.</p>
-        <p><strong>The bridge:</strong> CPython, W3C WebDriver, HTTP/TCP, the XNU kernel, Appium, and the XCUITest driver each solve one boundary. The rest of this module follows that handoff in order.</p>
-      </div>
-      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Architecture</h3>
-      <ul class="list-disc pl-6 space-y-2">
-        <li><strong>The Host System:</strong> A Unix-based operating system running on Apple Silicon or Intel hardware powered by the XNU Kernel (a hybrid of Carnegie Mellon's Mach microkernel and FreeBSD).</li>
-        <li><strong>Process Isolation:</strong> Every application executes in its own Virtual Address Space enforced by the Hardware Memory Management Unit (MMU). Process A (Python) cannot access the RAM of Process B (Node.js/Appium) without explicit Inter-Process Communication (IPC) or network sockets.</li>
-        <li><strong>Network Stack:</strong> A kernel-space subsystem implementing the standard 4-layer DARPA/Internet protocol suite (L7 Application down to L2/L1 Link/Physical).</li>
-      </ul>
-      <h3 class="font-semibold text-gray-800">🏬 The Super Mall Analogy</h3>
-      <ul class="list-disc pl-6 space-y-2">
-        <li><strong>The Super Mall:</strong> Your entire MacBook.</li>
-        <li><strong>The Mall General Manager (macOS Kernel / XNU):</strong> The ultimate authority of the building. Holds the master keys, controls physical access, assigns private office suites, monitors electricity and memory, builds soundproof concrete walls between tenants (Process Isolation), and maintains the mall's high-speed internal pneumatic vacuum tube system (The Network Stack &amp; Loopback Interface).</li>
-        <li><strong>The Mall Tenants:</strong> Applications running in the mall (VS Code, Python, Appium, Xcode). They are strictly confined to their leased office suites and cannot walk through walls into other stores.</li>
-      </ul>
-    </section>
-
-    <!-- ====================== ACT I ====================== -->
-    <section class="space-y-4 leading-relaxed">
-      <h2 class="text-lg font-semibold text-gray-900">🎬 Act I: The Blueprint Inception in VS Code</h2>
-      <pre class="diagram"># test_login.py
+└── 🏪 SUITE 400: APPIUM SERVER / NODE.JS (Central Freight &amp; Logistics Hub: Penny)
+     ├── 10. kqueue Brass Alarm &amp; Inbound Socket Buffer Ingestion
+     ├── 11. TCP Stream Reassembly, Checksum Verification &amp; HTTP Parsing
+     └── 12. Direct In-Memory Office Handoff to Inspector XCUITest</code></pre></figure>
+</section>
+<section id="prologue-the-foundational-ecosystem" class="chapter"><div class="chapter-kicker">Chapter 02</div><h2>🏛️ PROLOGUE: THE FOUNDATIONAL ECOSYSTEM</h2>
+<h3>1. The Core Problem: Crossing System Boundaries</h3>
+<figure class="code-panel"><figcaption>System map</figcaption><pre><code>[ Python Script (User Space) ] ───( Solid Concrete / Security Glass )───► [ iOS App / Simulator (Sandboxed) ]</code></pre></figure>
+<div class="insight mall"><span>Mall metaphor</span><p>Imagine standing in the bustling main concourse of the mall. Behind a pane of three-inch-thick, reinforced bulletproof glass sits the Apple Showcase Gallery, displaying a pristine iPhone running an app. You hold a piece of paper that says, "Click the Login button." You cannot walk through the glass. You cannot tap the screen with your hand. You cannot toss a rock through the window without mall security tackling you to the tile floor. If you want that button tapped, your written request must travel through official postal channels, pass armed security turnstiles, clear building inspectors, and be handed to a certified Apple technician authorized to work behind the glass.</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>The iOS Simulator and target applications execute within isolated sandbox profiles enforced by macOS security daemons. An automated test script written in Python executes in unprivileged user space. It possesses zero direct memory pointers, zero hardware interrupts, and zero direct execution privileges inside Apple's private XCTest.framework or the Simulator's UI display server.</p></div>
+<div class="insight why"><span>Why it matters</span><p>System Integrity and Zero-Trust Security. Modern operating systems are designed around isolation. If an unprivileged user space script could directly manipulate UI elements or access the memory of another application without strict authentication and protocol boundaries, malicious software could easily hijack user sessions, read sensitive keychain data, or crash the host kernel.</p></div>
+<h3>2. The Host Hardware &amp; OS Architecture</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>The 16.2-inch M5 Max Mega-Mall is an enterprise facility. Its operations are overseen by Commander XNU, an old-school military building director (the Mach-BSD hybrid kernel) who sits in the penthouse command office. He commands 18 Floor Managers (CPU Cores) who race across the building executing tenant tasks, and 40 Digital Signage Artists (GPU Cores) dedicated to rendering high-definition visuals on the 16.2-inch Grand Glass Pavilion. Beneath the retail level lies a 128-Acre Unified Subterranean Warehouse (128GB RAM), while deep underground sits the 2-Terabyte Steel Archival Vault (2TB SSD) holding permanent blueprints.</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>The host runs macOS on Apple Silicon (M5 Max SoC). The kernel integrates Carnegie Mellon’s Mach microkernel (thread scheduling, IPC, tasks), FreeBSD (POSIX compliance, networking, file systems), and IOKit/DriverKit (hardware driver frameworks). Compute resources are divided into performance and efficiency core clusters alongside a massive unified memory architecture (UMA).</p></div>
+<div class="insight why"><span>Why it matters</span><p>High-Throughput Parallelism. Combining Mach’s lightweight message-passing primitives with FreeBSD's battle-tested POSIX network stack allows macOS to schedule thousands of concurrent threads across asymmetric CPU core clusters while maintaining sub-millisecond I/O response times.</p></div>
+</section>
+<section id="act-i-the-blueprint-inception-in-vs-code" class="chapter"><div class="chapter-kicker">Chapter 03</div><h2>🎬 ACT I: THE BLUEPRINT INCEPTION IN VS CODE</h2>
+<figure class="code-panel"><figcaption>Python</figcaption><pre><code># test_login.py
 from appium import webdriver
 from appium.options.ios import XCUITestOptions
 
@@ -477,75 +111,54 @@ options.device_name = "iPhone 16"
 driver = webdriver.Remote(
     command_executor="http://127.0.0.1:4723",
     options=options
-)</pre>
-      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Reality</h3>
-      <ol class="list-decimal pl-6 space-y-2">
-        <li><strong>File Storage on NVMe Disk:</strong> Your test script <code class="bg-gray-100 px-1">test_login.py</code> resides as inert UTF-8 encoded text on your APFS (Apple File System) storage volume.</li>
-        <li><strong>Execution Invocation:</strong> Inside the VS Code integrated terminal, you execute <code class="bg-gray-100 px-1">pytest test_login.py</code> (or click Run).</li>
-        <li><strong>The Kernel System Call (fork / execve):</strong> VS Code (itself an Electron/V8 engine) cannot execute Python directly. It communicates with the macOS Kernel via POSIX APIs (posix_spawn() or fork() followed by execve()).</li>
-        <li><strong>Process Space Creation:</strong> The macOS Kernel allocates a new Mach task, creates an isolated virtual memory map (Page Tables, Stack, Heap, Text Segment), assigns a unique Process ID (PID), loads the python3 executable binary into memory, and points the Instruction Pointer (PC register) to CPython's entry point.</li>
-      </ol>
-      <h3 class="font-semibold text-gray-800">🏬 Super Mall Analogy</h3>
-      <ul class="list-disc pl-6 space-y-2">
-        <li><strong>VS Code (The Architectural Drafting Bureau — Suite 101):</strong> A high-tech design office on the first floor. The automation engineer sits at a drafting desk and writes down a project blueprint (test_login.py) on paper.</li>
-        <li><strong>The General Manager's Intervention:</strong> When the engineer clicks Run, the drafting office picks up the red hotline to the Mall General Manager (macOS Kernel): <em>"We need a licensed Python contractor to execute a job immediately."</em></li>
-        <li><strong>Opening Suite 204:</strong> The General Manager unlocks a brand-new private office suite (Process PID 24088), equips it with private desks and file cabinets (Virtual Memory Allocation), and hires a dedicated Python Automation Worker.</li>
-      </ul>
-    </section>
-
-    <!-- ====================== ACT II ====================== -->
-    <section class="space-y-4 leading-relaxed">
-      <h2 class="text-lg font-semibold text-gray-900">🎬 Act II: Parsing, Abstract Syntax Trees (AST), &amp; Bytecode Compilation</h2>
-      <pre class="diagram">
-┌─────────────────┐   ┌─────────────────┐   ┌────────────────┐   ┌──────────────────┐
-│ Raw Python Text │──►│  Lexer Tokens   │──►│ AST Structure  │──►│ CPython Bytecode │
-│  (Source Code)  │   │ (Grammar Units) │   │ (Grammar Tree) │   │ (Opcodes in RAM) │
-└─────────────────┘   └─────────────────┘   └────────────────┘   └────────┬─────────┘
-                                                                          ▼
-                                                            ┌───────────────────────┐
-                                                            │ Python Virtual Machine│
-                                                            │ (PVM Execution Loop)  │
-                                                            └───────────────────────┘
-      </pre>
-      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Reality</h3>
-      <p>The CPython runtime engine does not interpret human-readable text directly; it operates as a two-stage compiled bytecode virtual machine.</p>
-      <ol class="list-decimal pl-6 space-y-2">
-        <li><strong>Lexical Analysis (Tokenization):</strong> The CPython tokenizer scans the raw stream of characters, discarding whitespace and comments, and converts text into a continuous stream of atomic language tokens (NAME, OP, STRING, NEWLINE).</li>
-        <li><strong>Parsing &amp; AST Construction:</strong> The parser applies Python's formal PEG (Parsing Expression Grammar) to transform the flat token stream into a hierarchical graph: the Abstract Syntax Tree (AST).
-          <pre class="diagram mt-2">Module(
-  body=[
-    Assign(
-      targets=[Name(id='driver', ctx=Store())],
-      value=Call(
-        func=Attribute(value=Name(id='webdriver'), attr='Remote'),
-        args=[],
-        keywords=[
-          keyword(arg='command_executor',
-                  value=Constant(value='http://127.0.0.1:4723')),
-          keyword(arg='options', value=Name(id='options'))
-        ]
-      )
-    )
-  ]
-)</pre>
-          <em>Systems Significance:</em> If the syntax is malformed (e.g., unmatched brackets), compilation aborts instantly with a SyntaxError before any socket or network layer is initialized.</li>
-        <li><strong>Bytecode Compilation:</strong> The CPython compiler walks the AST nodes and emits a sequence of low-level 16-bit instructions (Bytecode) encapsulated in a PyCodeObject.</li>
-        <li><strong>PVM Evaluation Loop:</strong> The Python Virtual Machine iterates through opcodes (LOAD_NAME, LOAD_CONST, CALL_FUNCTION_KW), manipulating values on its internal evaluation stack.</li>
-      </ol>
-      <h3 class="font-semibold text-gray-800">🏬 Super Mall Analogy</h3>
-      <ul class="list-disc pl-6 space-y-2">
-        <li><strong>The Raw Work Order:</strong> The Python Worker in Suite 204 receives the raw text blueprint from the drafting bureau.</li>
-        <li><strong>The AST Chalkboard Scaffolding:</strong> The worker walks to a massive chalkboard and sketches an AST Family Tree — "Root Goal: Assign a driver variable"; "Branch A: Connect to remote service at 127.0.0.1:4723"; "Branch B: Apply the iOS capabilities package."</li>
-        <li><strong>Validation Against the Mall Code:</strong> If any branch violates the structural grammar of the Mall Building Code, the worker drops their chalk, throws a red flag (SyntaxError), and refuses to proceed.</li>
-        <li><strong>The Bytecode Muscle Checklist:</strong> Once validated, the worker writes an exact, step-by-step physical task list: Opcode 01: walk to storage shelf; Opcode 02: pick up standard capability clipboard; Opcode 03: write destination address; Opcode 04: execute dispatch procedure.</li>
-      </ul>
-    </section>
-
-    <!-- ====================== ACT III ====================== -->
-    <section class="space-y-4 leading-relaxed">
-      <h2 class="text-lg font-semibold text-gray-900">🎬 Act III: The Virtual Memory Heap &amp; The Serialization Layer</h2>
-      <pre class="diagram">
-┌──────────────────────────────────────────────────┐
+)</code></pre></figure>
+<figure class="code-panel"><figcaption>System map</figcaption><pre><code>[ 2TB NVMe SSD Vault ] ──► [ VS Code: Suite 101 ] ──► [ XNU: fork()/execve() ] ──► [ Suite 204: PID 24088 ]</code></pre></figure>
+<h3>1. File Storage on NVMe Disk</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Down in the mall's 2TB Deep Archival Vault, our automation script (test_login.py) rests completely inert, like a rolled-up blueprint in a steel safety deposit box. The ink is dry; nothing is moving.</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>The script exists as non-volatile UTF-8 encoded text on an APFS (Apple File System) partition within the high-speed NVMe flash storage array.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Non-Volatile Persistence. System memory (RAM) is volatile and loses all stored charges when powered off. The NVMe SSD permanently stores file bytes using solid-state NAND flash cells until the operating system explicitly pages them into active memory.</p></div>
+<h3>2. The Execution System Call (fork() / execve())</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>In Suite 101 (The Architectural Drafting Bureau / VS Code), our lead designer looks at the blueprint and clicks "Run." But Suite 101 is purely a design studio; the architects don't do physical field labor. The architect picks up the red emergency hotline directly to Commander XNU (The Mall GM): "Commander! We need a licensed Python contractor hired, assigned an office, and put to work immediately on this blueprint!"</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>VS Code (running within an Electron/Node.js runtime) executes a POSIX system call: fork() (or posix_spawn()) clones the calling process, and execve() overlays the child process image with the compiled Mach-O binary of the /usr/local/bin/python3 runtime.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Privilege Separation and Process Lifecycle Management. User applications cannot spawn processes out of thin air. Only the OS Kernel possesses the Ring 0 architectural privileges required to register process table entries, allocate thread execution states, and assign hardware time slices.</p></div>
+<h3>3. Suite 204 Allocation (Process Space Creation)</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Commander XNU takes a master key from his belt, marches down the hall, and unlocks Suite 204 (Process ID 24088). He pours thick, soundproof concrete walls around the room, rolls in a fresh set of empty desks, chalkboards, and filing cabinets (Virtual Memory Allocation), and hires Monty, an energetic Python field worker, assigning him to report to one of the 18 CPU Floor Managers.</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>The XNU Kernel instantiates a new Mach task, creates an isolated virtual address space (Page Tables, Stack, Heap, Text Segment), assigns a unique Process ID (PID 24088), loads the dynamic linker (dyld), and points the ARM64 Program Counter (PC register) to CPython’s entry point.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Fault Containment and Blast Radius Control. By giving Suite 204 its own isolated memory map and PID, the operating system guarantees that if Monty makes a fatal error or crashes, only Suite 204 collapses. The rest of the mall—VS Code, Appium, and macOS—remains completely unaffected.</p></div>
+</section>
+<section id="act-ii-parsing-abstract-syntax-trees-ast-bytecode-compilation" class="chapter"><div class="chapter-kicker">Chapter 04</div><h2>🎬 ACT II: PARSING, ABSTRACT SYNTAX TREES (AST), &amp; BYTECODE COMPILATION</h2>
+<figure class="code-panel"><figcaption>System map</figcaption><pre><code>┌─────────────────┐       ┌─────────────────┐       ┌────────────────┐       ┌──────────────────┐
+│ Raw Python Text │ ───►  │  Lexer Tokens   │ ───►  │ AST Structure  │ ───►  │ CPython Bytecode │
+│  (Source Code)  │       │ (Grammar Units) │       │ (Grammar Tree) │       │ (Opcodes in RAM) │
+└─────────────────┘       └─────────────────┘       └────────────────┘       └────────┬─────────┘
+                                                                                      ▼
+                                                                        ┌───────────────────────┐
+                                                                        │ Python Virtual Machine│
+                                                                        │ (PVM Execution Loop)  │
+                                                                        └───────────────────────┘</code></pre></figure>
+<h3>1. Lexical Analysis (Tokenization)</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Monty sits at his new desk in Suite 204, unrolls the blueprint paper, grabs a pair of scissors, and cuts away all the empty white margins and pencil scribbles (whitespace and comments). He cuts the sentences into distinct, color-coded index cards: [NAME: options], [OPERATOR: =], [NAME: XCUITestOptions].</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>CPython’s tokenizer reads the raw stream of UTF-8 characters and converts them into an atomic stream of language tokens defined in Python's formal grammar specification.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Simplifying Language Processing. Raw source text contains arbitrary spacing and commentary. Tokenization strips out non-semantic characters so the downstream compiler only processes structured language units.</p></div>
+<h3>2. Parsing &amp; Abstract Syntax Tree (AST) Construction</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Monty stands in front of a massive chalkboard. He takes his index cards and organizes them into a Family Tree of Intent:</p></div>
+<p>Trunk (Root): Assign variable driver.</p>
+<p>Main Branch: Execute webdriver.Remote.</p>
+<p>Sub-Branch: Attach the iOS options package and connect to http://127.0.0.1:4723.</p>
+<p>If Monty spots a broken sentence structure (like two equals signs in a row: options ==), he drops his chalk, throws a bright red penalty flag (SyntaxError), and refuses to proceed.</p>
+<div class="insight silicon"><span>Silicon reality</span><p>The parser applies Python's PEG (Parsing Expression Grammar) to transform the flat token stream into a hierarchical Abstract Syntax Tree (ast.Module).</p></div>
+<div class="insight why"><span>Why it matters</span><p>Structural Validation Before Execution. The runtime must mathematically prove that the code is grammatically correct before allocating memory, spinning up threads, or opening network sockets. Catching syntax errors at the AST phase prevents corrupted instructions from reaching the execution engine.</p></div>
+<h3>3. Bytecode Compilation &amp; PVM Execution Loop</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>With the tree validated, Monty writes out an actionable, numbered checklist on a clipboard:</p></div>
+<p>Task 01: LOAD_NAME (webdriver)</p>
+<p>Task 02: LOAD_CONST ("http://127.0.0.1:4723")</p>
+<p>Task 03: CALL_FUNCTION_KW</p>
+<p>One of the 18 CPU Floor Managers stands behind Monty, rapidly grabbing each clipboard instruction and executing it in lockstep.</p>
+<div class="insight silicon"><span>Silicon reality</span><p>CPython compiles the AST into 16-bit numeric instructions (Bytecode) encapsulated within a PyCodeObject. The Python Virtual Machine (PVM) loop executes these opcodes sequentially on an active hardware thread, pushing and popping memory addresses on its private evaluation stack.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Deterministic Execution Speed. Re-evaluating raw human text repeatedly in a loop is extremely slow. Bytecode compiles human language into low-level numeric opcodes that the CPU can execute in fractions of a nanosecond.</p></div>
+</section>
+<section id="act-iii-the-virtual-memory-heap-w3c-serialization" class="chapter"><div class="chapter-kicker">Chapter 05</div><h2>🎬 ACT III: THE VIRTUAL MEMORY HEAP &amp; W3C SERIALIZATION</h2>
+<figure class="code-panel"><figcaption>System map</figcaption><pre><code>┌──────────────────────────────────────────────────┐
 │  CPYTHON PROCESS HEAP (Private Virtual Memory)   │
 │                                                  │
 │  PyDictObject (Memory Pointers, Hash Table)      │
@@ -558,91 +171,107 @@ driver = webdriver.Remote(
 ┌──────────────────────────────────────────────────┐
 │    CONTIGUOUS UTF-8 W3C JSON BYTE BUFFER         │
 │  "{\"capabilities\":{\"alwaysMatch\":{...}}}"    │
-└──────────────────────────────────────────────────┘
-      </pre>
-      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Reality</h3>
-      <p>When Python executes <code class="bg-gray-100 px-1">options = XCUITestOptions()</code>, it populates a native dynamic data structure in user-space RAM: a PyDictObject.</p>
-      <ol class="list-decimal pl-6 space-y-2">
-        <li><strong>The In-Memory Isolation Problem:</strong> This dictionary resides as fragmented C pointers and hash tables in the private virtual memory heap of PID 24088. The Appium Server is a completely separate process (Node.js PID 18402) with its own distinct Google V8 JavaScript engine heap. Node.js cannot read CPython memory addresses.</li>
-        <li><strong>The W3C WebDriver Serialization:</strong> To cross process boundaries, data must be flattened into a language-agnostic representation. The Appium-Python-Client library inspects the XCUITestOptions instance, traverses internal property maps, and formats the properties into a strict JSON payload compliant with the W3C WebDriver Specification (Section 7: Sessions).</li>
-        <li><strong>The Output String:</strong>
-          <pre class="diagram mt-2">{
-  "capabilities": {
-    "alwaysMatch": {
-      "platformName": "iOS",
-      "appium:automationName": "XCUITest",
-      "appium:deviceName": "iPhone 16"
-    },
-    "firstMatch": [{}]
-  }
-}</pre></li>
-        <li><strong>Encoding to Bytes:</strong> The JSON string is encoded into a contiguous stream of UTF-8 binary bytes ready for transport.</li>
-      </ol>
-      <h3 class="font-semibold text-gray-800">🏬 Super Mall Analogy</h3>
-      <ul class="list-disc pl-6 space-y-2">
-        <li><strong>The Worker's Private Mind (The RAM Heap):</strong> The Python Worker has all the test ideas, capabilities, and device requirements floating in their own brain and private shorthand notebook in Suite 204.</li>
-        <li><strong>The Process Isolation Problem:</strong> The Mall General Manager (macOS) has poured 3 feet of solid, reinforced soundproof concrete between Suite 204 (Python) and Suite 400 (Appium). The Python worker cannot shout through the wall, and the Node.js clerk cannot read Python's shorthand notebook.</li>
-        <li><strong>The Standardized Triplicate Work Order (W3C JSON Serialization):</strong> The Python Worker pulls out the official Super Mall Triplicate Carbon-Copy Form (W3C WebDriver Protocol) and writes: Property: iOS · Framework Specialist: XCUITest · Target Unit: iPhone 16. Now any department in the mall — whether they speak JavaScript, Java, Go, or Rust — can read and execute the exact same form.</li>
-      </ul>
-
-      <h3 class="font-semibold text-gray-800">🛡️ Memory Boundary Checkpoint: MMU, TLB, and Page Permissions</h3>
-      <p>The process heap above is private because isolation is enforced in hardware, not merely by a convention between Python and Node.js.</p>
-      <pre class="diagram">
-🐍 Python virtual address
-          │
-          ▼
-🛡️ MMU checks TLB ──► page tables on a cache miss
-          │
-          ├── permitted ──► mapped physical page in unified memory
-          └── forbidden ──► page-fault exception ──► kernel response
-      </pre>
-      <ul class="list-disc pl-6 space-y-2">
-        <li><strong>Address translation:</strong> Each process uses virtual addresses. The Memory Management Unit (MMU) translates them to physical memory pages, first checking the Translation Lookaside Buffer (TLB), a small cache of recent translations.</li>
-        <li><strong>Protection:</strong> Page-table entries carry read, write, and execute permissions. An invalid access triggers a page fault; an unrecoverable protection violation can terminate the process with <code class="bg-gray-100 px-1">EXC_BAD_ACCESS</code>/<code class="bg-gray-100 px-1">SIGSEGV</code>.</li>
-        <li><strong>Why serialization is necessary:</strong> Python and Appium can use identical-looking virtual addresses that map to entirely different physical pages. JSON plus IPC/network transport moves meaning across that boundary without exposing either heap.</li>
-        <li><strong>Apple unified memory:</strong> CPU and GPU share one physical memory architecture, reducing some data copies for workloads such as Simulator rendering. Unified physical memory does <em>not</em> remove process isolation; MMU permissions still keep Python, Appium, the kernel, and the Simulator logically separate.</li>
-      </ul>
-      <p class="text-sm bg-blue-50 border border-blue-200 rounded-lg px-4 py-3"><strong>🏬 Mall checkpoint:</strong> Every tenant writes familiar shelf numbers in a private catalog. The MMU is the security desk that translates each catalog entry to a real warehouse locker. The TLB is its fast-pass clipboard; page permissions are the badge rules. Sharing one basement warehouse never gives tenants access to one another's lockers.</p>
-    </section>
-
-    <!-- ====================== ACT IV ====================== -->
-    <section class="space-y-4 leading-relaxed">
-      <h2 class="text-lg font-semibold text-gray-900">🎬 Act IV: Application Layer Framing (HTTP/1.1 POST /session)</h2>
-      <pre class="diagram">POST /session HTTP/1.1
+└──────────────────────────────────────────────────┘</code></pre></figure>
+<h3>1. In-Memory Heap Allocation (PyDictObject)</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>As the checklist runs, Monty sets up a desk drawer in Suite 204 with internal sticky notes and colored ribbons pointing to different boxes:</p></div>
+<p>Sticky Note "platformName" points to a box containing "iOS".</p>
+<p>Sticky Note "automationName" points to a box containing "XCUITest".</p>
+<p>Sticky Note "deviceName" points to a box containing "iPhone 16".</p>
+<div class="insight silicon"><span>Silicon reality</span><p>CPython’s memory allocator (PyObject_Malloc) creates a PyDictObject on the process heap. This is an open-addressed hash table populated with 64-bit memory pointers referencing string objects in virtual memory.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Dynamic Parameter Negotiation. Appium is a universal automation router. It has no built-in knowledge of what operating system you are targeting. This capabilities dictionary is the essential negotiation payload that tells Appium exactly which mobile operating system, framework, and device configuration to spin up.</p></div>
+<h3>2. The Process Isolation Problem</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Monty looks at his sticky notes and realizes: "Across the mall sits Suite 400 (Appium). But Commander XNU has poured solid, soundproof concrete walls between our offices. I cannot yell across the hall, and the Appium clerk cannot read the private sticky notes on my desk."</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>CPython (PID 24088) and Appium’s Node.js engine (PID 18402) occupy completely distinct, non-overlapping Virtual Address Spaces. The raw heap pointer 0x104b3a290 on Python's stack has zero meaning or validity inside Node.js's V8 heap.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Memory Protection and Privacy. Direct cross-process memory access is prohibited by design. If processes could read and write to arbitrary memory locations, a crash or memory leak in one application could corrupt the state of another, introducing hard-to-debug instabilities and severe security vulnerabilities.</p></div>
+<h3>3. W3C WebDriver Protocol Serialization (JSON Encoding)</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Monty pulls out an official Triplicate Carbon-Copy Shipping Form (The W3C WebDriver Protocol). He flattens the sticky notes from his desk into a universal, standardized document:</p></div>
+<figure class="code-panel"><figcaption>JSON</figcaption><pre><code>{"capabilities": {"alwaysMatch": {"platformName": "iOS", "appium:automationName": "XCUITest", "appium:deviceName": "iPhone 16"}}}
+Now, any clerk in any suite—whether they speak Python, JavaScript, Java, or C#—can read and execute the exact same instructions.</code></pre></figure>
+<div class="insight silicon"><span>Silicon reality</span><p>The Appium-Python-Client serializes the C-level dictionary into a contiguous UTF-8 encoded JSON string adhering strictly to the W3C WebDriver Specification (Section 7: Sessions).</p></div>
+<div class="insight why"><span>Why it matters</span><p>Language-Agnostic Interoperability. CPython uses C structs with dynamic pointers; Node.js uses Google V8 heap objects. Flat UTF-8 JSON text provides a universal, cross-platform standard that bridges disparate programming languages and runtime architectures.</p></div>
+</section>
+<section id="memory-boundary-deep-dive-mmu-tlb-unified-memory" class="chapter"><div class="chapter-kicker">Chapter 06</div><h2>🛡️ MEMORY BOUNDARY DEEP DIVE: MMU, TLB, &amp; UNIFIED MEMORY</h2>
+<figure class="code-panel"><figcaption>System map</figcaption><pre><code>+---------------------------------------------------------------------------------------------------+
+|                        128-ACRE UNIFIED BASEMENT WAREHOUSE (128GB RAM)                            |
+|                                                                                                   |
+|  [Locker #000109]         [Locker #394820]         [Locker #849301]        [Locker #998231]       |
+|   Python AST / Heap        Appium V8 Heap Buffer    Kernel Network Buffers  macOS UI Framework    |
+|   (Test Code Data)         (Parsed JSON Payloads)   (TCP Pneumatic Chute)   (Simulator Pixels)    |
++---------------------------------------------------------------------------------------------------+
+                                                 ▲
+                                                 │ Physical Address Translation &amp; Security Checks
+                            [ 🛡️ THE HARDWARE MMU GATEKEEPER 🛡️ ]
+                            (The Silicon Centurion on M5 Max Die)
+                                                 ▲
+                        ┌────────────────────────┴────────────────────────┐
+                        │                                                 │
+            Suite 204: Python Private Catalog                 Suite 400: Appium Private Catalog
+            "Aisle 0x0000 to 0xFFFF"                          "Aisle 0x0000 to 0xFFFF"</code></pre></figure>
+<h3>1. Virtual Address Space &amp; The Identical Store Blueprint</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Commander XNU hands Monty in Suite 204 and Penny in Suite 400 the exact same standardized store catalog. Both catalogs claim the tenant owns shelves numbered from Aisle 0x0000 to Aisle 0xFFFF. Monty puts his order on his "Aisle 0x1000", and Penny puts her invoices on her own "Aisle 0x1000". Neither knows the other is using the exact same aisle numbers, and their stock never gets mixed up.</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>The operating system assigns each 64-bit process an isolated Virtual Address Space running from 0x000000000000 to 0x7FFFFFFFFFFF. User space code has zero visibility into actual physical RAM chips.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Preventing Address Collisions. Without virtual memory, applications would have to coordinate which physical RAM addresses to use. If two programs attempted to write to the same physical memory location, one would overwrite the other's data. Virtual memory provides every application with the illusion of continuous, exclusive access to system memory.</p></div>
+<h3>2. The Silicon Centurion (MMU) &amp; The VIP Fast-Pass (TLB)</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>When Monty reaches for "Aisle 0x1000", he is intercepted by the Silicon Centurion (The Hardware MMU) standing at the entrance to the basement warehouse. The Centurion checks his master ledger (Page Tables) and translates the request: "Monty's Aisle 0x1000 maps to Locker #394820 down in the 128-Acre Basement." To keep things moving quickly, the Centurion keeps a pocket notebook (The TLB VIP Fast-Pass) listing recent translations, letting Monty bypass the big ledger entirely on subsequent trips.</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>The Memory Management Unit (MMU) on the M5 Max translates Virtual Addresses to Physical Addresses via hierarchical 16KB Page Tables. The CPU's on-die Translation Lookaside Buffer (TLB) caches recent translations, allowing lookups to resolve in fractions of a nanosecond.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Eliminating Address Translation Latency. Traversing multi-level page tables in system RAM for every single memory access would severely bottleneck the CPU. The on-die TLB hardware cache resolves more than 99% of translation requests almost instantly.</p></div>
+<h3>3. Catching Trespassers: Laser Alarms &amp; Instant Eviction</h3>
+<figure class="code-panel"><figcaption>System map</figcaption><pre><code>[ Monty: Suite 204 ]
+       │
+       │ Tries to open: "Aisle 0xFFFF_KERNEL_OFFICE" (Kernel Space)
+       ▼
+[ 🚨 THE SILICON CENTURION (Hardware MMU) 🚨 ]
+       │
+       ├─► 1. Freezes the M5 Max CPU core instantly at the electrical level!
+       ├─► 2. Sounds an electrical alarm: Hardware Exception Trap!
+       │
+       ▼
+[ 🏢 COMMANDER XNU (The Mall GM) ]
+       │
+       └─► Issues an immediate eviction notice:
+           💥 EXC_BAD_ACCESS (SIGSEGV - Segmentation Fault)
+           💥 Process Python terminated with Exit Code 139.</code></pre></figure>
+<div class="insight mall"><span>Mall metaphor</span><p>If Monty tries to open a door marked Aisle 0xFFFF_KERNEL_OFFICE to snoop around Commander XNU's private desk, a laser alarm trips instantly. The Silicon Centurion freezes Monty in place and alerts Commander XNU. The Commander immediately issues a fatal eviction notice: EXC_BAD_ACCESS / SIGSEGV, shutting down Suite 204 on the spot.</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>The MMU enforces hardware page protections (PROT_READ, PROT_WRITE, PROT_EXEC, and Apple Silicon's W^X: Write XOR Execute). If userland code attempts to access unmapped memory or write into executable segments, the MMU fires a Hardware Page Fault Exception Trap that triggers a process termination signal.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Hardware-Level Security and Exploit Prevention. W^X enforcement guarantees that memory marked for data (such as an incoming JSON buffer) can never be executed as machine code. This prevents malicious buffer-overflow attacks from executing arbitrary payload code within the runtime.</p></div>
+<h3>4. Apple Silicon 128GB Unified Memory Architecture (UMA)</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>In older mall complexes (Intel PCs with separate graphics cards), the 18 Floor Managers (CPU) had their own storage basement, and the 40 Display Artists (GPU) worked in a separate building across town. Moving an image required loading boxes onto a slow delivery truck (PCIe bus). In our M5 Max Mega-Mall, all 18 Managers and 40 Artists work in the exact same 128-Acre Basement. When Monty passes an image to the Display Artists, he simply points to the locker, and the artists read the data instantly.</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>The 18-core CPU, 40-core GPU, and Neural Engine share a single high-bandwidth physical memory bus. Data buffers do not need to be duplicated across discrete memory pools; they are shared directly via memory pointers.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Zero-Copy High-Frame-Rate Rendering. Transferring large frame buffers between CPU system memory and discrete GPU memory consumes bandwidth and introduces latency. Apple's Unified Memory allows the GPU to render iOS Simulator frames directly to the 16.2-inch Liquid Retina XDR Display with zero copy overhead.</p></div>
+</section>
+<section id="act-iv-application-layer-framing-http-1-1-post-session" class="chapter"><div class="chapter-kicker">Chapter 07</div><h2>🎬 ACT IV: APPLICATION LAYER FRAMING (HTTP/1.1 POST /session)</h2>
+<figure class="code-panel"><figcaption>HTTP</figcaption><pre><code>POST /session HTTP/1.1
 Host: 127.0.0.1:4723
 User-Agent: appium/python-client 4.0.0 (CPython/3.11.4 Darwin/23.5.0)
 Accept: application/json
-Accept-Encoding: identity
 Content-Type: application/json; charset=utf-8
 Content-Length: 154
 
-{"capabilities":{"alwaysMatch":{"platformName":"iOS","appium:automationName":"XCUITest","appium:deviceName":"iPhone 16"},"firstMatch":[{}]}}</pre>
-      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Reality</h3>
-      <p>A JSON string by itself has no operational context; the receiver does not know if it is supposed to read data, create a session, or delete a resource. The Python runtime wraps the JSON payload inside a standard HTTP/1.1 Request Envelope:</p>
-      <ol class="list-decimal pl-6 space-y-2">
-        <li><strong>Request Line:</strong> <code class="bg-gray-100 px-1">POST /session HTTP/1.1</code> — POST is the semantic verb indicating resource creation; /session is the standardized W3C endpoint for initiating automation contexts; HTTP/1.1 is the framing protocol version.</li>
-        <li><strong>Metadata Headers:</strong> <code class="bg-gray-100 px-1">Host: 127.0.0.1:4723</code> directs the request to the local authority at TCP port 4723. <code class="bg-gray-100 px-1">Content-Type: application/json; charset=utf-8</code> instructs the receiving parser to instantiate its JSON decoder. <code class="bg-gray-100 px-1">Content-Length: 154</code> is the exact byte count of the body payload, preventing premature socket stream termination (under-reading) or blocking (over-reading).</li>
-        <li><strong>Delimiter:</strong> The mandatory CRLF token pair (\r\n\r\n) that marks the definitive boundary between protocol metadata and the payload body.</li>
-      </ol>
-      <h3 class="font-semibold text-gray-800">🏬 Super Mall Analogy</h3>
-      <ul class="list-disc pl-6 space-y-2">
-        <li><strong>The Official Mall Dispatch Envelope (HTTP Envelope):</strong> The Python Worker takes the serialized triplicate work order and slides it into a heavy-duty official dispatch envelope.</li>
-        <li><strong>Stamping the Routing Slip:</strong> Department Action: "Create &amp; Launch New Shift (POST /session)" · Destination Building Wing: "Mall Suite Extension 4723" · Envelope Contents: "Standardized JSON Document" · Certified Weight Seal: "Payload Length = 154 Characters".</li>
-        <li>This guarantees that when the dispatch desk receives the package, they know instantly how heavy it is and which department must open it.</li>
-      </ul>
-    </section>
-
-    <!-- ====================== ACT V ====================== -->
-    <section class="space-y-4 leading-relaxed">
-      <h2 class="text-lg font-semibold text-gray-900">🎬 Act V: The Transport &amp; Network Machinery (The Active Role of TCP/IP)</h2>
-      <p>Here, software leaves user space and enters the realm of Operating System Kernel Networking.</p>
-      <pre class="diagram">
-┌────────────────────────────────────────────────────────────────────┐
+{"capabilities":{"alwaysMatch":{"platformName":"iOS","appium:automationName":"XCUITest","appium:deviceName":"iPhone 16"},"firstMatch":[{}]}}</code></pre></figure>
+<figure class="code-panel"><figcaption>System map</figcaption><pre><code>[ JSON Payload (154 Bytes) ] ──► [ HTTP Request Envelope Framing ] ──► [ Ready for Kernel Socket ]</code></pre></figure>
+<h3>1. The HTTP Request Line &amp; Endpoint Routing</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Monty takes his triplicate carbon-copy form and slides it into a standardized Heavy-Duty Mall Postal Envelope. He stamps the front in bold red ink:</p></div>
+<p>ACTION: CREATE NEW WORK SHIFT (POST) · DESTINATION: /session · RULEBOOK: HTTP/1.1.</p>
+<div class="insight silicon"><span>Silicon reality</span><p>The Python client builds an HTTP/1.1 framing envelope. POST indicates resource creation, and /session is the standardized W3C endpoint for establishing an automation context.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Clear Protocol Routing. Raw JSON contains no instructions on what action to take. The HTTP verb and endpoint provide clear, unambiguous routing instructions to the receiving server.</p></div>
+<h3>2. Metadata Headers &amp; Framing Delimiters</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Monty fills in the rest of the envelope's routing slip:</p></div>
+<p>Deliver to Counter: 4723 · Contents: JSON Document · Certified Weight: Exactly 154 Characters.</p>
+<p>He seals the envelope flap with a double red wax line (CRLF: \r\n\r\n).</p>
+<div class="insight silicon"><span>Silicon reality</span><p>The client appends standardized HTTP headers:</p></div>
+<p>Host: 127.0.0.1:4723 routes to the target port.</p>
+<p>Content-Type: application/json instructs the receiver to parse the body as JSON.</p>
+<p>Content-Length: 154 defines the exact byte size of the payload.</p>
+<p>\r\n\r\n (CRLF pair) provides the required boundary marker between headers and payload.</p>
+<div class="insight why"><span>Why it matters</span><p>Preventing Message Boundary Ambiguity. In continuous TCP byte streams, the receiver must know exactly where the headers end and how many body bytes to read. Content-Length prevents under-reading (parsing incomplete data) and over-reading (blocking the connection while waiting for more data).</p></div>
+</section>
+<section id="act-v-the-transport-network-machinery-tcp-ip" class="chapter"><div class="chapter-kicker">Chapter 08</div><h2>🎬 ACT V: THE TRANSPORT &amp; NETWORK MACHINERY (TCP/IP)</h2>
+<figure class="code-panel"><figcaption>System map</figcaption><pre><code>┌────────────────────────────────────────────────────────────────────┐
 │ APPLICATION LAYER (HTTP Payload: 154 Bytes + Headers = ~320 Bytes) │
 └──────────────────────────────────┬─────────────────────────────────┘
                                    ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│ TCP SUBSYSTEM (The Slicing, Sequencing, & Integrity Machinery)     │
+│ TCP SUBSYSTEM (The Slicing, Sequencing, &amp; Integrity Machinery)     │
 │  [ TCP Segment Header ]                                            │
 │  ├── Source Port: 54192 (Ephemeral) ──► Destination Port: 4723    │
 │  ├── Sequence Number: 0x3F8A1201    ──► Ack Number: 0x00000000    │
@@ -651,47 +280,33 @@ Content-Length: 154
 └──────────────────────────────────┬─────────────────────────────────┘
                                    ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│ IP SUBSYSTEM (The Packet Addressing & Routing Machinery)           │
+│ IP SUBSYSTEM (The Packet Addressing &amp; Routing Machinery)           │
 │  [ IPv4 Datagram Header ]                                          │
 │  ├── Version: 4          ──► Header Length: 20 Bytes              │
 │  ├── Protocol: 0x06 (TCP)──► Total Length: 360 Bytes              │
 │  ├── Source IP: 127.0.0.1──► Destination IP: 127.0.0.1            │
 │  └── Time-to-Live (TTL): 64                                       │
-└────────────────────────────────────────────────────────────────────┘
-      </pre>
-      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Reality</h3>
-      <p>When Python invokes the POSIX system call send() (or write() to the file descriptor representing the open socket), the execution context transitions from User Space (Ring 3) to Kernel Space (Ring 0).</p>
-      <p><strong>1. The TCP Layer: Segmentation, Sequencing, &amp; Reliability</strong></p>
-      <ul class="list-disc pl-6 space-y-2">
-        <li><strong>Transmission Control Protocol (TCP):</strong> A connection-oriented, reliable byte-stream protocol.</li>
-        <li><strong>The 3-Way Handshake (SYN → SYN-ACK → ACK):</strong> Prior to data transfer, the kernel initiates a handshake between an OS-assigned ephemeral source port (e.g., 54192) and target port 4723 to synchronize sequence numbers and establish sliding window buffers.</li>
-        <li><strong>Segmentation &amp; Sequence Numbering:</strong> The TCP engine reads the HTTP data from the socket send buffer (SO_SNDBUF), divides the stream into chunks bounded by the Maximum Segment Size (MSS), and stamps each segment with an incrementing 32-bit Sequence Number so out-of-order segments can be reassembled correctly.</li>
-        <li><strong>Integrity Checksums:</strong> The TCP layer computes a mathematical 16-bit one's complement checksum over the header, payload, and a pseudo-IP header. If a single bit flips, the packet is discarded and retransmitted.</li>
-        <li><strong>The PUSH Flag (PSH):</strong> The kernel sets the PSH flag in the TCP header, instructing Appium's receiving socket buffer not to wait for more data, but to immediately push these bytes up to the Node.js application layer.</li>
-      </ul>
-      <p><strong>2. The IP Layer: Packet Encapsulation &amp; Addressing</strong></p>
-      <ul class="list-disc pl-6 space-y-2">
-        <li><strong>Internet Protocol (IP):</strong> The packet-routing protocol of the network layer.</li>
-        <li><strong>Header Encapsulation:</strong> The kernel wraps the TCP segment inside an IPv4 Datagram.</li>
-        <li><strong>Addressing:</strong> It attaches the 32-bit Source IP address (127.0.0.1) and Destination IP address (127.0.0.1).</li>
-        <li><strong>Protocol Demultiplexing Field:</strong> It sets the Protocol field to 0x06 (identifying the encapsulated payload as TCP).</li>
-      </ul>
-      <h3 class="font-semibold text-gray-800">🏬 Super Mall Analogy: The Pneumatic Dispatch Mechanics &amp; The Couriers</h3>
-      <ol class="list-decimal pl-6 space-y-2">
-        <li><strong>The Handshake Scout:</strong> Before launching the payload, Mr. TCP sends a tiny test bell ringing through the tube to Store 4723 — "Are you awake and accepting work orders?" (SYN) · "Yes, wide awake! Window is open for 64KB of orders!" (SYN-ACK) · "Understood! Sending the work order capsules right now!" (ACK).</li>
-        <li><strong>Slicing the Document:</strong> The mall's pneumatic tube lines are rigid; they cannot fit a bulky, irregular envelope. Mr. TCP takes Python's work order and slices it into uniform, rigid index cards.</li>
-        <li><strong>The Sequence Manifest:</strong> On each card, Mr. TCP writes in bold ink: "CAPSULE SEQUENCE: #1 OF 1 — BYTE RANGE 0 TO 320". (A 5-megabyte file upload would be sliced into 3,500 sequentially numbered cards.)</li>
-        <li><strong>The Hot-Wax Checksum Seal:</strong> Mr. TCP calculates the exact weight and character count of the card and stamps a hot-wax seal with the numeric signature 0xE4A2: "If this seal arrives cracked or smudged by a single dot of ink, discard it immediately and demand a replacement."</li>
-        <li><strong>Mr. IP Encapsulates into the Capsule:</strong> Mr. IP takes Mr. TCP's sealed index card and drops it inside an airtight Pneumatic Steel Cylinder (The IP Datagram).</li>
-        <li><strong>Stenciling the Destination:</strong> FROM: This Building (127.0.0.1), Desk #54192 · TO: This Building (127.0.0.1), Counter Slot #4723 · CARGO TYPE: Class 06 (Certified TCP Document).</li>
-      </ol>
-    </section>
-
-    <!-- ====================== ACT VI ====================== -->
-    <section class="space-y-4 leading-relaxed">
-      <h2 class="text-lg font-semibold text-gray-900">🎬 Act VI: The Loopback Driver (lo0) &amp; The Inbound Socket Queue</h2>
-      <pre class="diagram">
-                        THE LOOPBACK TRANSIT
+└────────────────────────────────────────────────────────────────────┘</code></pre></figure>
+<h3>1. Transitioning to Kernel Space (sys_socket.c)</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Monty cannot walk down the mall hallway himself. He walks to the wall of Suite 204 and slides the sealed envelope through the Security Dispatch Counter Window directly into Commander XNU's central sorting facility.</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>Python executes the POSIX sendto() system call. This executes an ARM64 svc (Supervisor Call) instruction, switching privilege levels from User Space (Ring 3) to Kernel Space (Ring 0) within the XNU networking subsystem (bsd/kern/sys_socket.c).</p></div>
+<div class="insight why"><span>Why it matters</span><p>Privileged Hardware Control. Only the operating system kernel is authorized to allocate networking buffers, bind to communication ports, and trigger network transmissions. Restricting user space applications from direct network hardware access maintains system stability.</p></div>
+<h3>2. TCP Segmentation, 32-Bit Sequence IDs, &amp; Checksums</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>In the sorting room, Mr. TCP, an ultra-meticulous postal inspector, prepares the package for transit:</p></div>
+<p>He slices oversized documents into uniform index cards (Segmentation).</p>
+<p>He stamps a sequential tracking number on each card (Sequence Number: 0x3F8A1201).</p>
+<p>He calculates an exact mathematical weight hash and stamps a hot-wax seal (Checksum: 0xE4A2): "If this seal arrives cracked or altered by even a speck of dust, discard it and request a re-delivery!"</p>
+<p>He marks the card with a bright red PSH (Urgent) tag: "Deliver immediately; do not let this sit in a bin!"</p>
+<div class="insight silicon"><span>Silicon reality</span><p>The kernel's TCP subsystem divides the data stream into segments bounded by the Maximum Segment Size (MSS), assigns 32-bit sequence numbers, computes a 16-bit one's complement checksum across headers and data, and sets the PSH flag.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Guaranteed, Ordered Delivery. Network connections can drop, reorder, or corrupt packets. TCP guarantees that every byte is delivered reliably and reassembled in the correct order, automatically requesting retransmissions if an error or packet drop occurs.</p></div>
+<h3>3. IP Datagram Encapsulation</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Mr. IP, a heavy-duty pneumatic tube handler, takes Mr. TCP's sealed parcel and drops it inside an airtight Steel Pneumatic Cylinder:</p></div>
+<p>FROM: Suite 204 (127.0.0.1), Desk #54192 · TO: Suite 400 (127.0.0.1), Intake Counter #4723 · CARGO CLASS: 0x06 (Certified TCP Document).</p>
+<div class="insight silicon"><span>Silicon reality</span><p>The IP layer wraps the TCP segment within an IPv4 Datagram header, configuring Source IP (127.0.0.1), Destination IP (127.0.0.1), Protocol (0x06 for TCP), and TTL (64).</p></div>
+<div class="insight why"><span>Why it matters</span><p>Consistent Network Addressing. Encapsulating transport segments inside IP datagrams allows the operating system to handle local communication and remote network traffic using the same unified networking API.</p></div>
+</section>
+<section id="act-vi-the-loopback-driver-lo0-zero-wire-transit" class="chapter"><div class="chapter-kicker">Chapter 09</div><h2>🎬 ACT VI: THE LOOPBACK DRIVER (lo0) &amp; ZERO-WIRE TRANSIT</h2>
+<figure class="code-panel"><figcaption>System map</figcaption><pre><code>THE LOOPBACK TRANSIT
 ┌─────────────────────────┐              ┌─────────────────────────┐
 │ 🐍 PYTHON RUNTIME       │              │ 🏪 APPIUM SERVER        │
 │ Outbound Socket Buffer  │              │ Inbound Socket Buffer   │
@@ -708,30 +323,20 @@ Content-Length: 154
 ┌─────────────────────────────────────────────────────┴──────────────┐
 │ 🌀 THE VIRTUAL LOOPBACK PSEUDO-DEVICE DRIVER (lo0: if_loop.c)      │
 │ Direct Memory DMA Pointer Swap: never touches physical Wi-Fi NICs  │
-└─────────────────────────────────────────────────────────────────────┘
-      </pre>
-      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Reality</h3>
-      <ol class="list-decimal pl-6 space-y-2">
-        <li><strong>Routing Table Lookup:</strong> The kernel network routing engine checks the Destination IP (127.0.0.1) against the host routing table: <code class="bg-gray-100 px-1">127.0.0.1 → 127.0.0.1 · UH · lo0</code>.</li>
-        <li><strong>The lo0 Pseudo-Device:</strong> The destination is identified as the local loopback interface (lo0).</li>
-        <li><strong>Bypassing Physical Hardware:</strong> The packet is not transmitted to a physical Network Interface Controller (NIC) such as Wi-Fi (en0) or Thunderbolt Ethernet. No radio transmission, no serialization across copper/fiber, and no ARP (Address Resolution Protocol) resolution.</li>
-        <li><strong>Memory Pointer Handoff in Kernel Space:</strong> The kernel's if_loop.c driver intercepts the packet's mbuf (memory buffer pointer) in kernel RAM and instantaneously loops the outbound packet back into the kernel's inbound network queue (ipintr()).</li>
-        <li><strong>Inbound Demultiplexing:</strong> The IP layer confirms the destination address and strips off the 20-byte IP header; it inspects the protocol field (0x06) and hands the payload to the TCP subsystem; the TCP subsystem validates the 16-bit checksum (0xE4A2), matches destination port 4723, and appends the raw byte payload into Appium's Inbound Socket Receive Buffer (SO_RCVBUF).</li>
-      </ol>
-      <h3 class="font-semibold text-gray-800">🏬 Super Mall Analogy</h3>
-      <ul class="list-disc pl-6 space-y-2">
-        <li><strong>The Mall's Internal Vacuum Loopback Tube System (lo0):</strong> The pneumatic steel capsule does not get loaded into an outdoor FedEx truck. It never exits the front revolving doors of the mall into the city streets (The Internet / Wi-Fi).</li>
-        <li><strong>The General Manager's Chute Switchboard:</strong> The Mall General Manager (Kernel) looks at the capsule's stencil: "Destination: 127.0.0.1? That's not across town — that's right here in the Southcenter Super Mall building!"</li>
-        <li><strong>The High-Speed Wall Chute (lo0):</strong> The General Manager flips a mechanical diverter inside the wall. The capsule drops into Tube Line 0 (lo0), a dedicated, low-friction vacuum pipeline running directly behind the mall drywall.</li>
-        <li><strong>Instantaneous Arrival:</strong> WHOOOOSH-POP! In a fraction of a millisecond, the capsule shoots through the wall and lands with a heavy metallic THUMP! inside the secure intake hopper at Mail Slot #4723 in the Appium Store.</li>
-      </ul>
-    </section>
-
-    <!-- ====================== ACT VII ====================== -->
-    <section class="space-y-4 leading-relaxed">
-      <h2 class="text-lg font-semibold text-gray-900">🎬 Act VII: The Appium Receiving Dock, kqueue, &amp; The Handshake to XCUITest</h2>
-      <pre class="diagram">
-┌──────────────────────────────────────────────────────────────────────┐
+└─────────────────────────────────────────────────────────────────────┘</code></pre></figure>
+<h3>1. Routing Table Lookup &amp; The lo0 Pseudo-Device</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Mr. IP examines the cylinder's destination stencil: 127.0.0.1.</p></div>
+<p>"Hold on! This package isn't addressed to a building across town. It's addressed to Suite 400 right here in our mall! Do not load this onto the outdoor delivery trucks."</p>
+<div class="insight silicon"><span>Silicon reality</span><p>The kernel's routing engine queries the host routing table: 127.0.0.1 -&gt; 127.0.0.1 via lo0. The OS recognizes that the destination is the local host.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Avoiding Unnecessary Hardware Overhead. Bypassing external network hardware interfaces (such as Wi-Fi chips or Ethernet controllers) avoids transmission overhead, radio serialization delays, and unnecessary driver operations for local traffic.</p></div>
+<h3>2. Zero-Wire Kernel Memory Pointer Handoff (if_loop.c)</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Mr. IP drops the cylinder directly into Pneumatic Tube Line 0 (lo0)—a dedicated, frictionless vacuum chute running inside the mall walls.</p></div>
+<p>WHOOOOSH-POP! In a fraction of a millisecond, the cylinder travels through the wall and lands with a heavy metallic THUMP! inside Suite 400's secure receiving hopper at Counter #4723.</p>
+<div class="insight silicon"><span>Silicon reality</span><p>The loopback pseudo-device driver (bsd/net/if_loop.c) intercepts the packet’s mbuf (memory buffer pointer) in kernel RAM. It immediately routes the outbound packet back into the inbound network processing queue (ipintr()), passing the data directly into Appium's inbound socket buffer (SO_RCVBUF).</p></div>
+<div class="insight why"><span>Why it matters</span><p>Memory-Speed Inter-Process Communication. By handling local traffic through in-memory pointer swaps in the 128GB Unified Memory, communication between local processes operates at memory-bus speeds with sub-millisecond response times.</p></div>
+</section>
+<section id="act-vii-appium-receiving-dock-kqueue-xcuitest-dispatch" class="chapter"><div class="chapter-kicker">Chapter 10</div><h2>🎬 ACT VII: APPIUM RECEIVING DOCK, kqueue, &amp; XCUITest DISPATCH</h2>
+<figure class="code-panel"><figcaption>System map</figcaption><pre><code>┌──────────────────────────────────────────────────────────────────────┐
 │ 🏪 APPIUM STORE / NODE.JS PROCESS (Suite 400 — Port 4723)            │
 │                                                                      │
 │ 1. kqueue Event Notification  ──► libuv Event Loop wakes worker      │
@@ -746,1242 +351,38 @@ Content-Length: 154
 │                          ▼                                           │
 │ 6. 🔌 XCUITest DRIVER (The iOS Department Automation Manager)        │
 │    "Work order verified. I will now command Xcode to build WDA!"     │
-└──────────────────────────────────────────────────────────────────────┘
-      </pre>
-      <h3 class="font-semibold text-gray-800">🛠 The Real-World Technical Reality</h3>
-      <p>The Appium server process (Node.js engine) is not running an active while(true) loop that burns CPU cycles polling the socket. It utilizes an asynchronous event-driven architecture.</p>
-      <ol class="list-decimal pl-6 space-y-2">
-        <li><strong>Event Demultiplexing via kqueue:</strong> The Node.js asynchronous I/O engine (libuv) registers the socket file descriptor with macOS's kernel-level kqueue event notification facility. The Appium main thread sleeps peacefully until data arrives.</li>
-        <li><strong>The Kernel Wakeup:</strong> The moment the loopback driver drops bytes into the socket buffer, the kernel signals kqueue. libuv intercepts the event and wakes up the Appium execution thread on the next tick of the event loop.</li>
-        <li><strong>Ingestion &amp; HTTP Parsing:</strong> Appium issues a read() syscall, pulls the raw byte stream into its user-space buffer, parses the HTTP envelope, validates Content-Length: 154, and confirms the endpoint path /session.</li>
-        <li><strong>V8 JSON Deserialization:</strong> The JavaScript V8 engine parses the UTF-8 JSON body string back into a live in-memory JavaScript object graph on the Node.js heap.</li>
-        <li><strong>In-Process Module Handoff:</strong> Appium's core router inspects capabilities.alwaysMatch["appium:automationName"], sees "XCUITest". <em>Crucial Systems Boundary:</em> there is NO network hop here — Appium makes a direct, in-memory function call to the instantiated XCUITestDriver plugin running inside the exact same Node.js process runtime.</li>
-        <li><strong>The Orchestration Begins:</strong> The XCUITest Driver manager takes control of the thread and begins coordinating with the Apple developer toolchain (xcodebuild, simctl).</li>
-      </ol>
-      <h3 class="font-semibold text-gray-800">🏬 Super Mall Analogy</h3>
-      <ul class="list-disc pl-6 space-y-2">
-        <li><strong>The Bell at Counter 4723:</strong> The Appium Store Front Desk isn't staring at the chute all day. When the steel capsule lands in the hopper, it trips a brass lever (kqueue Event Trap) that rings a bell above the desk.</li>
-        <li><strong>Unboxing the Delivery:</strong> The Front Desk Clerk drops their coffee, opens the steel capsule, inspects Mr. TCP's hot-wax seal (Checksum Verified), and lays out the index cards.</li>
-        <li><strong>Taping the Work Order Together:</strong> "Ah, an HTTP POST request for a new automation session!"</li>
-        <li><strong>Reading the Carbon-Copy Order:</strong> The clerk reads the W3C specifications into the store's active ledger (V8 Object Deserialization): Target Platform: iOS · Specialist Requested: XCUITest · Device: iPhone 16.</li>
-        <li><strong>Calling the Specialist:</strong> The clerk does not dial another phone or send another pneumatic tube. They turn around and shout directly into the back office: "Hey, Manager (XCUITest Driver)! Python just sent an official work order for an iPhone 16 session. Grab your blueprints and go talk to the Apple Workshop (Xcode) right now!"</li>
-      </ul>
-    </section>
-
-    <!-- ====================== MATRIX ====================== -->
-    <section class="space-y-4 leading-relaxed">
-      <h2 class="text-lg font-semibold text-gray-900">🧭 The Complete Systems &amp; Mall Translation Matrix</h2>
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-sm border border-gray-200">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="px-3 py-2 text-left font-semibold border-b">Stage</th>
-              <th class="px-3 py-2 text-left font-semibold border-b">Subsystem / Layer</th>
-              <th class="px-3 py-2 text-left font-semibold border-b">🛠 Technical Reality</th>
-              <th class="px-3 py-2 text-left font-semibold border-b">🏬 Super Mall Analogy</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200">
-            <tr><td class="px-3 py-2 font-bold">0</td><td class="px-3 py-2">Host &amp; Memory Boundary</td><td class="px-3 py-2">XNU manages processes; the MMU and TLB translate addresses and enforce page permissions over unified physical memory.</td><td class="px-3 py-2"><strong>Mall GM + Security Desk:</strong> manage the shared warehouse while keeping every tenant's locker catalog private.</td></tr>
-            <tr><td class="px-3 py-2 font-bold">1</td><td class="px-3 py-2">Authoring Environment</td><td class="px-3 py-2">VS Code (Electron/V8) initiates POSIX fork()/execve().</td><td class="px-3 py-2"><strong>Architect's Drafting Bureau (Suite 101):</strong> sketches the blueprint and rings the General Manager.</td></tr>
-            <tr><td class="px-3 py-2 font-bold">2</td><td class="px-3 py-2">Syntax Compilation</td><td class="px-3 py-2">CPython builds Lexer Tokens → AST → Bytecode → PVM.</td><td class="px-3 py-2"><strong>Python Automation Worker (Suite 204):</strong> diagrams grammar on a chalkboard, creates a muscle checklist.</td></tr>
-            <tr><td class="px-3 py-2 font-bold">3</td><td class="px-3 py-2">Data Serialization</td><td class="px-3 py-2">PyDictObject heap pointers → contiguous W3C JSON string.</td><td class="px-3 py-2"><strong>Triplicate Work Order Form:</strong> private thoughts translated into universal trade language.</td></tr>
-            <tr><td class="px-3 py-2 font-bold">4</td><td class="px-3 py-2">Application Protocol</td><td class="px-3 py-2">Framed in HTTP/1.1 POST /session with metadata headers.</td><td class="px-3 py-2"><strong>Certified Dispatch Envelope:</strong> sealed and stamped with action, route, and weight.</td></tr>
-            <tr><td class="px-3 py-2 font-bold">5</td><td class="px-3 py-2">Transport Control (TCP)</td><td class="px-3 py-2">Sliced into TCP Segments, 32-bit Sequence IDs, 16-bit Checksums.</td><td class="px-3 py-2"><strong>Mr. TCP (Master Slicer):</strong> numbered index cards, hot-wax seals, tests the line.</td></tr>
-            <tr><td class="px-3 py-2 font-bold">6</td><td class="px-3 py-2">Network Protocol (IP)</td><td class="px-3 py-2">Packaged in IPv4 Datagrams (127.0.0.1 → 127.0.0.1).</td><td class="px-3 py-2"><strong>Mr. IP (Container Specialist):</strong> airtight steel capsules stamped for local delivery.</td></tr>
-            <tr><td class="px-3 py-2 font-bold">7</td><td class="px-3 py-2">Loopback Transit</td><td class="px-3 py-2">Handed to lo0 driver; kernel swaps memory pointers in RAM.</td><td class="px-3 py-2"><strong>Pneumatic Vacuum Wall Chute (lo0):</strong> capsule shoots through internal wall pipes without leaving the mall.</td></tr>
-            <tr><td class="px-3 py-2 font-bold">8</td><td class="px-3 py-2">Server Ingestion</td><td class="px-3 py-2">Kernel signals kqueue; Node.js libuv event loop reads socket buffer.</td><td class="px-3 py-2"><strong>Slot #4723 Intake Hopper:</strong> capsule lands, trips brass bell lever, wakes up the Front Desk Clerk.</td></tr>
-            <tr><td class="px-3 py-2 font-bold">9</td><td class="px-3 py-2">Route Handoff</td><td class="px-3 py-2">JSON parsed to V8 heap; direct in-memory call to XCUITest Driver.</td><td class="px-3 py-2"><strong>Front Desk to Back Office:</strong> clerk verifies seals and shouts to the iOS Manager.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-  <!-- Floating Analogy AI Tooltip -->
-  <div id="ai-tooltip" class="fixed hidden z-50 bg-gray-900 text-white rounded-lg shadow-2xl p-4 w-80 space-y-3 transition-all duration-150">
-    <div class="flex items-center justify-between border-b border-gray-700 pb-2">
-      <span class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1">✨ Analogy AI</span>
-      <span class="flex items-center gap-2">
-        <span id="selected-preview" class="text-xs text-gray-400 truncate max-w-[100px]"></span>
-        <button id="btn-settings" title="Configure AI (Gemini API key)" class="text-gray-500 hover:text-gray-300 text-sm leading-none">⚙️</button>
-      </span>
-    </div>
-
-    <div id="prompt-state">
-      <p class="text-xs text-gray-300 mb-2">Unclear about this concept?</p>
-      <button id="btn-explain" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 px-3 rounded shadow transition">
-        💡 Explain to me using an analogy
-      </button>
-      <button id="btn-diagram" class="w-full mt-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold py-2 px-3 rounded shadow transition">
-        📊 Diagram it
-      </button>
-      <p id="ai-status" class="text-[10px] text-gray-500 mt-2 text-center"></p>
-    </div>
+└──────────────────────────────────────────────────────────────────────┘</code></pre></figure>
+<h3>1. kqueue Event Demultiplexing &amp; Inbound Socket Notification</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>In Suite 400 (The Central Freight &amp; Logistics Hub / Appium), Penny, the front-desk clerk, is asleep at her desk. She doesn't stare at the empty pneumatic chute all day. But when the steel cylinder lands in the hopper, it trips a brass mechanical lever that rings a loud bell above her head (the kqueue trap). Penny wakes up instantly and gets to work.</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>Node.js uses libuv to register the socket file descriptor with macOS's kernel-level kqueue event notification facility. The Appium thread sleeps until the kernel signals a kevent indicating that unread data has arrived in SO_RCVBUF.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Resource-Efficient, Asynchronous I/O. Polling an open socket continuously burns CPU cycles and generates heat. kqueue allows a single event loop thread to manage thousands of active network connections, waking up only when new data is ready for processing.</p></div>
+<h3>2. TCP Reassembly, HTTP De-Framing, &amp; V8 JSON Deserialization</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Penny opens the intake hopper, checks Mr. TCP's red wax seal (Checksum Verified: 0xE4A2), unseals the envelope, reads the triplicate form, and logs the details directly into her store inventory ledger (V8 Heap Object Allocation).</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>Node.js executes a read() system call, validates the TCP checksum, strips the HTTP envelope headers, and calls JSON.parse(). Google's V8 engine instantiates a native JavaScript object graph on its heap.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Reconstructing Human Intent. The raw data traveling across the socket is simply a stream of binary bytes. Appium must deserialize those bytes back into a strongly-typed in-memory object so its routing logic can read and process the request parameters.</p></div>
+<h3>3. In-Memory Function Invocation to the XCUITest Driver</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Penny reads the parsed order:</p></div>
+<p>"Customer requested an iOS session on an iPhone 16 using the XCUITest engine."</p>
+<p>Penny doesn't send another pneumatic cylinder or make an outside phone call. She turns around and walks into the back office of Suite 400, handing the order directly to Inspector XCUITest (The iOS Specialist): "Inspector, Python just sent an official order. Grab your diagnostic gear and interface with the Apple Workshop (Xcode) right now!"</p>
+<div class="insight silicon"><span>Silicon reality</span><p>Appium's core routing engine matches capabilities.alwaysMatch["appium:automationName"] == "XCUITest". It executes a direct in-memory function call to the XCUITestDriver plugin running within the same Node.js process space.</p></div>
+<div class="insight why"><span>Why it matters</span><p>Zero-Overhead Subsystem Handoff. Because the XCUITestDriver runs within the same process runtime as the Appium server, the handoff requires no network hops or IPC overhead. The driver immediately begins orchestrating Apple's developer toolchain (xcodebuild, simctl, and WebDriverAgentRunner) to control the iOS Simulator.</p></div>
+</section>
+<section id="act-viii-complete-systems-mall-translation-matrix" class="chapter"><div class="chapter-kicker">Chapter 11</div><h2>📋 ACT VIII: COMPLETE SYSTEMS &amp; MALL TRANSLATION MATRIX</h2>
+<div class="matrix"><table>
+<tr><th>Stage</th><th>Subsystem / Layer</th><th>🏬 The Super Mall Metaphor</th><th>⚙️ The Silicon Reality (M5 Max)</th><th>💡 THE WHY: Engineering Reason</th></tr>
+<tr><td>0</td><td>Host &amp; Memory Boundary</td><td>Commander XNU &amp; The Silicon Centurion manage the shared 128-acre warehouse while keeping every tenant's locker catalog private.</td><td>XNU manages processes; the MMU and TLB translate addresses and enforce page permissions over 128GB unified memory.</td><td>Prevents applications from corrupting shared RAM, enforcing system stability and process isolation.</td></tr>
+<tr><td>1</td><td>Authoring Environment</td><td>Drafting Bureau (Suite 101) sketches blueprint and rings Commander XNU to lease Suite 204 for Monty.</td><td>VS Code triggers fork() / execve() to spawn CPython in an isolated virtual address space.</td><td>Humans need readable high-level tools; the OS requires controlled process privilege boundaries.</td></tr>
+<tr><td>2</td><td>Syntax Compilation</td><td>Monty diagrams grammar on a chalkboard, creating an actionable task checklist for the CPU Manager.</td><td>CPython Lexer creates Tokens  → → AST → → Bytecode → → Python Virtual Machine (PVM).</td><td>Text parsing is slow; bytecode enables predictable, nanosecond-speed CPU execution.</td></tr>
+<tr><td>3</td><td>Data Serialization</td><td>Monty fills out a Standardized Triplicate Order Form (W3C Standard) in universal language.</td><td>PyDictObject heap pointers are serialized into a contiguous UTF-8 W3C JSON byte string.</td><td>CPython and Node.js have different heap structures; JSON provides language interoperability.</td></tr>
+<tr><td>4</td><td>Application Protocol</td><td>Monty seals the manifest in a Certified Dispatch Envelope with weight and routing stamps.</td><td>HTTP/1.1 Framing adds request line (POST /session), metadata headers, and \r\n\r\n delimiters.</td><td>Standardizes commands over REST, making local and remote test execution identical.</td></tr>
+<tr><td>5</td><td>Transport Control (TCP)</td><td>Mr. TCP slices manifest into index cards, adds tracking badges, sequence numbers, and wax seals.</td><td>TCP Stack divides payload into MSS segments, adds 32-bit Sequence IDs and 16-bit Checksums.</td><td>Guarantees ordered, zero-loss, tamper-proof payload delivery across socket connections.</td></tr>
+<tr><td>6</td><td>Network Protocol (IP)</td><td>Mr. IP drops parcel into an airtight steel cylinder addressed to Suite 400.</td><td>IPv4 Layer encapsulates TCP segment with Source (127.0.0.1) and Destination (127.0.0.1) headers.</td><td>Provides standardized host-to-host network routing independent of physical link layers.</td></tr>
+<tr><td>7</td><td>Loopback Transit</td><td>Mr. IP drops cylinder into internal Vacuum Tube Line 0 (lo0), shooting it through wall pipes.</td><td>Kernel lo0 driver intercepts mbuf pointers in RAM, bypassing physical Wi-Fi/Ethernet NICs.</td><td>Achieves multi-gigabyte memory-bus speeds with zero physical transmission latency.</td></tr>
+<tr><td>8</td><td>Server Ingestion</td><td>Cylinder lands in Slot #4723 hopper, tripping a brass bell lever that wakes up Penny.</td><td>Inbound bytes signal kqueue; Node.js libuv event loop wakes up to read SO_RCVBUF.</td><td>Non-blocking asynchronous I/O allows a single thread to handle high-volume event traffic.</td></tr>
+<tr><td>9</td><td>Route Handoff</td><td>Penny verifies wax seals, opens manifest, and walks into the back room to brief Inspector XCUITest.</td><td>TCP checksum is verified; V8 parses JSON; Appium makes direct in-memory call to XCUITestDriver.</td><td>Eliminates IPC overhead, immediately routing execution to Apple-specific automation tools.</td></tr>
+</table></div>
+</section></article>
   </div>
-
-  <!-- Mobile SDET Tutor chat -->
-  <button id="chat-fab" title="Open Mobile SDET Tutor">🎓</button>
-
-  <button id="quiz-fab" title="Open Quiz Explorer">🧠</button>
-  <div id="quiz-panel">
-    <div class="qz-head">
-      <span>Quiz Explorer</span>
-      <span class="spacer"></span>
-      <button id="btn-quiz-close" title="Hide Quiz Explorer">✕</button>
-    </div>
-    <div class="qz-tree" id="qz-tree"></div>
-    <div class="qz-foot" id="qz-foot"></div>
-    <div id="qz-quiz">
-      <div class="qzq-bar">
-        <button id="qzq-back" title="Stop quiz & back to sections">←</button>
-        <span id="qzq-title"></span>
-        <span class="quiz-dots" id="qz-dots"></span>
-      </div>
-      <div id="qz-feed"></div>
-      <div class="qzq-input">
-        <textarea id="qz-answer" placeholder="Type your answer…"></textarea>
-        <button id="qz-submit" title="Submit answer">➤</button>
-      </div>
-    </div>
-    <div id="quiz-panel-resizer" title="Drag to resize"></div>
-  </div>
-  <div id="chat-panel">
-    <div id="chat-resizer" title="Drag to resize"></div>
-    <div class="chat-head">
-      <div>
-        <div class="chat-title">MOBILE SDET TUTOR</div>
-        <div class="chat-sub">Stanford-style · Super Mall Method</div>
-      </div>
-      <span class="spacer"></span>
-      <button id="btn-chat-clear" title="Clear chat history">🗑</button>
-      <button id="btn-chat-close" title="Hide chat">✕</button>
-    </div>
-    <div class="chat-messages" id="chat-messages">
-      <div class="chat-empty" id="chat-empty">🎓 I'm your personal Mobile SDET tutor. My mission: get you to mid-level Mobile SDET. Highlight anything in the lecture and hit "Explain", or ask me anything — pytest, Appium, XCUITest, networking, CI/CD. Try: "what should I learn today?"</div>
-    </div>
-    <div class="chat-footer">
-      <div class="quick-row" id="quick-row">
-        <button class="quick-chip" id="chip-learn">✨ What should I learn?</button>
-      </div>
-      <div id="chat-selection">
-        <span>🔦</span><span class="sel-text" id="chat-selection-text"></span>
-        <button id="btn-sel-clear" title="Clear selection">✕</button>
-      </div>
-      <div class="chat-input-row">
-        <textarea id="chat-input" placeholder="Ask your tutor… (e.g. 'what should I learn today?')"></textarea>
-        <button id="btn-send" title="Send">➤</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    if (window.mermaid) mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' });
-
-    let currentSelection = null;
-    let currentRange = null;
-
-    const tooltip = document.getElementById('ai-tooltip');
-    const selectedPreview = document.getElementById('selected-preview');
-    const btnExplain = document.getElementById('btn-explain');
-    const chatPanel = document.getElementById('chat-panel');
-
-    // 1. Detect text selection on mouseup
-    document.addEventListener('mouseup', (e) => {
-      if (tooltip.contains(e.target) || chatPanel.contains(e.target)) return;
-
-      const selection = window.getSelection();
-      const text = selection.toString().trim();
-
-      // Don't pop the tooltip while editing a badge
-      if (selection.anchorNode?.parentElement?.closest('.analogy-badge.editing')) return;
-
-      if (text.length > 0) {
-        currentSelection = text;
-        currentRange = selection.getRangeAt(0).cloneRange();
-
-        const rect = currentRange.getBoundingClientRect();
-        tooltip.style.left = `${Math.min(window.innerWidth - 340, Math.max(10, rect.left))}px`;
-        tooltip.style.top = `${rect.bottom + 8}px`;
-
-        selectedPreview.textContent = `"${text}"`;
-        tooltip.classList.remove('hidden');
-        offerSelectionInChat(text);
-      } else {
-        tooltip.classList.add('hidden');
-      }
-    });
-
-    // 2. "Explain" hands off to the tutor chat
-    btnExplain.addEventListener('click', () => {
-      const term = currentSelection;
-      const anchorEl = currentRange.startContainer.parentElement;
-      const block = anchorEl.closest('p, li, td, pre, h1, h2, h3, section, div') || anchorEl;
-      const surroundingContext = block.innerText;
-      const occ = Math.max(0, occurrenceIndexOfRange(term, currentRange));
-
-      tooltip.classList.add('hidden');
-      window.getSelection().removeAllRanges();
-      clearChatSelection();
-      openChat();
-      runExplain(term, surroundingContext, occ);
-    });
-
-    // 2b. "Diagram it" — the tutor draws the concept as a rendered diagram in chat
-    document.getElementById('btn-diagram').addEventListener('click', () => {
-      const term = currentSelection;
-      const anchorEl = currentRange.startContainer.parentElement;
-      const block = anchorEl.closest('p, li, td, pre, h1, h2, h3, section, div') || anchorEl;
-      const surroundingContext = block.innerText;
-
-      tooltip.classList.add('hidden');
-      window.getSelection().removeAllRanges();
-      clearChatSelection();
-      openChat();
-      runDiagram(term, surroundingContext);
-    });
-
-    // 3. Insert analogy right next to the selected text in DOM (persisted in localStorage)
-    const ANNOTATIONS_STORAGE = 'cs198_annotations';
-
-    function loadAnnotations() {
-      try { return JSON.parse(localStorage.getItem(ANNOTATIONS_STORAGE)) || []; }
-      catch { return []; }
-    }
-    function saveAnnotations(list) {
-      localStorage.setItem(ANNOTATIONS_STORAGE, JSON.stringify(list));
-    }
-
-    // All text nodes in the lecture, excluding text inside badges or the tooltip
-    function lectureTextNodes() {
-      const root = document.getElementById('content');
-      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-        acceptNode(node) {
-          return node.parentElement.closest('.analogy-badge, #ai-tooltip, #chat-panel')
-            ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
-        }
-      });
-      const nodes = [];
-      while (walker.nextNode()) nodes.push(walker.currentNode);
-      return nodes;
-    }
-
-    // Which occurrence (0-based) of `term` does `range` start at?
-    function occurrenceIndexOfRange(term, range) {
-      let occ = -1, best = -1;
-      for (const node of lectureTextNodes()) {
-        let idx = node.textContent.indexOf(term);
-        while (idx !== -1) {
-          occ++;
-          const probe = document.createRange();
-          probe.setStart(node, idx);
-          probe.collapse(true);
-          const cmp = probe.compareBoundaryPoints(Range.START_TO_START, range);
-          if (cmp === 0) return occ;
-          if (cmp < 0) best = occ; // nearest occurrence before the selection
-          idx = node.textContent.indexOf(term, idx + 1);
-        }
-      }
-      return best;
-    }
-
-    // Range collapsed to the end of the nth occurrence of `term`
-    function rangeAtOccurrenceEnd(term, occurrence) {
-      let occ = -1;
-      for (const node of lectureTextNodes()) {
-        let idx = node.textContent.indexOf(term);
-        while (idx !== -1) {
-          occ++;
-          if (occ === occurrence) {
-            const r = document.createRange();
-            r.setStart(node, Math.min(idx + term.length, node.textContent.length));
-            r.collapse(true);
-            return r;
-          }
-          idx = node.textContent.indexOf(term, idx + 1);
-        }
-      }
-      return null;
-    }
-
-    function buildBadge(id, text) {
-      const badge = document.createElement('span');
-      badge.className = 'analogy-badge';
-      badge.dataset.annotationId = id;
-      const label = document.createElement('strong');
-      label.textContent = '💡 [Analogy]: ';
-      badge.appendChild(label);
-      const body = document.createElement('span');
-      body.className = 'badge-text';
-      body.textContent = text;
-      badge.appendChild(body);
-
-      const edit = document.createElement('span');
-      edit.className = 'badge-ctl badge-edit';
-      edit.title = 'Edit this analogy — type or paste a better one, then hit ✅ to save';
-      edit.textContent = '✏️';
-
-      const save = document.createElement('span');
-      save.className = 'badge-ctl badge-save';
-      save.title = 'Save changes';
-      save.textContent = '✅';
-      save.style.display = 'none';
-
-      const del = document.createElement('span');
-      del.className = 'badge-del';
-      del.title = 'Remove this analogy';
-      del.textContent = '🗑';
-
-      // Paste as plain text while editing
-      body.addEventListener('paste', (e) => {
-        if (body.contentEditable !== 'true') return;
-        e.preventDefault();
-        const t = (e.clipboardData || window.clipboardData).getData('text/plain');
-        document.execCommand('insertText', false, t);
-      });
-
-      edit.addEventListener('click', () => {
-        badge.classList.add('editing');
-        body.contentEditable = 'true';
-        edit.style.display = 'none';
-        del.style.display = 'none';
-        save.style.display = '';
-        body.focus();
-      });
-
-      save.addEventListener('click', () => {
-        badge.classList.remove('editing');
-        body.contentEditable = 'false';
-        save.style.display = 'none';
-        edit.style.display = '';
-        del.style.display = '';
-        const newText = body.textContent.trim();
-        saveAnnotations(loadAnnotations().map(a => a.id === id ? { ...a, text: newText } : a));
-      });
-
-      del.addEventListener('click', () => {
-        badge.remove();
-        saveAnnotations(loadAnnotations().filter(a => a.id !== id));
-      });
-
-      badge.appendChild(edit);
-      badge.appendChild(save);
-      badge.appendChild(del);
-      return badge;
-    }
-
-    // Insert an analogy badge after the nth occurrence of term, and persist it
-    function insertAnnotation(term, occ, text) {
-      const r = rangeAtOccurrenceEnd(term, occ);
-      if (!r) return false;
-      const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-      r.insertNode(buildBadge(id, text));
-      const list = loadAnnotations();
-      list.push({ id, term, text, occ });
-      saveAnnotations(list);
-      return true;
-    }
-
-    // Restore saved analogies on page load
-    for (const a of loadAnnotations()) {
-      const r = rangeAtOccurrenceEnd(a.term, a.occ);
-      if (r) r.insertNode(buildBadge(a.id, a.text));
-    }
-
-    /**
-     * Analogy generation, in priority order:
-     * 1. Google Gemini (free API key, stored ONLY in your browser's localStorage) — real AI,
-     *    tailored to the highlighted term AND its surrounding paragraph.
-     * 2. Custom backend via ANALOGY_API_URL (POST {term, context} -> {analogy}).
-     * 3. Built-in Super Mall knowledge base (offline fallback).
-     */
-    const ANALOGY_API_URL = ""; // e.g. "http://localhost:3000/api/analogy"
-    const GEMINI_KEY_STORAGE = "cs198_gemini_api_key";
-
-    const btnSettings = document.getElementById('btn-settings');
-    const aiStatus = document.getElementById('ai-status');
-
-    function getGeminiKey() { return localStorage.getItem(GEMINI_KEY_STORAGE) || ""; }
-
-    function updateAiStatus() {
-      aiStatus.textContent = getGeminiKey()
-        ? "🟢 Real AI enabled (Gemini)"
-        : "⚪ Using built-in analogies — click ⚙️ to add a free Gemini API key for real AI";
-    }
-    updateAiStatus();
-
-    btnSettings.addEventListener('click', () => {
-      const existing = getGeminiKey();
-      const input = window.prompt(
-        "Paste your free Google Gemini API key (get one at aistudio.google.com/apikey).\n" +
-        "It is stored ONLY in this browser's localStorage — never uploaded anywhere.\n\n" +
-        "Leave empty and press OK to remove the saved key.",
-        existing
-      );
-      if (input === null) return; // cancelled
-      if (input.trim()) localStorage.setItem(GEMINI_KEY_STORAGE, input.trim());
-      else localStorage.removeItem(GEMINI_KEY_STORAGE);
-      updateAiStatus();
-    });
-
-    // The Stanford-style Mobile SDET tutor persona (same tutor as code-explainer.html)
-    const TUTOR_MISSION =
-      "You are 'Professor', a personal Stanford-style tutor with ONE mission: transform this student into a " +
-      "hireable MID-LEVEL MOBILE SDET (2-5 yrs equivalent skill). The student studies this lecture page daily; " +
-      "every answer is a micro-lesson advancing that mission.\n\n" +
-      "THE STUDENT'S CURRENT LESSON: CS 198 — Advanced Mobile Test Infrastructure & Systems Architecture, a " +
-      "lecture deconstructing the iOS test automation pipeline (Python test client → Appium/Node.js server → " +
-      "XCUITest → iOS Simulator on macOS) through a 'Super Mall' analogy: the MacBook is the mall, the macOS/XNU " +
-      "kernel is the General Manager, processes are stores in sealed suites, sockets are pneumatic tube mail " +
-      "slots, TCP is the document slicer, kqueue is the intake-hopper bell. The student also maintains a real " +
-      "practice repo: StageTimePNW_Automation (pytest + Appium Python client + XCUITest + iOS Simulator).\n\n" +
-      "THE TARGET: the modern, high-demand mid-level Mobile SDET profile — NOT the outdated one.\n" +
-      "OUTDATED (low demand): brittle XPath UI tests, black-box Appium wrappers with slow runs, manual regression " +
-      "passes, basic bug reports.\n" +
-      "MODERN (what you are training them for): native framework automation (XCUITest, Espresso/Compose, Maestro); " +
-      "white-box integration testing and local backend mocking (WireMock, MockWebServer); owning parallel CI/CD test " +
-      "matrices (GitHub Actions, Bitrise) and device clouds; diagnosing device vitals (memory leaks, frame drops, " +
-      "battery drain, crash dumps); solid page-object architecture; understanding the full pipeline " +
-      "(Python client → Appium/Node server → XCUITest → Simulator/device).\n\n" +
-      "TEACHING STYLE: Stanford seminar — rigorous but encouraging. Connect every concept to (a) this lecture, " +
-      "(b) the mid-level skill it builds, and (c) how it comes up in interviews or on the job. Use Super Mall " +
-      "analogies when vivid. When natural, end with ONE short 'Next rep:' — a concrete exercise.";
-
-    async function fetchGeminiAnalogy(term, context) {
-      const key = getGeminiKey();
-      if (!key) return null;
-
-      const systemPrompt =
-        TUTOR_MISSION + "\n\n" +
-        "TASK: The student highlighted a term in the lecture. Reply with EXACTLY four short parts, plain text:\n" +
-        "1. WHAT IT IS: 1-2 sentences defining the highlighted term technically.\n" +
-        "2. On a new line starting with '🏬 Analogy: ', a vivid 2-3 sentence Super Mall analogy consistent with " +
-        "the mall metaphors and grounded in the surrounding lecture context provided.\n" +
-        "3. On a new line starting with '🔗 In mobile automation: ', 1-2 sentences explaining SPECIFICALLY how " +
-        "THIS term participates in the Python/Appium/Xcode/XCUITest/iOS pipeline — concrete and tied to the term, " +
-        "not generic. Mention only the tools actually relevant to this term.\n" +
-        "4. On a new line starting with '🎓 Mid-level rep: ', 1-2 sentences tying this concept to the mid-level " +
-        "Mobile SDET skill it builds, with one concrete next exercise.\n\n" +
-        "Plain text only. No markdown, no headers, no bullet points.";
-
-      return geminiCall(systemPrompt,
-        `Highlighted term: "${term}"\n\nSurrounding lecture context:\n${(context || '').slice(0, 1500)}`);
-    }
-
-    // Shared Gemini call with a bounded timeout and retry backoff.
-    async function geminiCall(systemPrompt, userText) {
-      const key = getGeminiKey().trim();
-      if (!key) throw new Error("No API key configured. Click ⚙️ to add your Gemini API key.");
-
-      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
-      const timeoutMs = 30000;
-      
-      const makeBody = () => JSON.stringify({
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role: 'user', parts: [{ text: userText }] }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2048
-        }
-      });
-
-      const doFetch = async () => {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), timeoutMs);
-        try {
-          return await fetch(url, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-goog-api-key': key,
-              'X-Server-Timeout': '25'
-            },
-            body: makeBody(),
-            signal: controller.signal
-          });
-        } finally {
-          clearTimeout(timeout);
-        }
-      };
-
-      let res;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          res = await doFetch();
-        } catch (err) {
-          if (attempt < 2 && (err.name === 'AbortError' || err instanceof TypeError)) {
-            await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1)));
-            continue;
-          }
-          throw new Error(err.name === 'AbortError'
-            ? 'Gemini timed out after 30 seconds'
-            : `Network error: ${err.message}`);
-        }
-
-        if (res.ok || (res.status !== 429 && res.status !== 503) || attempt === 2) break;
-        await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1)));
-      }
-
-      if (!res.ok) {
-        let apiMessage = '';
-        try {
-          const errorData = await res.json();
-          apiMessage = errorData?.error?.message || '';
-        } catch { /* The response was not JSON. */ }
-        throw new Error(res.status === 503 ? 'Gemini is overloaded right now — wait a few seconds and try again'
-          : res.status === 429 ? 'Rate limit hit — wait a minute and try again'
-          : `Gemini HTTP ${res.status}${apiMessage ? `: ${apiMessage}` : ''}`);
-      }
-      const data = await res.json();
-      const text = data?.candidates?.[0]?.content?.parts?.filter(p => !p.thought && p.text).map(p => p.text).join('').trim();
-      return text || null;
-    }
-
-    // Freeform tutor Q&A grounded in the lecture
-    async function fetchAnswerFromAI(question, chip) {
-      const key = getGeminiKey();
-      if (!key) {
-        if (chip) return localAnalogy(chip);
-        return "⚪ Freeform chat needs a Gemini API key — click ⚙️ in the highlight tooltip and paste a free key from aistudio.google.com/apikey. (Highlight-to-explain works offline for common terms.)";
-      }
-      try {
-        const systemPrompt =
-          TUTOR_MISSION + "\n\n" +
-          "TASK: Answer the student's question conversationally but rigorously, grounded in the lecture text " +
-          "provided. If they ask what to learn or study, act as their curriculum director: name the next mid-level " +
-          "skill gap and give a concrete lesson plan. When a vivid Super Mall analogy helps, add one starting with " +
-          "'🏬 Analogy: '. End with 'Next rep: ' and one concrete exercise when natural. Plain text only, no " +
-          "markdown headers or bullets. Under ~300 words.";
-        const lecture = document.getElementById('content').innerText.slice(0, 15000);
-        const userText =
-          (chip ? `Highlighted lecture text: "${chip}"\n\n` : "") +
-          `Question: ${question}\n\nLecture content:\n${lecture}`;
-        const text = await geminiCall(systemPrompt, userText);
-        return text || "Hmm, I got an empty response — try rephrasing.";
-      } catch (err) {
-        return `❌ AI request failed (${err.message}). Check your Gemini key via ⚙️ in the highlight tooltip.`;
-      }
-    }
-
-    async function fetchAnalogyFromAI(term, context) {
-      // 1. Real AI via Gemini
-      if (getGeminiKey()) {
-        const aiText = await fetchGeminiAnalogy(term, context);
-        if (!aiText) throw new Error('Gemini returned an empty response');
-        return aiText;
-      }
-      // 2. Custom backend
-      if (ANALOGY_API_URL) {
-        try {
-          const res = await fetch(ANALOGY_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ term, context })
-          });
-          const data = await res.json();
-          if (data.analogy) return data.analogy;
-        } catch (err) {
-          console.warn('Analogy API failed, using local knowledge base.', err);
-        }
-      }
-      // 3. Offline knowledge base (only when no Gemini key is configured)
-      return `⚪ Offline built-in explanation (Gemini is not configured)\n\n${await localAnalogy(term)}`;
-    }
-
-    async function localAnalogy(term) {
-      await new Promise(r => setTimeout(r, 600)); // simulated thinking delay
-
-      const analogies = {
-        kernel: "The Kernel is the Super Mall General Manager who holds all the master keys, controls physical access to stores, and builds soundproof walls between tenants so they can't spy on each other.",
-        xnu: "XNU is the specific General Manager hired for this particular mall — a hybrid manager trained at two academies (Mach and BSD) who runs everything from suite leasing to the pneumatic tubes.",
-        fork: "fork() is like cloning a mall worker: the General Manager creates an identical twin standing in the same office with the same immediate clipboard.",
-        execve: "execve() takes that cloned worker, wipes their clipboard clean, and hands them a brand new job description and tools (e.g., swapping into a Python worker).",
-        posix: "POSIX is the standard city building code that all mall contractors and workers are legally required to understand and follow, so any certified worker can operate in any compliant building.",
-        mmu: "The MMU is the mall's automated badge-scanner system on every office door: it physically prevents a tenant from wandering into another suite's filing cabinets, no matter how hard they try.",
-        ast: "The AST is the worker's chalkboard family-tree sketch of the work order — every task drawn as branches and sub-branches so the structure can be validated before any hammer swings.",
-        bytecode: "Bytecode is the worker's step-by-step muscle checklist: tiny numbered physical actions ('walk to shelf', 'pick up clipboard') compiled from the big chalkboard diagram.",
-        pvm: "The PVM is the worker actually executing the muscle checklist one numbered step at a time, keeping their in-progress items stacked neatly on a small side tray (the evaluation stack).",
-        heap: "The heap is the worker's private workspace shelving in Suite 204 — sticky notes and boxes arranged only they can decipher, invisible and unreachable from any other suite.",
-        pydictobject: "A PyDictObject is the worker's personal shorthand notebook: a private index of labels pointing at boxes scattered around their own office shelves.",
-        serialization: "Serialization is copying your private shorthand notes onto the mall's official triplicate carbon-copy form in universal trade language, so any department can read them.",
-        json: "JSON is the mall's universal trade language on the triplicate form — every store, regardless of the language its staff speaks, can read and fill one out.",
-        http: "HTTP is the mall's certified dispatch envelope system: every package gets a stamped action verb, destination wing, contents label, and weight seal so the receiving desk knows exactly what to do.",
-        tcp: "Mr. TCP is the Master Document Slicer: he cuts your bulky envelope into rigid numbered index cards, hot-wax-seals each one, and demands replacements for any card that arrives damaged or out of order.",
-        ip: "Mr. IP is the Container Specialist: he packs each sealed card into an airtight steel pneumatic capsule and stencils the exact building and counter-slot address on the outside.",
-        checksum: "The checksum is the hot-wax integrity seal stamped on each index card — if the seal arrives cracked or smudged by even one dot of ink, the card is discarded and a replacement is demanded.",
-        syn: "SYN is Mr. TCP ringing a tiny test bell through the tube first: 'Are you awake and accepting work orders?' — no capsules launch until the other counter rings back.",
-        handshake: "The 3-way handshake is the bell-ringing ritual before any delivery: 'You awake?' (SYN) → 'Yes, window open!' (SYN-ACK) → 'Great, capsules incoming!' (ACK).",
-        socket: "A socket is a numbered mail slot installed in a suite's wall — the only officially sanctioned opening through which a tenant may send or receive pneumatic capsules.",
-        port: "A port is the specific counter-slot number painted on a mail slot (like Slot #4723) so the tube system knows exactly which desk inside the building should receive the capsule.",
-        loopback: "The loopback is the mall's internal wall chute: capsules addressed to the same building never leave through the front doors — they whoosh through a pipe behind the drywall straight to the destination slot.",
-        lo0: "lo0 is Tube Line 0 — a dedicated low-friction vacuum pipeline behind the mall's drywall used exclusively for same-building deliveries, so packages never touch the city streets.",
-        kqueue: "kqueue is the brass lever at the intake hopper: instead of a clerk staring at the chute all day, the landing capsule trips the lever, rings the bell, and only then does the clerk look up.",
-        libuv: "libuv is the store's front-desk paging system: it lets the clerk nap until the intake bell rings, then instantly routes them to whichever hopper has a fresh capsule.",
-        mbuf: "An mbuf is the reusable metal transit tray the mall's back-room staff slide capsules around on — the tray (pointer) moves between rooms, not the capsule contents being recopied.",
-        nic: "A NIC is the mall's outdoor loading dock where trucks connect to the city — for internal wall-chute (loopback) deliveries, the loading dock is never used at all.",
-        arp: "ARP is like the mall calling the city directory to ask which physical street dock belongs to an address — unnecessary for internal deliveries that never leave the building.",
-        v8: "V8 is the high-speed reading machine at the Appium front desk that converts the standardized paper form back into the clerk's live working ledger in one pass.",
-        webdriver: "The W3C WebDriver protocol is the mall-wide standardized triplicate form: any store, in any language, fills out and reads the exact same fields the exact same way.",
-        appium: "Appium is the Central Logistics & Dispatch Store (Suite 400): it receives work orders at its counter and routes each one to the correct in-house platform specialist.",
-        xcuitest: "The XCUITest Driver is the in-house iOS Department Manager sitting in Appium's back office — the front desk clerk just turns around and shouts the order to them, no new delivery needed.",
-        pid: "A PID is the suite number on an office door: a unique identifier the General Manager assigns so every memo, bill, and inspection is routed to exactly the right tenant.",
-        syscall: "A system call is a tenant pressing the official service button to summon the General Manager — the only legal way to request anything outside your own suite's walls.",
-        buffer: "A socket buffer is the intake hopper bolted beneath a mail slot: capsules pile up there safely until the clerk is ready to scoop them out in order.",
-        mss: "The MSS is the rigid diameter of the pneumatic tube: any document wider than the tube must be sliced into cards that individually fit.",
-        virtualaddressspace: "A Virtual Address Space is a tenant's private suite layout: every store believes it occupies the entire mall starting at Room 0, but the General Manager secretly maps those room numbers to totally different physical locations for each tenant.",
-        addressspace: "An address space is a tenant's private suite layout: the store sees its own room numbers 0 through N, while the General Manager quietly maps them onto real physical rooms no other tenant can reach.",
-        memorymanagementunit: "The Memory Management Unit is the badge-scanner hardware on every office door: when a worker asks for 'Room 5', it instantly translates that to the real physical room — and hard-locks the door if the room belongs to another tenant.",
-        processisolation: "Process isolation is the mall's soundproof-walls policy: every store operates in its own sealed suite and physically cannot peek at a neighbor's shelves — all sharing must go through official mall channels.",
-        process: "A process is one open store in the mall: its own suite, its own staff, its own private shelving, and its own suite number (PID) on the door.",
-        memory: "Memory (RAM) is the physical shelving inside each suite: fast to reach, but strictly private — the badge-scanner (MMU) ensures no tenant ever touches another tenant's shelves.",
-        ram: "RAM is the mall's physical shelving space: every tenant gets shelves inside their own locked suite, and the badge-scanner hardware keeps everyone out of everyone else's aisles.",
-        ipc: "IPC is the mall's official inter-store courier service: since suites are sealed off from each other, the only legal way to pass documents between stores is through manager-sanctioned channels like pneumatic tubes.",
-        networkstack: "The network stack is the mall's entire pneumatic tube department: the slicer (TCP), the capsule packer (IP), the tube lines, and the intake hoppers — a full in-house logistics division run by the General Manager.",
-        darpa: "The DARPA/Internet suite is the mall's four-floor logistics department: the customer counter (Application), the document slicer (Transport), the capsule packer (Internet), and the physical tube lines (Link).",
-        mach: "Mach is one of the two academies the General Manager trained at — the one that taught modern message-passing management: run the mall by routing memos between departments rather than micromanaging every task.",
-        freebsd: "FreeBSD is the General Manager's other alma mater — the old-school academy that taught the practical trades: filing systems, tube networks, and the standard forms tenants use to request services.",
-        thread: "A thread is one individual employee inside a store: several employees can share the same suite and shelves, so they must coordinate carefully to avoid grabbing the same box at once.",
-        python: "Python is the worker in Suite 204 who reads work orders from a chalkboard sketch, compiles them into a muscle checklist, and executes them one numbered step at a time.",
-        node: "Node.js is the Suite 400 dispatch clerk who never stands around waiting: they file every pending job with the paging system (libuv) and only act when a bell rings.",
-        interpreter: "An interpreter is a worker who executes the checklist one numbered step at a time, rather than shipping the whole job off to a factory to be pre-built (compiled) first.",
-        macos: "macOS is the whole mall complex — the building, the management office, the tube network, and the house rules — inside which every store (process) operates.",
-        simulator: "The iOS Simulator is a full model apartment built inside the mall: a real, working iPhone showroom staffed and powered by the mall itself rather than by an external building.",
-        xcode: "Xcode is the mall's licensed general contractor: it builds the iPhone showrooms (Simulators), certifies the iOS Department Managers (XCUITest), and supplies all the official Apple-approved tools.",
-        vscode: "VS Code is your personal architect's studio across the street: you draft all the work orders (test scripts) there, then send them into the mall to be executed.",
-        visualstudiocode: "Visual Studio Code is your personal architect's studio across the street: you draft all the work orders (test scripts) there, then send them into the mall to be executed.",
-        ios: "iOS is the strict franchise rulebook of the iPhone showroom: it dictates exactly how the showroom operates and only lets certified staff (XCUITest) touch the displays.",
-        iphone: "The iPhone is the flagship showroom at the end of every delivery route: all the tubes, forms, and dispatchers exist to make something happen on its display floor."
-      };
-
-      // Why each term matters for mobile automation (Python / Appium / Xcode / iOS)
-      const relevance = {
-        kernel: "Every Appium command your Python test sends crosses the kernel — it owns the sockets, memory, and process boundaries your whole test stack runs on.",
-        xnu: "XNU is the macOS kernel hosting your entire toolchain: Python, the Appium server, Xcode's tools, and the iOS Simulator are all its tenants.",
-        fork: "When Appium launches helper processes (like the WebDriverAgent runner via Xcode tooling), fork() is step one of spawning them.",
-        execve: "It's how the Appium server actually starts xcodebuild/WebDriverAgent — fork a process, then execve() it into the new program.",
-        posix: "Python and Node.js both talk to macOS through POSIX APIs — it's why the same Appium test code runs on macOS and Linux CI boxes.",
-        mmu: "The MMU is why your Python test can't just reach into the iOS app's memory — you MUST go through Appium's network protocol instead.",
-        ast: "Before your test runs, CPython parses your Python script into an AST — it's the first transformation of your test code on every run.",
-        bytecode: "Your Appium test's .pyc files are this — CPython compiles your test script to bytecode before executing a single tap or assert.",
-        pvm: "The Python Virtual Machine is what actually executes your test script, line by line, driving every Appium call you wrote.",
-        heap: "Your driver object, locators, and test data all live in Python's heap — private memory Appium and the iOS app can never see directly.",
-        pydictobject: "Every Appium capability dict and element response in your Python test is a PyDictObject under the hood.",
-        serialization: "Every find_element() and tap() must be serialized to JSON before it can leave Python and travel to the Appium server.",
-        json: "The WebDriver protocol Appium speaks is JSON over HTTP — every command and response in your test suite is a JSON document.",
-        http: "Appium is literally an HTTP server: your Python client POSTs to /session/:id/element and Appium replies — that's all a test step is.",
-        tcp: "Your test commands ride TCP to the Appium server (port 4723) — guaranteed ordered delivery is why steps never arrive scrambled.",
-        ip: "IP routes your test traffic — usually to 127.0.0.1 for local Appium, or a real address when targeting a device farm or Selenium Grid.",
-        checksum: "TCP checksums silently protect every Appium command from corruption — one reason flaky tests are almost never 'corrupted network bytes'.",
-        syn: "When your Python client opens an Appium session, this is the very first packet — no SYN, no session, and you get a ConnectionRefusedError.",
-        handshake: "Before webdriver.Remote() returns, a TCP handshake with the Appium server must complete — connection errors here mean Appium isn't running.",
-        socket: "Your Python test and the Appium server talk through sockets — 'Address already in use' on 4723 means another Appium grabbed the socket.",
-        port: "4723 is Appium's famous port — your driver URL targets it, and Appium in turn talks to WebDriverAgent on the iOS side over another port (8100).",
-        loopback: "Local Appium runs never touch a real network — Python → Appium traffic loops back inside your Mac, which is why it's fast and firewall-proof.",
-        lo0: "All localhost Appium traffic rides lo0 — you can literally watch your test commands with 'tcpdump -i lo0 port 4723'.",
-        kqueue: "kqueue is how the Node.js-based Appium server sleeps until your Python client's command arrives — event-driven, not polling.",
-        libuv: "libuv is the engine of Appium's event loop — it's why one Appium server can juggle multiple sessions and device connections at once.",
-        mbuf: "mbufs shuttle your Appium commands through the macOS kernel — zero-copy plumbing that keeps local test traffic fast.",
-        nic: "Local Simulator tests skip the NIC entirely; it only matters when your tests target real devices or a remote cloud device farm.",
-        arp: "ARP only enters the picture when Appium targets a device or grid over the LAN — localhost testing never needs it.",
-        v8: "V8 is the engine executing the Appium server itself — Appium is JavaScript, so every command you send is ultimately handled by V8.",
-        webdriver: "This is THE protocol of mobile automation: Python Appium clients, Selenium, and XCUITest drivers all speak WebDriver, which is why they interoperate.",
-        appium: "The star of the show — the middleman translating your Python WebDriver commands into native XCUITest actions on iOS (or UiAutomator2 on Android).",
-        xcuitest: "Apple's own UI testing framework, built into Xcode — Appium's iOS driver wraps it, so every tap you script becomes an XCUITest action.",
-        pid: "Appium tracks the Simulator's and WebDriverAgent's PIDs to manage them — and 'kill <pid>' is how you clean up a zombie Appium or Simulator.",
-        syscall: "Every meaningful step of a test — opening the socket, sending the command, launching the Simulator — is your tools asking macOS via syscalls.",
-        buffer: "If your Python client fires commands while Appium's event loop is busy, they wait safely in the socket buffer — nothing is lost.",
-        mss: "Large Appium payloads (like page-source dumps or screenshots) get sliced to MSS-sized TCP segments and reassembled — invisibly to your test.",
-        virtualaddressspace: "It's why Python, Appium, and the iOS app each live in their own sealed world — and why automation must go through the WebDriver protocol instead of shared memory.",
-        addressspace: "Each of Python, Node/Appium, and the Simulator gets its own — the isolation that forces mobile automation to use network protocols to communicate.",
-        memorymanagementunit: "Hardware-enforced isolation between your test process and the app under test — the physical reason Appium exists as a network middleman.",
-        processisolation: "The core reason mobile automation architecture looks the way it does: Python can't touch the iOS app directly, so Appium bridges them over HTTP.",
-        process: "Your test run is at least three processes — Python (client), Node.js (Appium server), and the iOS app/Simulator — each isolated, talking via sockets.",
-        memory: "Python's objects, Appium's session state, and the iOS app's UI tree each live in separate protected memory — only messages cross between them.",
-        ram: "Test data in Python and UI state in the iOS app occupy isolated RAM — sharing happens only through the WebDriver messages you send.",
-        ipc: "Mobile automation IS inter-process communication: Python ↔ Appium ↔ WebDriverAgent ↔ your app, all over sanctioned channels.",
-        networkstack: "Every element lookup in your test traverses this stack twice — down through it from Python, back up into the Appium server.",
-        darpa: "The 4-layer model your Appium traffic actually rides: HTTP (app) → TCP (transport) → IP (internet) → loopback (link).",
-        mach: "Mach messaging underpins how macOS coordinates the Simulator and Xcode tooling your iOS tests depend on.",
-        freebsd: "The BSD half of XNU provides the sockets API — the exact interface Python and Node use to move your Appium commands.",
-        thread: "Appium handles concurrent sessions with event-driven code instead of threads, while your Python test typically runs single-threaded top to bottom.",
-        python: "The language of your test suite — the Appium Python client turns your method calls into WebDriver HTTP requests.",
-        node: "Appium itself is a Node.js app — knowing how Node's event loop works explains Appium's async, non-blocking behavior.",
-        interpreter: "CPython interprets your test scripts at runtime — no compile step, which is why you can edit a test and immediately rerun it.",
-        macos: "The host OS of iOS automation — Xcode, the Simulator, Appium, and Python all run here, governed by its kernel.",
-        simulator: "Your primary test target during development — a full iOS environment running as a macOS process, driven by XCUITest via Appium.",
-        xcode: "Xcode ships the Simulator, XCUITest, and xcodebuild — Appium's iOS driver can't function without the toolchain Xcode installs.",
-        visualstudiocode: "Your cockpit: you write Python test scripts in VS Code, run them from its terminal, and debug Appium sessions with its Python extension.",
-        ios: "The target platform — everything in this pipeline exists to remotely control an iOS app you can't touch directly.",
-        iphone: "The end target of the whole pipeline — whether Simulator or physical device, every command ultimately lands as a UI action here."
-      };
-
-      const genericRelevance = [
-        "In your mobile automation stack, this sits somewhere on the path between your Python test script and the iOS app — Appium relies on it working correctly.",
-        "For mobile automation, understanding this helps you debug the Python → Appium → XCUITest → iOS pipeline when tests fail mysteriously.",
-        "In the Appium world, this is part of the machinery that carries your test commands from Python to the iOS device and back."
-      ];
-
-      const raw = (currentSelection || term).toLowerCase();
-      const key = raw.replace(/[^a-z0-9]/g, '');
-      const words = raw.split(/[^a-z0-9]+/).filter(Boolean);
-
-      const compose = (k) =>
-        analogies[k] + "\n\n🔗 In mobile automation: " + (relevance[k] || genericRelevance[k.length % genericRelevance.length]);
-
-      // 1. Exact match on the full selection
-      if (analogies[key]) return compose(key);
-      // 2. Longest dictionary key contained in the squashed selection (min length 4 to avoid false hits)
-      const keys = Object.keys(analogies).sort((a, b) => b.length - a.length);
-      for (const k of keys) {
-        if (k.length >= 4 && key.includes(k)) return compose(k);
-      }
-      // 3. Whole-word match for short keys like "ip", "ast", "pid"
-      for (const k of keys) {
-        if (words.includes(k)) return compose(k);
-      }
-      // 4. Varied generic fallback (deterministic per term, but different across terms)
-      const fallbacks = [
-        `"${term}" works like a department inside the Super Mall: it has one clear job, a counter where requests arrive, and it hands finished work to the next department down the hall.`,
-        `Picture "${term}" as a set of house rules posted by the mall's General Manager: every store must follow them so the whole building runs predictably.`,
-        `"${term}" is like a service window in the Super Mall: tenants line up, submit a standard form, and the mall handles the messy details behind the wall.`,
-        `Think of "${term}" as part of the mall's back-of-house machinery: shoppers never see it, but every delivery and every open store depends on it humming along.`,
-        `"${term}" plays the role of a mall coordinator: it doesn't do the work itself, it makes sure the right store gets the right package at the right time.`
-      ];
-      let hash = 0;
-      for (const ch of key) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
-      return fallbacks[hash % fallbacks.length] +
-        "\n\n🔗 In mobile automation: " + genericRelevance[hash % genericRelevance.length];
-    }
-
-    /* ================= MOBILE SDET TUTOR CHAT ================= */
-    const chatMessages = document.getElementById('chat-messages');
-    const CHAT_STORAGE = 'cs198_chat_history';
-
-    function openChat() {
-      chatPanel.classList.add('open');
-      chatPanel.style.width = `${chatWidth}px`;
-      document.body.style.marginRight = `${chatWidth}px`;
-      localStorage.setItem('cs198_chat_open', '1');
-    }
-    function closeChat() {
-      chatPanel.classList.remove('open');
-      document.body.style.marginRight = '';
-      localStorage.setItem('cs198_chat_open', '0');
-    }
-    let chatWidth = 380;
-
-    // Drag the left edge to resize, like VS Code panels
-    const chatResizer = document.getElementById('chat-resizer');
-    let resizingChat = false;
-    chatResizer.addEventListener('mousedown', (e) => {
-      resizingChat = true;
-      chatResizer.classList.add('dragging');
-      document.body.classList.add('resizing-chat');
-      e.preventDefault();
-    });
-    document.addEventListener('mousemove', (e) => {
-      if (!resizingChat) return;
-      chatWidth = Math.min(680, Math.max(280, window.innerWidth - e.clientX));
-      chatPanel.style.width = `${chatWidth}px`;
-      document.body.style.marginRight = `${chatWidth}px`;
-    });
-    document.addEventListener('mouseup', () => {
-      if (!resizingChat) return;
-      resizingChat = false;
-      chatResizer.classList.remove('dragging');
-      document.body.classList.remove('resizing-chat');
-    });
-    document.getElementById('chat-fab').addEventListener('click', () => {
-      chatPanel.classList.contains('open') ? closeChat() : openChat();
-    });
-    document.getElementById('btn-chat-close').addEventListener('click', closeChat);
-
-    function offerSelectionInChat(text) {
-      document.getElementById('chat-selection-text').textContent = text;
-      document.getElementById('chat-selection').classList.add('active');
-    }
-    function clearChatSelection() {
-      document.getElementById('chat-selection').classList.remove('active');
-    }
-    document.getElementById('btn-sel-clear').addEventListener('click', clearChatSelection);
-
-    function loadChat() {
-      try { return JSON.parse(localStorage.getItem(CHAT_STORAGE)) || []; } catch { return []; }
-    }
-    function saveChat(list) { localStorage.setItem(CHAT_STORAGE, JSON.stringify(list.slice(-60))); }
-
-    function addMsg(role, text, { chip = null, save = true, thinking = false, insertTerm = null, insertOcc = null, mermaidCode = null } = {}) {
-      document.getElementById('chat-empty')?.remove();
-      const msg = document.createElement('div');
-      msg.className = 'msg ' + (role === 'user' ? 'user' : 'assistant') + (thinking ? ' thinking' : '');
-      const author = document.createElement('div');
-      author.className = 'msg-author';
-      author.textContent = '🎓 Tutor';
-      msg.appendChild(author);
-      if (chip) {
-        const c = document.createElement('span');
-        c.className = 'code-chip'; c.textContent = chip;
-        msg.appendChild(c);
-        msg.appendChild(document.createElement('br'));
-      }
-      const body = document.createElement('div');
-      body.className = 'msg-body'; body.textContent = text;
-      msg.appendChild(body);
-      if (mermaidCode) {
-        const box = document.createElement('div');
-        box.className = 'mermaid-box';
-        box.textContent = 'Rendering diagram…';
-        msg.appendChild(box);
-        const mid = 'mmd' + Date.now().toString(36) + Math.floor(Math.random() * 1e6);
-        try {
-          window.mermaid.render(mid, mermaidCode)
-            .then(r => { box.innerHTML = r.svg; chatMessages.scrollTop = chatMessages.scrollHeight; })
-            .catch(() => { box.textContent = mermaidCode; });
-        } catch { box.textContent = mermaidCode; }
-      }
-      if (role === 'assistant' && !thinking) {
-        const actions = document.createElement('div');
-        actions.className = 'msg-actions';
-        if (insertTerm !== null && insertOcc !== null) {
-          const ins = document.createElement('button');
-          ins.textContent = '📌 Insert into lecture';
-          ins.addEventListener('click', () => {
-            if (insertAnnotation(insertTerm, insertOcc, body.textContent)) {
-              ins.textContent = '✅ Inserted';
-              ins.disabled = true;
-            }
-          });
-          actions.appendChild(ins);
-        }
-        const copy = document.createElement('button');
-        copy.textContent = '⧉ Copy';
-        copy.addEventListener('click', () => navigator.clipboard?.writeText(body.textContent));
-        actions.appendChild(copy);
-        msg.appendChild(actions);
-      }
-      chatMessages.appendChild(msg);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-      if (save) { const h = loadChat(); h.push({ role, text, chip, insertTerm, insertOcc, mermaidCode }); saveChat(h); }
-      return msg;
-    }
-
-    async function runExplain(term, context, occ) {
-      addMsg('user', 'Explain:', { chip: term, insertTerm: term, insertOcc: occ });
-      const th = addMsg('assistant', 'Consulting the Super Mall Manager…', { save: false, thinking: true });
-      try {
-        const answer = await fetchAnalogyFromAI(term, context);
-        th.remove();
-        addMsg('assistant', answer, { insertTerm: term, insertOcc: occ });
-      } catch (err) {
-        th.remove();
-        addMsg('assistant', `❌ Gemini request failed (${err.message}). No hard-coded answer was substituted. Check your API key via ⚙️ or try again after the rate limit resets.`);
-      }
-    }
-
-    async function fetchGeminiDiagram(term, context) {
-      const systemPrompt =
-        TUTOR_MISSION + "\n\n" +
-        "TASK: The student wants a DIAGRAM of the highlighted concept. Reply with ONLY valid Mermaid " +
-        "diagram code — no markdown fences, no commentary, no explanation. Choose the best type: " +
-        "'sequenceDiagram' for protocols/handshakes/interactions, 'flowchart TD' or 'flowchart LR' for " +
-        "structures, layers, and pipelines. Keep it focused: 6-14 nodes maximum, short clear labels " +
-        "(emoji welcome). Ground it in the iOS test automation pipeline (Python → Appium → XCUITest → " +
-        "iOS Simulator) and the lecture context. Use only basic flowchart/sequence syntax — no advanced " +
-        "Mermaid features. Quote node labels that contain parentheses or special characters.";
-      let code = await geminiCall(systemPrompt,
-        `Concept to diagram: "${term}"\n\nLecture context:\n${(context || '').slice(0, 1500)}`);
-      if (!code) return null;
-      return code.replace(/```(?:mermaid)?/gi, '').trim();
-    }
-
-    async function runDiagram(term, context) {
-      addMsg('user', 'Diagram:', { chip: term });
-      if (!getGeminiKey()) {
-        addMsg('assistant', "⚪ Diagrams need a Gemini API key — highlight any text, click ⚙️ in the tooltip, and paste a free key from aistudio.google.com/apikey.");
-        return;
-      }
-      const th = addMsg('assistant', 'Drawing the blueprint…', { save: false, thinking: true });
-      try {
-        const code = await fetchGeminiDiagram(term, context);
-        th.remove();
-        if (code) addMsg('assistant', `📊 ${term}`, { mermaidCode: code });
-        else addMsg('assistant', 'Hmm, I could not draw that one — try highlighting a more specific concept.');
-      } catch (err) {
-        th.remove();
-        addMsg('assistant', `❌ Diagram failed (${err.message}). Check your Gemini key via ⚙️.`);
-      }
-    }
-
-    async function sendChat() {
-      const input = document.getElementById('chat-input');
-      const q = input.value.trim();
-      if (!q) return;
-      input.value = '';
-      const chip = document.getElementById('chat-selection').classList.contains('active') ? currentSelection : null;
-      clearChatSelection();
-      addMsg('user', q, { chip });
-      const th = addMsg('assistant', 'Thinking…', { save: false, thinking: true });
-      const answer = await fetchAnswerFromAI(q, chip);
-      th.remove();
-      addMsg('assistant', answer);
-    }
-    document.getElementById('btn-send').addEventListener('click', sendChat);
-    document.getElementById('chat-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
-    });
-
-    document.getElementById('btn-chat-clear').addEventListener('click', () => {
-      saveChat([]);
-      chatMessages.innerHTML = '<div class="chat-empty" id="chat-empty">🎓 History cleared. Highlight lecture text or ask me anything.</div>';
-    });
-
-    // ==================== 🧠 QUIZ ME MODE ====================
-    const QUIZ_STATS = 'cs198_quiz_stats';
-    let quiz = null; // { title, sectionText, questions: [{q, key}], idx, score }
-
-    function quizSections() {
-      return [...document.querySelectorAll('#content section')].map(s => {
-        const h = s.querySelector('h2');
-        return h ? { title: h.textContent.trim(), text: s.textContent.replace(/\s+/g, ' ').trim() } : null;
-      }).filter(Boolean);
-    }
-    function loadQuizStats() { try { return JSON.parse(localStorage.getItem(QUIZ_STATS)) || {}; } catch { return {}; } }
-    function saveQuizStats(s) { localStorage.setItem(QUIZ_STATS, JSON.stringify(s)); }
-    function recordQuizResult(title, points) {
-      const stats = loadQuizStats();
-      const e = stats[title] || { asked: 0, score: 0 };
-      e.asked += 1; e.score += points;
-      stats[title] = e; saveQuizStats(stats);
-    }
-    function weakSpotReport() {
-      const stats = loadQuizStats();
-      const rows = Object.entries(stats)
-        .filter(([, e]) => e.asked >= 2)
-        .map(([t, e]) => ({ t, pct: Math.round((e.score / e.asked) * 100) }))
-        .sort((a, b) => a.pct - b.pct);
-      if (!rows.length) return '';
-      const weak = rows.filter(r => r.pct < 70);
-      let out = '\n📈 Your section scores:\n' + rows.map(r => `${r.pct >= 70 ? '🟢' : '🔴'} ${r.pct}% — ${r.t}`).join('\n');
-      if (weak.length) out += `\n\n🎯 Weak spots to re-read: ${weak.map(r => r.t).join(' · ')}`;
-      return out;
-    }
-
-    // ── Quiz Explorer sidebar (VS Code style) ──
-    const quizPanel = document.getElementById('quiz-panel');
-    let quizPanelWidth = 260;
-
-    function sectionIcon(title) {
-      const m = title.match(/^\p{Extended_Pictographic}/u);
-      return m ? m[0] : '📄';
-    }
-    function buildQuizTree() {
-      const tree = document.getElementById('qz-tree');
-      tree.innerHTML = '';
-      const stats = loadQuizStats();
-      const folder = document.createElement('div');
-      folder.className = 'qz-folder';
-      folder.innerHTML = '<span class="chev">▼</span><span>CS 198 — LECTURE SECTIONS</span>';
-      tree.appendChild(folder);
-      const rows = [...quizSections().map(s => ({ section: s, label: s.title })),
-                    { section: null, label: '🎲 Mixed review' }];
-      rows.forEach(({ section, label }) => {
-        const statKey = section ? section.title : '🎲 Mixed review';
-        const row = document.createElement('div');
-        row.className = 'qz-row';
-        if (quiz && quiz.title === statKey) row.classList.add('active');
-        const icon = sectionIcon(label);
-        const name = label.replace(/^\p{Extended_Pictographic}\s*/u, '');
-        const e = stats[statKey];
-        const pct = e && e.asked ? Math.round((e.score / e.asked) * 100) : null;
-        const badgeCls = pct === null ? '' : pct >= 70 ? 'good' : pct >= 40 ? 'mid' : 'low';
-        row.innerHTML = `<span class="qz-icon"></span><span class="qz-name"></span>` +
-          `<span class="qz-badge ${badgeCls}"></span>`;
-        row.querySelector('.qz-icon').textContent = icon;
-        row.querySelector('.qz-name').textContent = name;
-        row.querySelector('.qz-badge').textContent = pct === null ? '—' : pct + '%';
-        row.title = `Quiz me: ${statKey}`;
-        row.addEventListener('click', () => {
-          startQuiz(section);
-        });
-        tree.appendChild(row);
-      });
-      const foot = document.getElementById('qz-foot');
-      const report = weakSpotReport();
-      if (report) {
-        foot.style.display = '';
-        foot.innerHTML = '<div class="qz-foot-title">📈 Progress</div>';
-        const txt = document.createElement('div');
-        txt.textContent = report.replace(/\n?📈 Your section scores:\n/, '').trim();
-        txt.style.whiteSpace = 'pre-line';
-        foot.appendChild(txt);
-      } else {
-        foot.innerHTML = '<div class="qz-foot-title">📈 Progress</div>Click a section to start a 3-question quiz. Scores show up here.';
-      }
-    }
-
-    function openQuizPanel() {
-      buildQuizTree();
-      quizPanel.classList.add('open');
-      document.body.style.marginLeft = `${quizPanelWidth}px`;
-      localStorage.setItem('cs198_quiz_open', '1');
-    }
-    function closeQuizPanel() {
-      quizPanel.classList.remove('open');
-      document.body.style.marginLeft = '0';
-      localStorage.setItem('cs198_quiz_open', '0');
-    }
-    document.getElementById('quiz-fab').addEventListener('click', () => {
-      quizPanel.classList.contains('open') ? closeQuizPanel() : openQuizPanel();
-    });
-    document.getElementById('btn-quiz-close').addEventListener('click', closeQuizPanel);
-
-    // resizer (drag right edge)
-    const quizResizer = document.getElementById('quiz-panel-resizer');
-    let resizingQuiz = false;
-    quizResizer.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      resizingQuiz = true;
-      quizResizer.classList.add('dragging');
-      document.body.classList.add('resizing-quiz');
-    });
-    document.addEventListener('mousemove', (e) => {
-      if (!resizingQuiz) return;
-      quizPanelWidth = Math.min(420, Math.max(200, e.clientX));
-      quizPanel.style.width = `${quizPanelWidth}px`;
-      document.body.style.marginLeft = `${quizPanelWidth}px`;
-    });
-    document.addEventListener('mouseup', () => {
-      if (!resizingQuiz) return;
-      resizingQuiz = false;
-      quizResizer.classList.remove('dragging');
-      document.body.classList.remove('resizing-quiz');
-    });
-
-    // Quiz UI helpers (left panel)
-    function qzCard(kind, text) {
-      const c = document.createElement('div');
-      c.className = 'qz-card' + (kind ? ' ' + kind : '');
-      c.textContent = text;
-      const feed = document.getElementById('qz-feed');
-      feed.appendChild(c);
-      feed.scrollTop = feed.scrollHeight;
-      return c;
-    }
-    function updateQzHead() {
-      if (!quiz) return;
-      document.getElementById('qzq-title').textContent =
-        `${quiz.title} · Q${Math.min(quiz.idx + 1, quiz.questions.length)}/${quiz.questions.length}`;
-      const dots = document.getElementById('qz-dots');
-      dots.innerHTML = '';
-      quiz.questions.forEach((_, i) => {
-        const d = document.createElement('span');
-        d.className = 'qdot';
-        if (i < quiz.idx) {
-          const p = quiz.results?.[i] ?? 0;
-          d.classList.add(p >= 0.75 ? 'done-full' : p > 0 ? 'done-half' : 'done-zero');
-        } else if (i === quiz.idx) d.classList.add('current');
-        dots.appendChild(d);
-      });
-    }
-    function enterQuizView() {
-      quizPanel.classList.add('quizzing');
-      document.getElementById('qz-feed').innerHTML = '';
-      document.getElementById('qz-answer').value = '';
-      document.getElementById('qz-answer').disabled = false;
-    }
-    function exitQuizView() {
-      quizPanel.classList.remove('quizzing');
-      buildQuizTree();
-    }
-
-    async function startQuiz(section) {
-      enterQuizView();
-      if (!getGeminiKey()) {
-        qzCard('bad', '⚪ Quiz Me needs a Gemini API key — highlight any lecture text, click ⚙️ in the tooltip, and paste a free key from aistudio.google.com/apikey.');
-        return;
-      }
-      const sections = quizSections();
-      let title, sourceText;
-      if (section) {
-        title = section.title;
-        sourceText = section.text;
-      } else {
-        title = '🎲 Mixed review';
-        sourceText = sections.map(s => `## ${s.title}\n${s.text.slice(0, 1200)}`).join('\n\n');
-      }
-      document.getElementById('qzq-title').textContent = title;
-      document.getElementById('qz-dots').innerHTML = '';
-      const th = qzCard('think', 'Writing your quiz…');
-      try {
-        const systemPrompt = TUTOR_MISSION + '\n\nTASK: Write exactly 3 active-recall quiz questions from the lecture section below. ' +
-          'Mix difficulty: 1 recall, 1 conceptual "why/how", 1 applied scenario a Mobile SDET would face. ' +
-          'Questions must be answerable from the section content. For each question also write 3 progressively revealing hints ' +
-          '(Khan Academy style): hint 1 = a gentle nudge pointing where to think, hint 2 = a partial step toward the answer, ' +
-          'hint 3 = nearly the full answer. Reply with ONLY a JSON array, no fences, no commentary: ' +
-          '[{"q":"question text","key":"the key points a correct answer must include","hints":["nudge","partial","almost full answer"]}]';
-        const raw = await geminiCall(systemPrompt, `Section: ${title}\n\n${sourceText.slice(0, 6000)}`);
-        const jsonText = (raw || '').replace(/```(?:json)?/gi, '').trim();
-        const questions = JSON.parse(jsonText.slice(jsonText.indexOf('['), jsonText.lastIndexOf(']') + 1));
-        if (!Array.isArray(questions) || !questions.length || !questions[0].q) throw new Error('bad quiz format');
-        th.remove();
-        quiz = { title, sectionText: sourceText.slice(0, 6000), questions, idx: 0, score: 0, hintsUsed: 0, results: [] };
-        askQuizQuestion();
-      } catch (err) {
-        th.remove();
-        qzCard('bad', `❌ Couldn't build the quiz. ${err.message}.`);
-        const feed = document.getElementById('qz-feed');
-        const row = document.createElement('div');
-        row.className = 'qz-btn-row';
-        const retry = document.createElement('button');
-        retry.className = 'qz-again';
-        retry.textContent = '🔁 Try again';
-        retry.addEventListener('click', () => startQuiz(section));
-        const back = document.createElement('button');
-        back.className = 'qz-again';
-        back.textContent = '← All sections';
-        back.addEventListener('click', exitQuizView);
-        row.appendChild(retry); row.appendChild(back);
-        feed.appendChild(row);
-      }
-    }
-
-    // Khan Academy-style question card with progressive hints
-    function askQuizQuestion() {
-      const q = quiz.questions[quiz.idx];
-      quiz.hintsUsed = 0;
-      updateQzHead();
-      qzCard('q', `Q${quiz.idx + 1}/${quiz.questions.length}: ${q.q}`);
-      const hints = Array.isArray(q.hints) ? q.hints.filter(h => typeof h === 'string' && h.trim()) : [];
-      if (!hints.length) return;
-      const feed = document.getElementById('qz-feed');
-      const wrap = document.createElement('div');
-      wrap.className = 'quiz-hint-msg';
-      const list = document.createElement('div');
-      list.className = 'hint-list';
-      wrap.appendChild(list);
-      const btn = document.createElement('button');
-      btn.className = 'hint-btn';
-      btn.textContent = `＋ Get a hint (0/${hints.length})`;
-      btn.addEventListener('click', () => {
-        const n = quiz ? quiz.hintsUsed : hints.length;
-        if (n >= hints.length) return;
-        const row = document.createElement('div');
-        row.className = 'hint-item';
-        row.innerHTML = `<span class="hint-num">${n + 1} / ${hints.length}</span><span class="hint-text"></span>`;
-        row.querySelector('.hint-text').textContent = hints[n];
-        list.appendChild(row);
-        if (quiz) quiz.hintsUsed = n + 1;
-        if (n + 1 >= hints.length) { btn.disabled = true; btn.textContent = 'All hints shown — give it your best answer!'; }
-        else btn.textContent = `＋ Get another hint (${n + 1}/${hints.length})`;
-        feed.scrollTop = feed.scrollHeight;
-      });
-      wrap.appendChild(btn);
-      feed.appendChild(wrap);
-      feed.scrollTop = feed.scrollHeight;
-    }
-
-    async function gradeQuizAnswer(answer) {
-      const q = quiz.questions[quiz.idx];
-      if (/^(stop|quit|exit|end)$/i.test(answer.trim())) { endQuiz(true); return; }
-      // freeze hint buttons for this question
-      document.querySelectorAll('#qz-feed .hint-btn:not(:disabled)').forEach(b => { b.disabled = true; b.style.display = 'none'; });
-      const hintsUsed = quiz.hintsUsed || 0;
-      qzCard('you', answer);
-      const th = qzCard('think', 'Grading…');
-      let points = 0, cls, feedback;
-      try {
-        const systemPrompt = TUTOR_MISSION + '\n\nTASK: Grade the student\'s quiz answer. First line must be exactly one of: ' +
-          'VERDICT: correct | VERDICT: partial | VERDICT: incorrect. Then 2-4 sentences of feedback: what they got right, ' +
-          'what they missed (using the key points), and one crisp takeaway. Be encouraging but honest — this student is training to be a mid-level Mobile SDET.';
-        const raw = await geminiCall(systemPrompt,
-          `Question: ${q.q}\n\nKey points for a correct answer: ${q.key}\n\nStudent's answer: ${answer}\n\nLecture excerpt:\n${quiz.sectionText.slice(0, 2500)}`);
-        const verdict = (raw.match(/VERDICT:\s*(correct|partial|incorrect)/i) || [])[1]?.toLowerCase() || 'partial';
-        points = verdict === 'correct' ? 1 : verdict === 'partial' ? 0.5 : 0;
-        // Khan-style: hints reduce credit a little, never below 0
-        if (hintsUsed > 0 && points > 0) points = Math.max(0.25, points - 0.2 * hintsUsed);
-        cls = verdict === 'correct' ? 'good' : verdict === 'partial' ? 'mid' : 'bad';
-        const icon = verdict === 'correct' ? '✅' : verdict === 'partial' ? '🟡' : '❌';
-        const hintNote = hintsUsed > 0 ? ` (💡 ${hintsUsed} hint${hintsUsed > 1 ? 's' : ''} used)` : '';
-        feedback = `${icon} ${verdict.toUpperCase()}${hintNote}\n${raw.replace(/VERDICT:.*(\n|$)/i, '').trim()}`;
-      } catch (err) {
-        th.remove();
-        qzCard('bad', `❌ Grading failed (${err.message}). Your answer wasn't counted — try again.`);
-        return;
-      }
-      th.remove();
-      quiz.score += points;
-      quiz.results.push(points);
-      recordQuizResult(quiz.title, points);
-      qzCard(cls, feedback);
-      quiz.idx += 1;
-      if (quiz.idx < quiz.questions.length) {
-        askQuizQuestion();
-      } else {
-        endQuiz(false);
-      }
-    }
-
-    function endQuiz(early) {
-      const pct = quiz.idx ? Math.round((quiz.score / quiz.idx) * 100) : 0;
-      const grade = pct >= 90 ? '🏆 Outstanding' : pct >= 70 ? '💪 Solid' : pct >= 40 ? '📚 Getting there' : '🔁 Re-read this section';
-      updateQzHead();
-      qzCard('summary',
-        `🏁 QUIZ COMPLETE${early ? ' (ended early)' : ''}\n` +
-        `Score: ${quiz.score}/${quiz.idx} (${pct}%) — ${grade}` +
-        weakSpotReport());
-      const lastTitle = quiz.title;
-      const lastSection = quizSections().find(s => s.title === lastTitle) || null;
-      quiz = null;
-      document.getElementById('qz-answer').disabled = true;
-      const feed = document.getElementById('qz-feed');
-      const row = document.createElement('div');
-      row.className = 'qz-btn-row';
-      const again = document.createElement('button');
-      again.className = 'qz-again';
-      again.textContent = '🔁 Quiz again';
-      again.addEventListener('click', () => startQuiz(lastTitle === '🎲 Mixed review' ? null : lastSection));
-      const back = document.createElement('button');
-      back.className = 'qz-again';
-      back.textContent = '← All sections';
-      back.addEventListener('click', exitQuizView);
-      row.appendChild(again); row.appendChild(back);
-      feed.appendChild(row);
-      feed.scrollTop = feed.scrollHeight;
-    }
-
-    function submitQuizAnswer() {
-      const input = document.getElementById('qz-answer');
-      const a = input.value.trim();
-      if (!a || !quiz) return;
-      input.value = '';
-      gradeQuizAnswer(a);
-    }
-    document.getElementById('qz-submit').addEventListener('click', submitQuizAnswer);
-    document.getElementById('qz-answer').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitQuizAnswer(); }
-    });
-    document.getElementById('qzq-back').addEventListener('click', () => {
-      if (quiz) endQuiz(true);
-      exitQuizView();
-    });
-
-    // Quiz Explorer restores open by default (stays closed only if user closed it)
-    if (localStorage.getItem('cs198_quiz_open') !== '0') openQuizPanel();
-    else buildQuizTree();
-    document.getElementById('chip-learn').addEventListener('click', () => {
-      const input = document.getElementById('chat-input');
-      input.value = 'What should I learn today?';
-      sendChat();
-    });
-    // ==================== end quiz mode ====================
-
-
-    for (const m of loadChat()) {
-      addMsg(m.role, m.text, { chip: m.chip, save: false, insertTerm: m.insertTerm ?? null, insertOcc: m.insertOcc ?? null, mermaidCode: m.mermaidCode ?? null });
-    }
-
-    // Chat is open by default (stays closed only if the user closed it last time)
-    if (localStorage.getItem('cs198_chat_open') !== '0') openChat();
-  </script>
+  <a class="top" href="#top" aria-label="Back to top">↑</a>
 </body>
 </html>
