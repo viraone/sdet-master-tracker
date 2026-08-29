@@ -1146,7 +1146,7 @@ Content-Length: 154
       const key = getGeminiKey().trim();
       if (!key) throw new Error("No API key configured. Click ⚙️ to add your Gemini API key.");
 
-      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";   
+      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";   
       
         const makeBody = () => JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
