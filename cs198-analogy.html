@@ -280,6 +280,8 @@
     .insight-action:hover { color:#fff; border-color:#60718f; transform:translateY(-1px); }
     .insight-action.cancel { color:#ff7777; border-color:#71373d; background:#24151a; }
     .insight-action.cancel:hover { color:#fff; background:#a32f3a; border-color:#dd4f5b; }
+    .insight-action.copy { color:#79b8ff; border-color:#315b88; background:#102033; }
+    .insight-action.copy:hover { color:#07131f; background:#79b8ff; border-color:#79b8ff; }
     .insight-action.save { color:#63df9a; border-color:#286444; background:#10231a; }
     .insight-action.save:hover { color:#07150d; background:#63df9a; border-color:#63df9a; }
     .insight-action[hidden] { display:none; }
@@ -1521,22 +1523,25 @@ Content-Length: 154
       const cancel = document.createElement('button');
       cancel.type = 'button'; cancel.className = 'insight-action cancel'; cancel.textContent = '✕'; cancel.hidden = true;
       cancel.title = 'Cancel editing'; cancel.setAttribute('aria-label', 'Cancel editing');
+      const copy = document.createElement('button');
+      copy.type = 'button'; copy.className = 'insight-action copy'; copy.textContent = '⧉'; copy.hidden = true;
+      copy.title = 'Copy highlighted text to clipboard'; copy.setAttribute('aria-label', 'Copy highlighted text to clipboard');
       const save = document.createElement('button');
       save.type = 'button'; save.className = 'insight-action save'; save.textContent = '✓'; save.hidden = true;
       save.title = 'Save changes'; save.setAttribute('aria-label', 'Save changes');
-      actions.append(edit, cancel, save); card.appendChild(actions);
+      actions.append(edit, cancel, copy, save); card.appendChild(actions);
 
       let beforeEdit = body.textContent;
       function finishEditing() {
         body.removeAttribute('contenteditable');
         card.classList.remove('editing');
-        edit.hidden = false; cancel.hidden = true; save.hidden = true;
+        edit.hidden = false; cancel.hidden = true; copy.hidden = true; save.hidden = true;
       }
       edit.addEventListener('click', () => {
         beforeEdit = body.textContent;
         body.setAttribute('contenteditable', 'plaintext-only');
         card.classList.add('editing');
-        edit.hidden = true; cancel.hidden = false; save.hidden = false;
+        edit.hidden = true; cancel.hidden = false; copy.hidden = false; save.hidden = false;
         body.focus();
         const range = document.createRange();
         range.selectNodeContents(body); range.collapse(false);
@@ -1546,6 +1551,23 @@ Content-Length: 154
       cancel.addEventListener('click', () => {
         body.textContent = beforeEdit;
         finishEditing();
+      });
+      // Keep the current text selection intact when the clipboard button is pressed.
+      copy.addEventListener('mousedown', (event) => event.preventDefault());
+      copy.addEventListener('click', async () => {
+        const selection = window.getSelection();
+        const selectedText = selection && selection.rangeCount && body.contains(selection.getRangeAt(0).commonAncestorContainer)
+          ? selection.toString().trim()
+          : '';
+        const textToCopy = selectedText || body.textContent;
+        try {
+          await navigator.clipboard.writeText(textToCopy);
+          copy.textContent = '✓'; copy.title = selectedText ? 'Highlighted text copied' : 'Card text copied';
+          window.setTimeout(() => { copy.textContent = '⧉'; copy.title = 'Copy highlighted text to clipboard'; }, 1200);
+        } catch {
+          copy.textContent = '!'; copy.title = 'Clipboard access failed';
+          window.setTimeout(() => { copy.textContent = '⧉'; copy.title = 'Copy highlighted text to clipboard'; }, 1200);
+        }
       });
       save.addEventListener('click', () => {
         const text = body.textContent.trim();
