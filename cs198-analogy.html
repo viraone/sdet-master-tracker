@@ -998,10 +998,12 @@ Content-Length: 154
       chatPanel.classList.add('open');
       chatPanel.style.width = `${chatWidth}px`;
       document.body.style.marginRight = `${chatWidth}px`;
+      localStorage.setItem('cs198_chat_open', '1');
     }
     function closeChat() {
       chatPanel.classList.remove('open');
       document.body.style.marginRight = '';
+      localStorage.setItem('cs198_chat_open', '0');
     }
     let chatWidth = 380;
 
@@ -1123,6 +1125,9 @@ Content-Length: 154
     for (const m of loadChat()) {
       addMsg(m.role, m.text, { chip: m.chip, save: false, insertTerm: m.insertTerm ?? null, insertOcc: m.insertOcc ?? null });
     }
+
+    // Chat is open by default (stays closed only if the user closed it last time)
+    if (localStorage.getItem('cs198_chat_open') !== '0') openChat();
   </script>
 </body>
 </html>
