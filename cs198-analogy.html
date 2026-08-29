@@ -1141,28 +1141,25 @@ Content-Length: 154
         `Highlighted term: "${term}"\n\nSurrounding lecture context:\n${(context || '').slice(0, 1500)}`);
     }
 
-    // Shared Gemini call with thinking-budget retry (mirrors code-explainer.html)
+    // Shared Gemini call with free-tier-friendly output limits and retry backoff.
     async function geminiCall(systemPrompt, userText) {
       const key = getGeminiKey();
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`;
-      const makeBody = (withThinkingCap) => JSON.stringify({
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`;
+      const makeBody = () => JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: [{ role: 'user', parts: [{ text: userText }] }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 8000,
-          ...(withThinkingCap ? { thinkingConfig: { thinkingBudget: 1024 } } : {})
+          maxOutputTokens: 2048
         }
       });
-      const doFetch = (withThinkingCap) =>
-        fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: makeBody(withThinkingCap) });
-      let res = await doFetch(true);
-      if (!res.ok && res.status === 400) res = await doFetch(false);
-      // Retry transient errors (503 overloaded / 429 rate limit) with backoff
+      const doFetch = () =>
+        fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: makeBody() });
+      let res = await doFetch();
+      // Retry transient errors (503 overloaded / 429 rate limit) with backoff.
       for (let attempt = 1; attempt <= 3 && !res.ok && (res.status === 503 || res.status === 429); attempt++) {
-        await new Promise(r => setTimeout(r, 1200 * attempt));
-        res = await doFetch(true);
-        if (!res.ok && res.status === 400) res = await doFetch(false);
+        await new Promise(r => setTimeout(r, 2000 * attempt));
+        res = await doFetch();
       }
       if (!res.ok) {
         throw new Error(res.status === 503 ? 'Gemini is overloaded right now — wait a few seconds and try again'
