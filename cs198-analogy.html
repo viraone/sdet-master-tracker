@@ -808,7 +808,6 @@ Content-Length: 154
         <div class="chat-sub">Stanford-style · Super Mall Method</div>
       </div>
       <span class="spacer"></span>
-      <button id="btn-quiz" title="Quiz me on a lecture section">🧠</button>
       <button id="btn-chat-clear" title="Clear chat history">🗑</button>
       <button id="btn-chat-close" title="Hide chat">✕</button>
     </div>
@@ -817,7 +816,6 @@ Content-Length: 154
     </div>
     <div class="chat-footer">
       <div class="quick-row" id="quick-row">
-        <button class="quick-chip" id="chip-quiz">🧠 Quiz me</button>
         <button class="quick-chip" id="chip-learn">✨ What should I learn?</button>
       </div>
       <div id="chat-selection">
@@ -1860,13 +1858,9 @@ Content-Length: 154
       exitQuizView();
     });
 
-    document.getElementById('btn-quiz').addEventListener('click', () => {
-      quizPanel.classList.contains('open') ? closeQuizPanel() : openQuizPanel();
-    });
     // Quiz Explorer restores open by default (stays closed only if user closed it)
     if (localStorage.getItem('cs198_quiz_open') !== '0') openQuizPanel();
     else buildQuizTree();
-    document.getElementById('chip-quiz').addEventListener('click', openQuizPanel);
     document.getElementById('chip-learn').addEventListener('click', () => {
       const input = document.getElementById('chat-input');
       input.value = 'What should I learn today?';
