@@ -1144,7 +1144,7 @@ Content-Length: 154
     // Shared Gemini call with free-tier-friendly output limits and retry backoff.
     async function geminiCall(systemPrompt, userText) {
       const key = getGeminiKey();
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`;
       const makeBody = () => JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: [{ role: 'user', parts: [{ text: userText }] }],
@@ -1200,12 +1200,9 @@ Content-Length: 154
     async function fetchAnalogyFromAI(term, context) {
       // 1. Real AI via Gemini
       if (getGeminiKey()) {
-        try {
-          const aiText = await fetchGeminiAnalogy(term, context);
-          if (aiText) return aiText;
-        } catch (err) {
-          console.warn('Gemini failed, falling back.', err);
-        }
+        const aiText = await fetchGeminiAnalogy(term, context);
+        if (!aiText) throw new Error('Gemini returned an empty response');
+        return aiText;
       }
       // 2. Custom backend
       if (ANALOGY_API_URL) {
@@ -1221,8 +1218,8 @@ Content-Length: 154
           console.warn('Analogy API failed, using local knowledge base.', err);
         }
       }
-      // 3. Offline knowledge base
-      return localAnalogy(term);
+      // 3. Offline knowledge base (only when no Gemini key is configured)
+      return `⚪ Offline built-in explanation (Gemini is not configured)\n\n${await localAnalogy(term)}`;
     }
 
     async function localAnalogy(term) {
@@ -1505,9 +1502,14 @@ Content-Length: 154
     async function runExplain(term, context, occ) {
       addMsg('user', 'Explain:', { chip: term, insertTerm: term, insertOcc: occ });
       const th = addMsg('assistant', 'Consulting the Super Mall Manager…', { save: false, thinking: true });
-      const answer = await fetchAnalogyFromAI(term, context);
-      th.remove();
-      addMsg('assistant', answer, { insertTerm: term, insertOcc: occ });
+      try {
+        const answer = await fetchAnalogyFromAI(term, context);
+        th.remove();
+        addMsg('assistant', answer, { insertTerm: term, insertOcc: occ });
+      } catch (err) {
+        th.remove();
+        addMsg('assistant', `❌ Gemini request failed (${err.message}). No hard-coded answer was substituted. Check your API key via ⚙️ or try again after the rate limit resets.`);
+      }
     }
 
     async function fetchGeminiDiagram(term, context) {
