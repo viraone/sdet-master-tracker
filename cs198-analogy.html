@@ -1144,7 +1144,7 @@ Content-Length: 154
     // Shared Gemini call with free-tier-friendly output limits and retry backoff.
     async function geminiCall(systemPrompt, userText) {
       const key = getGeminiKey();
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(key)}`;
       const makeBody = () => JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: [{ role: 'user', parts: [{ text: userText }] }],
