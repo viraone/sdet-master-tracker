@@ -254,7 +254,7 @@
     h1 { max-width:980px; margin:.7rem 0 1.2rem; font-size:clamp(2.7rem,7vw,6.8rem); line-height:.93; letter-spacing:-.065em; }
     .subtitle { color:var(--muted); max-width:760px; font-size:clamp(1.05rem,2vw,1.35rem); }
     .shell { width:min(1240px,100%); margin:auto; display:block; padding:.85rem clamp(1.2rem,4vw,3rem) 7rem; }
-    nav { margin:0 0 1rem; padding:1.25rem 1.4rem; border:1px solid var(--line); border-radius:14px; background:rgba(11,17,29,.72); }
+    nav { margin:0; padding:1.25rem 1.4rem; border:1px solid var(--line); border-radius:14px; background:rgba(11,17,29,.72); }
     nav h2 { font-size:.72rem; color:#708098; text-transform:uppercase; letter-spacing:.18em; margin:0 0 1rem; }
     nav { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); column-gap:1.5rem; }
     nav h2 { grid-column:1/-1; }
@@ -262,13 +262,16 @@
     nav a:hover { color:white } nav a span { color:#4f6788; font-family:ui-monospace,monospace; }
     article { min-width:0; width:100%; overflow:hidden; }
     .chapter { padding:0; scroll-margin-top:2rem; }
+    article > .chapter:first-child { padding-top:0; }
     .chapter > :last-child { margin-bottom:0; }
     .chapter + .chapter { border-top:1px solid var(--line); padding-top:.75rem; }
-    h2 { font-size:clamp(1.8rem,4vw,3.2rem); line-height:1.07; letter-spacing:-.04em; margin:.8rem 0 2rem; }
+    h2 { color:var(--ink); font-size:clamp(1.8rem,4vw,3.2rem); line-height:1.07; letter-spacing:-.04em; margin:.25rem 0 .75rem; }
     h3 { margin:2.7rem 0 1rem; font-size:1.25rem; line-height:1.3; color:#fff; }
     p { color:#c3cbd8; margin:.9rem 0; }
     code,pre { font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace; }
     .code-panel { width:100%; max-width:100%; margin:2rem 0; background:#060b13; border:1px solid #26334a; border-radius:16px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,.22); }
+    .chapter h2 + .code-panel { margin-top:0; }
+    .chapter-kicker + .code-panel { margin-top:.25rem; }
     .code-panel figcaption { padding:.65rem 1rem; border-bottom:1px solid #26334a; color:#6f819d; text-transform:uppercase; letter-spacing:.14em; font:700 .65rem/1 ui-monospace,monospace; }
     pre { width:100%; max-width:100%; margin:0; padding:1.4rem; overflow-x:auto; color:#afd4ff; line-height:1.45; }
     .code-panel pre,
@@ -316,7 +319,7 @@
   <header class="hero"><div class="hero-inner"><div class="eyebrow">Advanced systems lecture · Module 01</div><h1>CS 198: Advanced Mobile Test Infrastructure &amp; Systems Architecture</h1><p class="subtitle">Module 1: The Client Runtime, OS Kernel Boundaries, Protocol Serialization, and Transport Mechanics</p></div></header>
   <div class="shell">
     <nav aria-label="Course chapters"><h2>Course map</h2><a href="#full-systems-topology-the-m5-max-mega-mall"><span>01</span>🗺️ FULL SYSTEMS TOPOLOGY: THE M5 MAX MEGA-MALL</a><a href="#prologue-the-foundational-ecosystem"><span>02</span>🏛️ PROLOGUE: THE FOUNDATIONAL ECOSYSTEM</a><a href="#act-0-the-architectural-bureau-the-specialized-tool-locker-venv"><span>03</span>🎬 ACT 0: THE ARCHITECTURAL BUREAU &amp; THE SPECIALIZED TOOL LOCKER (venv)</a><a href="#act-ii-parsing-abstract-syntax-trees-ast-bytecode-compilation"><span>04</span>🎬 ACT II: PARSING, ABSTRACT SYNTAX TREES (AST), &amp; BYTECODE COMPILATION</a><a href="#act-iii-the-virtual-memory-heap-w3c-serialization"><span>05</span>🎬 ACT III: THE VIRTUAL MEMORY HEAP &amp; W3C SERIALIZATION</a><a href="#memory-boundary-deep-dive-mmu-tlb-unified-memory"><span>06</span>🛡️ MEMORY BOUNDARY DEEP DIVE: MMU, TLB, &amp; UNIFIED MEMORY</a><a href="#act-iv-application-layer-framing-http-1-1-post-session"><span>07</span>🎬 ACT IV: APPLICATION LAYER FRAMING (HTTP/1.1 POST /session)</a><a href="#act-v-the-transport-network-machinery-tcp-ip"><span>08</span>🎬 ACT V: THE TRANSPORT &amp; NETWORK MACHINERY (TCP/IP)</a><a href="#act-vi-the-loopback-driver-lo0-zero-wire-transit"><span>09</span>🎬 ACT VI: THE LOOPBACK DRIVER (lo0) &amp; ZERO-WIRE TRANSIT</a><a href="#act-vii-appium-receiving-dock-kqueue-xcuitest-dispatch"><span>10</span>🎬 ACT VII: APPIUM RECEIVING DOCK, kqueue, &amp; XCUITest DISPATCH</a><a href="#act-viii-complete-systems-mall-translation-matrix"><span>11</span>📋 ACT VIII: COMPLETE SYSTEMS &amp; MALL TRANSLATION MATRIX</a></nav>
-    <article><section id="full-systems-topology-the-m5-max-mega-mall" class="chapter"><div class="chapter-kicker">Chapter 01</div><h2>🗺️ FULL SYSTEMS TOPOLOGY: THE M5 MAX MEGA-MALL</h2>
+    <article><section id="full-systems-topology-the-m5-max-mega-mall" class="chapter"><div class="chapter-kicker">Chapter 01</div>
 <figure class="code-panel"><figcaption>System map</figcaption><pre><code>==================================================================================================
                  🏢 THE 16.2-INCH M5 MAX MEGA-MALL &amp; LOGISTICS COMPLEX 🏢
 ==================================================================================================
