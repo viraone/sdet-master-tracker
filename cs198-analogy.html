@@ -278,7 +278,7 @@
     .code-panel pre code { font-size:var(--course-map-font-size) !important; }
     .insight { position:relative; margin:1rem 0; padding:1.1rem 4.4rem 1.1rem 1.25rem; border:1px solid var(--line); border-left-width:4px; border-radius:0 12px 12px 0; background:rgba(17,24,39,.72); }
     .insight span { display:block; margin-bottom:.3rem; text-transform:uppercase; letter-spacing:.13em; font:800 .65rem/1.2 ui-monospace,monospace; }
-    .insight p { margin:0; color:#d2d9e5; }
+    .insight p { margin:0; color:#d2d9e5; white-space:pre-wrap; overflow-wrap:anywhere; }
     .insight-actions { position:absolute; top:.8rem; right:.8rem; display:flex; gap:.35rem; }
     .insight-action { width:1.8rem; height:1.8rem; display:grid; place-items:center; padding:0; border:1px solid #34425a; border-radius:7px; background:#111a29; color:#aab5c6; cursor:pointer; font:800 .9rem/1 system-ui,sans-serif; transition:border-color .15s,background .15s,color .15s,transform .15s; }
     .insight-action:hover { color:#fff; border-color:#60718f; transform:translateY(-1px); }
@@ -1605,7 +1605,7 @@ Content-Length: 154
         const selectedText = selection && selection.rangeCount && body.contains(selection.getRangeAt(0).commonAncestorContainer)
           ? selection.toString().trim()
           : '';
-        const textToCopy = selectedText || body.textContent;
+        const textToCopy = selectedText || body.innerText;
         try {
           await navigator.clipboard.writeText(textToCopy);
           copy.textContent = '✓'; copy.title = selectedText ? 'Highlighted text copied' : 'Card text copied';
@@ -1616,7 +1616,9 @@ Content-Length: 154
         }
       });
       save.addEventListener('click', () => {
-        const text = body.textContent.trim();
+        // innerText preserves visual line breaks inserted by Enter even when the
+        // browser represents them as <div> or <br> nodes inside contenteditable.
+        const text = body.innerText.replace(/\r\n?/g, '\n').trim();
         body.textContent = text;
         const edits = loadInsightEdits();
         edits[key] = text;
