@@ -731,6 +731,7 @@ Content-Length: 154
       <span class="flex items-center gap-2">
         <span id="selected-preview" class="text-xs text-gray-400 truncate max-w-[100px]"></span>
         <button id="btn-settings" title="Configure AI (Gemini API key)" class="text-gray-500 hover:text-gray-300 text-sm leading-none">⚙️</button>
+        <button id="btn-tooltip-close" type="button" title="Close Analogy AI" aria-label="Close Analogy AI" class="text-gray-400 hover:text-white text-base leading-none rounded focus:outline-none focus:ring-2 focus:ring-blue-400">✕</button>
       </span>
     </div>
 
@@ -787,7 +788,21 @@ Content-Length: 154
     const tooltip = document.getElementById('ai-tooltip');
     const selectedPreview = document.getElementById('selected-preview');
     const btnExplain = document.getElementById('btn-explain');
+    const btnTooltipClose = document.getElementById('btn-tooltip-close');
     const chatPanel = document.getElementById('chat-panel');
+
+    function closeTooltip() {
+      tooltip.classList.add('hidden');
+      currentSelection = null;
+      currentRange = null;
+      selectedPreview.textContent = '';
+      window.getSelection()?.removeAllRanges();
+    }
+
+    btnTooltipClose.addEventListener('click', closeTooltip);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !tooltip.classList.contains('hidden')) closeTooltip();
+    });
 
     // 1. Detect text selection on mouseup
     document.addEventListener('mouseup', (e) => {
