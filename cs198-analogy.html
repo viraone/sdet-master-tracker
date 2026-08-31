@@ -1121,7 +1121,7 @@ Content-Length: 154
       if (!key) throw new Error("No API key configured. Click ⚙️ to add your Gemini API key.");
 
       const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
-      const timeoutMs = 30000;
+      const timeoutMs = 45000;
 
       const makeBody = () => JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -1140,8 +1140,7 @@ Content-Length: 154
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-goog-api-key': key,
-              'X-Server-Timeout': '25'
+              'X-goog-api-key': key
             },
             body: makeBody(),
             signal: controller.signal
@@ -1151,6 +1150,7 @@ Content-Length: 154
         }
       };
 
+      const RETRYABLE_STATUSES = new Set([429, 503, 504]);
       let res;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
@@ -1161,11 +1161,11 @@ Content-Length: 154
             continue;
           }
           throw new Error(err.name === 'AbortError'
-            ? 'Gemini timed out after 30 seconds'
+            ? `Gemini timed out after ${timeoutMs / 1000} seconds`
             : `Network error: ${err.message}`);
         }
 
-        if (res.ok || (res.status !== 429 && res.status !== 503) || attempt === 2) break;
+        if (res.ok || !RETRYABLE_STATUSES.has(res.status) || attempt === 2) break;
         await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1)));
       }
 
@@ -1177,6 +1177,7 @@ Content-Length: 154
         } catch { /* The response was not JSON. */ }
         throw new Error(res.status === 503 ? 'Gemini is overloaded right now — wait a few seconds and try again'
           : res.status === 429 ? 'Rate limit hit — wait a minute and try again'
+          : res.status === 504 ? 'Gemini took too long to respond (cold start or a long request) — it retried automatically but still timed out. Try again in a moment.'
           : `Gemini HTTP ${res.status}${apiMessage ? `: ${apiMessage}` : ''}`);
       }
       const data = await res.json();
