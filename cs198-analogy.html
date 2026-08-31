@@ -138,6 +138,11 @@
       color: var(--ink);
     }
     .msg .msg-body { white-space: pre-line; word-wrap: break-word; }
+    .msg .msg-image {
+      display: block; max-width: 100%; max-height: 220px; border-radius: 12px;
+      margin-bottom: 6px; border: 1px solid var(--line);
+    }
+    .msg.user .msg-image { border-color: rgba(255,255,255,0.35); }
     .msg .code-chip {
       display: inline-block; font-family: 'SF Mono', Menlo, monospace; font-size: 10.5px;
       background: var(--code-bg); border: 1px solid var(--line); border-radius: 99px;
@@ -189,6 +194,18 @@
     #chat-selection button { background: none; border: none; cursor: pointer; font-size: 11px; color: var(--muted); }
     .sel-action { font-size: 13px; padding: 3px 5px; border-radius: 6px; transition: background 0.15s, color 0.15s; }
     .sel-action:hover { background: rgba(60,50,30,0.08); color: var(--ink); }
+    #chat-attachment {
+      display: none; align-items: center; gap: 8px; margin-bottom: 8px;
+      background: var(--paper); border: 1px solid var(--line);
+      border-radius: 10px; padding: 6px 10px;
+    }
+    #chat-attachment.active { display: flex; }
+    #chat-attachment img {
+      width: 34px; height: 34px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line);
+    }
+    #chat-attachment .att-label { flex: 1; font-size: 10.5px; color: var(--muted); }
+    #chat-attachment button { background: none; border: none; cursor: pointer; font-size: 11px; color: var(--muted); }
+    #chat-attachment button:hover { color: var(--accent-dark); }
     .chat-input-row {
       display: flex; gap: 8px; align-items: flex-end;
       background: var(--paper); border: 1px solid var(--line);
@@ -797,8 +814,13 @@ Content-Length: 154
         <button id="btn-sel-diagram" class="sel-action" title="Diagram it">📊</button>
         <button id="btn-sel-clear" title="Clear selection">✕</button>
       </div>
+      <div id="chat-attachment">
+        <img id="chat-attachment-img" alt="Pasted image">
+        <span class="att-label">Image attached</span>
+        <button id="btn-attachment-remove" title="Remove image">✕</button>
+      </div>
       <div class="chat-input-row">
-        <textarea id="chat-input" placeholder="Ask your tutor… (e.g. 'what should I learn today?')"></textarea>
+        <textarea id="chat-input" placeholder="Ask your tutor… (e.g. 'what should I learn today?') — paste an image to ask about it"></textarea>
         <div class="input-actions">
           <button id="btn-mic" type="button" title="Voice input">🎤</button>
           <button id="btn-send" title="Send">➤</button>
@@ -1116,16 +1138,19 @@ Content-Length: 154
     }
 
     // Shared Gemini call with a bounded timeout and retry backoff.
-    async function geminiCall(systemPrompt, userText) {
+    async function geminiCall(systemPrompt, userText, image = null) {
       const key = getGeminiKey().trim();
       if (!key) throw new Error("No API key configured. Click ⚙️ to add your Gemini API key.");
 
       const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
       const timeoutMs = 45000;
 
+      const parts = [{ text: userText }];
+      if (image) parts.push({ inlineData: { mimeType: image.mimeType, data: image.base64 } });
+
       const makeBody = () => JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
-        contents: [{ role: 'user', parts: [{ text: userText }] }],
+        contents: [{ role: 'user', parts }],
         generationConfig: {
           temperature: 0.7,
           maxOutputTokens: 2048
@@ -1186,9 +1211,10 @@ Content-Length: 154
     }
 
     // Freeform tutor Q&A grounded in the lecture
-    async function fetchAnswerFromAI(question, chip) {
+    async function fetchAnswerFromAI(question, chip, image = null) {
       const key = getGeminiKey();
       if (!key) {
+        if (image) return "⚪ Reading images needs a Gemini API key — click ⚙️ in the highlight tooltip and paste a free key from aistudio.google.com/apikey.";
         if (chip) return localAnalogy(chip);
         return "⚪ Freeform chat needs a Gemini API key — click ⚙️ in the highlight tooltip and paste a free key from aistudio.google.com/apikey. (Highlight-to-explain works offline for common terms.)";
       }
@@ -1198,7 +1224,9 @@ Content-Length: 154
           "TASK: Answer the student's question conversationally but rigorously, grounded in the lecture text " +
           "provided and in the mall mechanics and TARGET skill map from your mission — not generic testing " +
           "advice. If they pasted a passage and asked you to expand on it, address only that passage; don't " +
-          "sprawl past what they asked. If they ask what to learn or study, act as their curriculum director: " +
+          "sprawl past what they asked. If they pasted an image, ground your answer in what's actually shown " +
+          "(e.g. a code snippet, an error, a screenshot of a test run) before connecting it to the lecture. " +
+          "If they ask what to learn or study, act as their curriculum director: " +
           "name the next mid-level skill gap from THE TARGET and give a concrete lesson plan. When a vivid " +
           "Super Mall analogy helps, add one starting with '🏬 Analogy: ', reusing the established cast " +
           "(Commander XNU, Monty, Penny, Mr. TCP, Mr. IP, etc.) rather than inventing new characters. End with " +
@@ -1207,7 +1235,7 @@ Content-Length: 154
         const userText =
           (chip ? `Highlighted lecture text: "${chip}"\n\n` : "") +
           `Question: ${question}\n\nLecture content:\n${lecture}`;
-        const text = await geminiCall(systemPrompt, userText);
+        const text = await geminiCall(systemPrompt, userText, image);
         return text || "Hmm, I got an empty response — try rephrasing.";
       } catch (err) {
         return `❌ AI request failed (${err.message}). Check your Gemini key via ⚙️ in the highlight tooltip.`;
@@ -1459,9 +1487,21 @@ Content-Length: 154
     function loadChat() {
       try { return JSON.parse(localStorage.getItem(CHAT_STORAGE)) || []; } catch { return []; }
     }
-    function saveChat(list) { localStorage.setItem(CHAT_STORAGE, JSON.stringify(list.slice(-60))); }
+    function saveChat(list) {
+      const trimmed = list.slice(-60);
+      try {
+        localStorage.setItem(CHAT_STORAGE, JSON.stringify(trimmed));
+      } catch {
+        // Pasted images can push history past the localStorage quota; drop
+        // older images (keep the text) and retry once before giving up.
+        try {
+          const withoutOldImages = trimmed.map((m, i) => i < trimmed.length - 5 ? { ...m, image: null } : m);
+          localStorage.setItem(CHAT_STORAGE, JSON.stringify(withoutOldImages));
+        } catch { /* still over quota; history just won't persist this time */ }
+      }
+    }
 
-    function addMsg(role, text, { chip = null, save = true, thinking = false, insertTerm = null, insertOcc = null, mermaidCode = null } = {}) {
+    function addMsg(role, text, { chip = null, save = true, thinking = false, insertTerm = null, insertOcc = null, mermaidCode = null, image = null } = {}) {
       document.getElementById('chat-empty')?.remove();
       const msg = document.createElement('div');
       msg.className = 'msg ' + (role === 'user' ? 'user' : 'assistant') + (thinking ? ' thinking' : '');
@@ -1474,6 +1514,11 @@ Content-Length: 154
         c.className = 'code-chip'; c.textContent = chip;
         msg.appendChild(c);
         msg.appendChild(document.createElement('br'));
+      }
+      if (image) {
+        const img = document.createElement('img');
+        img.className = 'msg-image'; img.src = image; img.alt = 'Pasted image';
+        msg.appendChild(img);
       }
       const body = document.createElement('div');
       body.className = 'msg-body'; body.textContent = text;
@@ -1512,7 +1557,7 @@ Content-Length: 154
       }
       chatMessages.appendChild(msg);
       chatMessages.scrollTop = chatMessages.scrollHeight;
-      if (save) { const h = loadChat(); h.push({ role, text, chip, insertTerm, insertOcc, mermaidCode }); saveChat(h); }
+      if (save) { const h = loadChat(); h.push({ role, text, chip, insertTerm, insertOcc, mermaidCode, image }); saveChat(h); }
       return msg;
     }
 
@@ -1566,13 +1611,15 @@ Content-Length: 154
     async function sendChat() {
       const input = document.getElementById('chat-input');
       const q = input.value.trim();
-      if (!q) return;
+      if (!q && !pendingImage) return;
       input.value = '';
+      const image = pendingImage;
+      clearPendingImage();
       const chip = document.getElementById('chat-selection').classList.contains('active') ? currentSelection : null;
       clearChatSelection();
-      addMsg('user', q, { chip });
+      addMsg('user', q || '🖼️ (image)', { chip, image: image?.dataUrl });
       const th = addMsg('assistant', 'Thinking…', { save: false, thinking: true });
-      const answer = await fetchAnswerFromAI(q, chip);
+      const answer = await fetchAnswerFromAI(q || 'What is shown in this image?', chip, image);
       th.remove();
       addMsg('assistant', answer);
     }
@@ -1580,6 +1627,55 @@ Content-Length: 154
     document.getElementById('chat-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
     });
+
+    // Pasting an image into the composer attaches it (shown as a thumbnail)
+    // and sends it to Gemini alongside the question as an inlineData part.
+    let pendingImage = null; // { dataUrl, mimeType, base64 }
+
+    function clearPendingImage() {
+      pendingImage = null;
+      document.getElementById('chat-attachment').classList.remove('active');
+      document.getElementById('chat-attachment-img').src = '';
+    }
+
+    function setPendingImage(dataUrl, mimeType) {
+      pendingImage = { dataUrl, mimeType, base64: dataUrl.split(',')[1] };
+      document.getElementById('chat-attachment-img').src = dataUrl;
+      document.getElementById('chat-attachment').classList.add('active');
+    }
+
+    // Clipboard images can be several megabytes uncompressed; downscale before
+    // storing so chat history (persisted to localStorage) doesn't blow past quota.
+    function downscaleImage(file, maxDim = 1024, quality = 0.82) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve({ dataUrl: canvas.toDataURL('image/jpeg', quality), mimeType: 'image/jpeg' });
+          URL.revokeObjectURL(img.src);
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    document.getElementById('chat-input').addEventListener('paste', (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const imageItem = Array.from(items).find(it => it.type.startsWith('image/'));
+      if (!imageItem) return;
+      e.preventDefault();
+      const file = imageItem.getAsFile();
+      if (!file) return;
+      downscaleImage(file)
+        .then(({ dataUrl, mimeType }) => setPendingImage(dataUrl, mimeType))
+        .catch(() => {});
+    });
+    document.getElementById('btn-attachment-remove').addEventListener('click', clearPendingImage);
 
     // Voice input for the chat composer, via the browser's built-in Web Speech API.
     (() => {
@@ -1830,7 +1926,7 @@ Content-Length: 154
     });
 
     for (const m of loadChat()) {
-      addMsg(m.role, m.text, { chip: m.chip, save: false, insertTerm: m.insertTerm ?? null, insertOcc: m.insertOcc ?? null, mermaidCode: m.mermaidCode ?? null });
+      addMsg(m.role, m.text, { chip: m.chip, save: false, insertTerm: m.insertTerm ?? null, insertOcc: m.insertOcc ?? null, mermaidCode: m.mermaidCode ?? null, image: m.image ?? null });
     }
 
     // Chat is open by default (stays closed only if the user closed it last time)
