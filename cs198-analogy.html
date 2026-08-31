@@ -1815,6 +1815,23 @@ Content-Length: 154
       const del = makeCardDeleteButton(card, key, `${kind === 'mall' ? 'Mall metaphor' : kind === 'silicon' ? 'Silicon reality' : 'Why it matters'} card`);
       actions.append(edit, cancel, copy, save, del); card.appendChild(actions);
 
+      // Text pasted from elsewhere (e.g. a hard-wrapped source doc, one line per
+      // sentence) shouldn't turn into a wall of forced line breaks here — these
+      // cards hold flowing prose. Collapse incidental line breaks into spaces;
+      // keep genuine paragraph breaks (a blank line) as a single line break.
+      body.addEventListener('paste', (e) => {
+        if (body.getAttribute('contenteditable') !== 'plaintext-only') return;
+        e.preventDefault();
+        const raw = (e.clipboardData || window.clipboardData).getData('text/plain');
+        const normalized = raw
+          .replace(/\r\n?/g, '\n')
+          .split(/\n{2,}/)
+          .map(block => block.split('\n').map(line => line.trim()).filter(Boolean).join(' '))
+          .filter(Boolean)
+          .join('\n');
+        document.execCommand('insertText', false, normalized);
+      });
+
       let beforeEdit = body.textContent;
       function finishEditing() {
         body.removeAttribute('contenteditable');
