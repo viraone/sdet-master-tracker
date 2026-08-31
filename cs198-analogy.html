@@ -417,13 +417,31 @@
             ├─► 2. Modifies Tool Search Belt ($PATH) ──► Bypasses dusty Mall Basement
             └─► 3. Equips Monty with precision tools: `pytest` + `Appium-Python-Client`</code></pre></figure>
 <h3>1. Meet the Chief Architect in Suite 101 (VS Code)</h3>
-<figure class="code-panel"><figcaption>Text</figcaption><pre><code>┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ SUITE 101: VISUAL STUDIO CODE                                                          │
-│ • Character: Arthur the Chief Architect                                                │
-│ • Workbench: Dual 4K Drafting Monitors with Live Syntax Highlighting &amp; IntelliSense    │
-│ • Current Project Folder: "StageTimePNW_Automation"                                    │
-└────────────────────────────────────────────────────────────────────────────────────────┘</code></pre></figure>
-<div class="insight mall"><span>Mall metaphor</span><p>Inside Suite 101, the air is quiet and smells of fresh espresso and blueprints. Sitting at a sleek, mahogany drafting desk is Arthur, the Chief Architect.<br>Arthur is a perfectionist. He wears thick drafting glasses and uses high-tech digital pens that automatically glow in different neon colors as he writes:<br>He writes import in bright pink.<br>He writes pytest in neon green.<br>He writes def driver(): in electric blue.<br>Floating right above his desk is a smart magnifying lens (IntelliSense / Language Server Protocol). If Arthur makes a typo or forgets a comma, the lens immediately flashes a subtle yellow warning light before he even finishes his sentence.<br>Arthur does not build walls, lay bricks, or touch physical wires. His entire job in the mall is to design flawless architectural work orders for the StageTimePNW_Automation project, bind them into official folders, and hire specialized workers to carry them out.</p></div>
+<figure class="code-panel"><figcaption>Text</figcaption><pre><code>┌──────────────────────────────────────────────────────────────────────────────┐
+│ SUITE 101: VISUAL STUDIO CODE                                                │
+│ • Character: Arthur the Chief Architect                                      │
+│ • Physical Location: /Users/viradeth/Desktop/SDET_MASTER                     │
+│ • Hardware Backbone: Apple M5 Max (18-Core CPU, 128GB Unified Memory)       │
+│ • Workbench: 16.2" Liquid Retina with Live Syntax Highlighting &amp; IntelliSense│
+│ • Storage: Private Tool Locker (venv/) bolted to the 2TB SSD Bedrock         │
+└──────────────────────────────────────────────────────────────────────────────┘</code></pre></figure>
+<div class="insight mall"><span>Mall metaphor</span><p>On Day 1 of the operation, Arthur unlocks the door to Suite 101 for the very first time.<br>The address plate beside the doorway confirms his exact coordinates inside the Citadel:</p></div>
+<figure class="code-panel"><figcaption>Bash</figcaption><pre><code>pwd
+# Telemetry readout confirms location:
+/Users/viradeth/Desktop/SDET_MASTER</code></pre></figure>
+<div class="insight mall"><span>Mall metaphor</span><p>Arthur knows that in system architecture, physical location is everything. If he were standing out in the generic hallway (/Users/viradeth/Desktop), any infrastructure he builds would clutter the public floor. By standing firmly inside SDET_MASTER, everything he constructs remains hermetically sealed inside this office.</p></div>
+<div class="insight mall"><span>Mall metaphor</span><p>Inside Suite 101, the air is quiet and smells of fresh espresso and crisp blueprint paper. Arthur sits down at a sleek, mahogany drafting desk—the Visual Studio Code workspace.<br>Arthur is a perfectionist. He wears thick drafting glasses and uses high-tech digital pens that automatically glow in neon colors as his thoughts hit the page:<br>He writes import in bright pink.<br>He writes pytest in neon green.<br>He writes def driver(): in electric blue.<br>Floating just above his drafting board is a smart holographic magnifying lens (IntelliSense / Language Server Protocol). If Arthur makes a typo, forgets a colon, or misplaces an argument, the lens instantly flashes a subtle amber warning beam before he even finishes his sentence.<br>Arthur does not lay bricks, hammer nails, or physically tap mobile screens himself. His sole purpose is to design flawless architectural work orders, bind them into official protocols (conftest.py), and dispatch specialized workers to carry them out.</p></div>
+<h3>Step 0: Constructing the Private Locker (python3 -m venv venv)</h3>
+<div class="insight mall"><span>Mall metaphor</span><p>Before Arthur can draft a single blueprint or order precision tools from the outside world, he needs a dedicated, isolated place to store them. He cannot leave high-precision mobile testing equipment lying out in Apple's dusty, shared basement (/usr/bin/python3).<br>Arthur reaches to the bottom edge of his drafting desk, flips open the dispatch intercom (the integrated zsh terminal), and transmits the construction protocol:</p></div>
+<figure class="code-panel"><figcaption>Bash</figcaption><pre><code>python3 -m venv venv</code></pre></figure>
+<p>THUD—CLANG—WHIRR.</p>
+<div class="insight mall"><span>Mall metaphor</span><p>In the back corner of Suite 101, a brand-new, heavy-gauge steel equipment cabinet labeled venv materializes out of the floor, bolted directly into the Mac's 2TB SSD storage foundation:</p></div>
+<figure class="code-panel"><figcaption>Text</figcaption><pre><code>SDET_MASTER/
+├── conftest.py        &lt;-- [Blueprint on the drafting desk]
+└── venv/              &lt;-- [The newly constructed private locker!]
+    ├── bin/           &lt;-- [The Tool Rack: Holds activate &amp; Python engine]
+    └── lib/           &lt;-- [The Parts Shelves: Currently empty, awaiting tools]</code></pre></figure>
+<div class="insight mall"><span>Mall metaphor</span><p>The locker is built, clean, and structurally sound.<br>With the empty cabinet securely in place, Arthur is ready to flip on its power switch (source venv/bin/activate), call the courier to stock the shelves (pip install ...), and prepare Monty for the mission.</p></div>
 <div class="insight silicon"><span>Silicon reality</span><p>VS Code operates as an Electron-based application (Chromium rendering UI frontend + Node.js backend). The active workspace is the directory StageTimePNW_Automation. As the engineer types, the Python Language Server (Pylance / Pyright) continuously parses the in-memory text buffer, building a live semantic token tree to provide syntax highlighting, auto-completion, and static linting in real time.</p></div>
 <div class="insight why"><span>Why it matters</span><p>Ergonomics &amp; Static Defect Prevention.<br>Human software engineers cannot efficiently write binary opcodes or raw memory pointers. High-level IDEs provide visual abstractions, syntax verification, and static type analysis, catching semantic errors at the drafting stage before consuming expensive operating system execution cycles.</p></div>
 <h3>2. The Master Pre-Flight Protocol: conftest.py</h3>
