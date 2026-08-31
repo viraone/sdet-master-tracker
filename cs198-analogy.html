@@ -302,10 +302,12 @@
     nav a { display:grid; grid-template-columns:2rem 1fr; gap:.5rem; color:var(--muted); text-decoration:none; font-size:var(--course-map-font-size); line-height:1.35; padding:.62rem 0; border-bottom:1px solid var(--line); min-width:0; }
     nav a:hover { color:var(--accent-dark) } nav a span { color:var(--accent); font-family:ui-monospace,monospace; font-weight:700; }
     article { min-width:0; width:100%; overflow:hidden; }
-    .chapter { padding:0; scroll-margin-top:2rem; }
+    .chapter { position:relative; padding:0 2.6rem 0 0; scroll-margin-top:2rem; }
     article > .chapter:first-child { padding-top:0; }
     .chapter > :last-child { margin-bottom:0; }
     .chapter + .chapter { border-top:1px solid var(--line); padding-top:.75rem; }
+    .chapter-delete { position:absolute; top:0; right:0; width:1.8rem; height:1.8rem; display:grid; place-items:center; padding:0; border:1px solid var(--line); border-radius:7px; background:var(--paper); color:var(--muted); cursor:pointer; font-size:.95rem; transition:border-color .15s,background .15s,color .15s,transform .15s; }
+    .chapter-delete:hover { border-color:#c1443f; color:#c1443f; background:#fbeceb; transform:translateY(-1px); }
     h2 { color:var(--ink); font-size:clamp(1.6rem,3.4vw,2.6rem); line-height:1.15; letter-spacing:-.02em; margin:.25rem 0 .75rem; font-weight:800; }
     h3 { margin:2.7rem 0 1rem; font-size:1.25rem; line-height:1.3; color:var(--ink); font-weight:700; }
     p { color:#4a4536; margin:.9rem 0; }
@@ -1923,6 +1925,42 @@ Content-Length: 154
         if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); save.click(); }
         if (event.key === 'Escape') { event.preventDefault(); cancel.click(); }
       });
+    });
+
+    // Per-chapter delete (this browser only). Confirms before removing.
+    const DELETED_CHAPTERS_STORAGE = 'cs198_deleted_chapters_v1';
+    function loadDeletedChapters() {
+      try { return JSON.parse(localStorage.getItem(DELETED_CHAPTERS_STORAGE)) || []; }
+      catch { return []; }
+    }
+    function saveDeletedChapters(list) {
+      localStorage.setItem(DELETED_CHAPTERS_STORAGE, JSON.stringify(list));
+    }
+    const deletedChapters = new Set(loadDeletedChapters());
+
+    function removeChapter(section) {
+      document.querySelector(`nav a[href="#${section.id}"]`)?.remove();
+      section.remove();
+    }
+
+    document.querySelectorAll('article > .chapter').forEach((section) => {
+      if (deletedChapters.has(section.id)) { removeChapter(section); return; }
+
+      const title = section.querySelector('h2')?.textContent?.trim()
+        || section.querySelector('.chapter-kicker')?.textContent?.trim()
+        || 'this chapter';
+
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'chapter-delete'; del.textContent = '🗑';
+      del.title = 'Delete this chapter'; del.setAttribute('aria-label', `Delete "${title}"`);
+      del.addEventListener('click', () => {
+        const ok = window.confirm(`Really delete "${title}"?\n\nThis removes it from your view in this browser and can't be undone.`);
+        if (!ok) return;
+        deletedChapters.add(section.id);
+        saveDeletedChapters([...deletedChapters]);
+        removeChapter(section);
+      });
+      section.appendChild(del);
     });
 
     for (const m of loadChat()) {
