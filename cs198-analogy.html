@@ -337,6 +337,8 @@
     .insight-action.copy:hover { color:#fff; background:#3f7ea6; border-color:#3f7ea6; }
     .insight-action.save { color:#2f8f57; border-color:#bfe3cc; background:#eef8f1; }
     .insight-action.save:hover { color:#fff; background:#2f8f57; border-color:#2f8f57; }
+    .insight-action.delete { color:#c1443f; border-color:#e7b9b3; background:#fdeceb; }
+    .insight-action.delete:hover { color:#fff; background:#c1443f; border-color:#c1443f; }
     .insight-action[hidden] { display:none; }
     .insight.editing { border-color:var(--accent); box-shadow:0 0 0 3px rgba(217,119,87,.15); }
     .insight.editing p { min-height:4rem; padding:.7rem .8rem; border:1px dashed var(--muted); border-radius:8px; background:#fbf9f4; color:var(--ink); outline:none; white-space:pre-wrap; }
@@ -1753,6 +1755,31 @@ Content-Length: 154
       sendChat();
     });
 
+    // Per-card delete (this browser only), shared by insight cards and code panels below.
+    // Confirms before removing; keyed the same way as each card's edit-storage key.
+    const DELETED_CARDS_STORAGE = 'cs198_deleted_cards_v1';
+    function loadDeletedCards() {
+      try { return JSON.parse(localStorage.getItem(DELETED_CARDS_STORAGE)) || []; }
+      catch { return []; }
+    }
+    function saveDeletedCards(list) {
+      localStorage.setItem(DELETED_CARDS_STORAGE, JSON.stringify(list));
+    }
+    const deletedCards = new Set(loadDeletedCards());
+    function makeCardDeleteButton(card, key, label) {
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'insight-action delete'; del.textContent = '🗑';
+      del.title = `Delete this ${label}`; del.setAttribute('aria-label', `Delete this ${label}`);
+      del.addEventListener('click', () => {
+        const ok = window.confirm(`Really delete this ${label}?\n\nThis removes it from your view in this browser and can't be undone.`);
+        if (!ok) return;
+        deletedCards.add(key);
+        saveDeletedCards([...deletedCards]);
+        card.remove();
+      });
+      return del;
+    }
+
     // Inline editing for lecture insight cards. Changes stay in this browser only.
     const INSIGHT_EDITS_STORAGE = 'cs198_insight_card_edits_v1';
     function loadInsightEdits() {
@@ -1768,6 +1795,7 @@ Content-Length: 154
       if (!body) return;
       const kind = card.classList.contains('mall') ? 'mall' : card.classList.contains('silicon') ? 'silicon' : 'why';
       const key = `${kind}-${index}`;
+      if (deletedCards.has(key)) { card.remove(); return; }
       if (Object.prototype.hasOwnProperty.call(savedInsightEdits, key)) body.textContent = savedInsightEdits[key];
 
       const actions = document.createElement('div');
@@ -1784,19 +1812,20 @@ Content-Length: 154
       const save = document.createElement('button');
       save.type = 'button'; save.className = 'insight-action save'; save.textContent = '✓'; save.hidden = true;
       save.title = 'Save changes'; save.setAttribute('aria-label', 'Save changes');
-      actions.append(edit, cancel, copy, save); card.appendChild(actions);
+      const del = makeCardDeleteButton(card, key, `${kind === 'mall' ? 'Mall metaphor' : kind === 'silicon' ? 'Silicon reality' : 'Why it matters'} card`);
+      actions.append(edit, cancel, copy, save, del); card.appendChild(actions);
 
       let beforeEdit = body.textContent;
       function finishEditing() {
         body.removeAttribute('contenteditable');
         card.classList.remove('editing');
-        edit.hidden = false; cancel.hidden = true; copy.hidden = true; save.hidden = true;
+        edit.hidden = false; del.hidden = false; cancel.hidden = true; copy.hidden = true; save.hidden = true;
       }
       edit.addEventListener('click', () => {
         beforeEdit = body.textContent;
         body.setAttribute('contenteditable', 'plaintext-only');
         card.classList.add('editing');
-        edit.hidden = true; cancel.hidden = false; copy.hidden = false; save.hidden = false;
+        edit.hidden = true; del.hidden = true; cancel.hidden = false; copy.hidden = false; save.hidden = false;
         body.focus();
         const range = document.createRange();
         range.selectNodeContents(body); range.collapse(false);
@@ -1858,6 +1887,7 @@ Content-Length: 154
       const body = panel.querySelector('pre code') || panel.querySelector('pre');
       if (!figcaption || !body) return;
       const key = `code-${index}`;
+      if (deletedCards.has(key)) { panel.remove(); return; }
       if (Object.prototype.hasOwnProperty.call(savedCodePanelEdits, key)) body.textContent = savedCodePanelEdits[key];
 
       const actions = document.createElement('div');
@@ -1874,20 +1904,21 @@ Content-Length: 154
       const save = document.createElement('button');
       save.type = 'button'; save.className = 'insight-action save'; save.textContent = '✓'; save.hidden = true;
       save.title = 'Save changes'; save.setAttribute('aria-label', 'Save changes');
-      actions.append(edit, cancel, copy, save);
+      const del = makeCardDeleteButton(panel, key, `${figcaption.textContent.trim()} code block`);
+      actions.append(edit, cancel, copy, save, del);
       figcaption.appendChild(actions);
 
       let beforeEdit = body.textContent;
       function finishEditing() {
         body.removeAttribute('contenteditable');
         panel.classList.remove('editing');
-        edit.hidden = false; cancel.hidden = true; save.hidden = true;
+        edit.hidden = false; del.hidden = false; cancel.hidden = true; save.hidden = true;
       }
       edit.addEventListener('click', () => {
         beforeEdit = body.textContent;
         body.setAttribute('contenteditable', 'plaintext-only');
         panel.classList.add('editing');
-        edit.hidden = true; cancel.hidden = false; save.hidden = false;
+        edit.hidden = true; del.hidden = true; cancel.hidden = false; save.hidden = false;
         body.focus();
         const range = document.createRange();
         range.selectNodeContents(body); range.collapse(false);
