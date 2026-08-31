@@ -196,6 +196,7 @@
       font-family: inherit; outline: none; line-height: 1.5;
     }
     #chat-input::placeholder { color: #5c5c66; }
+    .input-actions { display: flex; flex-direction: column; gap: 4px; }
     #btn-send {
       flex-shrink: 0; width: 34px; height: 34px;
       background: linear-gradient(135deg, #6366f1, #a855f7);
@@ -777,8 +778,10 @@ Content-Length: 154
       </div>
       <div class="chat-input-row">
         <textarea id="chat-input" placeholder="Ask your tutor… (e.g. 'what should I learn today?')"></textarea>
-        <button id="btn-mic" type="button" title="Voice input">🎤</button>
-        <button id="btn-send" title="Send">➤</button>
+        <div class="input-actions">
+          <button id="btn-mic" type="button" title="Voice input">🎤</button>
+          <button id="btn-send" title="Send">➤</button>
+        </div>
       </div>
     </div>
   </div>
