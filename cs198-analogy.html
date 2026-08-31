@@ -272,7 +272,10 @@
     .code-panel { width:100%; max-width:100%; margin:2rem 0; background:#060b13; border:1px solid #26334a; border-radius:16px; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,.22); }
     .chapter h2 + .code-panel { margin-top:0; }
     .chapter-kicker + .code-panel { margin-top:.25rem; }
-    .code-panel figcaption { padding:.65rem 1rem; border-bottom:1px solid #26334a; color:#6f819d; text-transform:uppercase; letter-spacing:.14em; font:700 .65rem/1 ui-monospace,monospace; }
+    .code-panel figcaption { padding:.65rem 1rem; border-bottom:1px solid #26334a; color:#6f819d; text-transform:uppercase; letter-spacing:.14em; font:700 .65rem/1 ui-monospace,monospace; display:flex; align-items:center; justify-content:space-between; gap:.75rem; }
+    .code-panel-actions { display:flex; align-items:center; gap:.35rem; flex-shrink:0; }
+    .code-panel.editing pre { outline:1px dashed #60718f; outline-offset:-2px; background:#09111d; }
+    .code-panel.editing pre code { outline:none; }
     pre { width:100%; max-width:100%; margin:0; padding:1.4rem; overflow-x:auto; color:#afd4ff; line-height:1.45; }
     .code-panel pre,
     .code-panel pre code { font-size:var(--course-map-font-size) !important; }
@@ -1676,6 +1679,94 @@ Content-Length: 154
       });
     });
 
+
+    // Inline editing for lecture code panels (Python/Text/System map/HTTP/JSON/Bash blocks).
+    // Changes stay in this browser only.
+    const CODE_PANEL_EDITS_STORAGE = 'cs198_code_panel_edits_v1';
+    function loadCodePanelEdits() {
+      try { return JSON.parse(localStorage.getItem(CODE_PANEL_EDITS_STORAGE)) || {}; }
+      catch { return {}; }
+    }
+    function saveCodePanelEdits(edits) {
+      localStorage.setItem(CODE_PANEL_EDITS_STORAGE, JSON.stringify(edits));
+    }
+    const savedCodePanelEdits = loadCodePanelEdits();
+    document.querySelectorAll('#content .code-panel').forEach((panel, index) => {
+      const figcaption = panel.querySelector('figcaption');
+      const body = panel.querySelector('pre code') || panel.querySelector('pre');
+      if (!figcaption || !body) return;
+      const key = `code-${index}`;
+      if (Object.prototype.hasOwnProperty.call(savedCodePanelEdits, key)) body.textContent = savedCodePanelEdits[key];
+
+      const actions = document.createElement('div');
+      actions.className = 'code-panel-actions';
+      const edit = document.createElement('button');
+      edit.type = 'button'; edit.className = 'insight-action edit'; edit.textContent = '✎';
+      edit.title = 'Edit this code block'; edit.setAttribute('aria-label', 'Edit this code block');
+      const cancel = document.createElement('button');
+      cancel.type = 'button'; cancel.className = 'insight-action cancel'; cancel.textContent = '✕'; cancel.hidden = true;
+      cancel.title = 'Cancel editing'; cancel.setAttribute('aria-label', 'Cancel editing');
+      const copy = document.createElement('button');
+      copy.type = 'button'; copy.className = 'insight-action copy'; copy.textContent = '⧉';
+      copy.title = 'Copy code to clipboard'; copy.setAttribute('aria-label', 'Copy code to clipboard');
+      const save = document.createElement('button');
+      save.type = 'button'; save.className = 'insight-action save'; save.textContent = '✓'; save.hidden = true;
+      save.title = 'Save changes'; save.setAttribute('aria-label', 'Save changes');
+      actions.append(edit, cancel, copy, save);
+      figcaption.appendChild(actions);
+
+      let beforeEdit = body.textContent;
+      function finishEditing() {
+        body.removeAttribute('contenteditable');
+        panel.classList.remove('editing');
+        edit.hidden = false; cancel.hidden = true; save.hidden = true;
+      }
+      edit.addEventListener('click', () => {
+        beforeEdit = body.textContent;
+        body.setAttribute('contenteditable', 'plaintext-only');
+        panel.classList.add('editing');
+        edit.hidden = true; cancel.hidden = false; save.hidden = false;
+        body.focus();
+        const range = document.createRange();
+        range.selectNodeContents(body); range.collapse(false);
+        const selection = window.getSelection();
+        selection.removeAllRanges(); selection.addRange(range);
+      });
+      cancel.addEventListener('click', () => {
+        body.textContent = beforeEdit;
+        finishEditing();
+      });
+      // Keep the current text selection intact when the clipboard button is pressed.
+      copy.addEventListener('mousedown', (event) => event.preventDefault());
+      copy.addEventListener('click', async () => {
+        const selection = window.getSelection();
+        const selectedText = selection && selection.rangeCount && body.contains(selection.getRangeAt(0).commonAncestorContainer)
+          ? selection.toString().trim()
+          : '';
+        const textToCopy = selectedText || body.innerText;
+        try {
+          await navigator.clipboard.writeText(textToCopy);
+          copy.textContent = '✓'; copy.title = selectedText ? 'Highlighted text copied' : 'Code copied';
+          window.setTimeout(() => { copy.textContent = '⧉'; copy.title = 'Copy code to clipboard'; }, 1200);
+        } catch {
+          copy.textContent = '!'; copy.title = 'Clipboard access failed';
+          window.setTimeout(() => { copy.textContent = '⧉'; copy.title = 'Copy code to clipboard'; }, 1200);
+        }
+      });
+      save.addEventListener('click', () => {
+        const text = body.innerText.replace(/\r\n?/g, '\n').trim();
+        body.textContent = text;
+        const edits = loadCodePanelEdits();
+        edits[key] = text;
+        saveCodePanelEdits(edits);
+        beforeEdit = text;
+        finishEditing();
+      });
+      body.addEventListener('keydown', (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); save.click(); }
+        if (event.key === 'Escape') { event.preventDefault(); cancel.click(); }
+      });
+    });
 
     for (const m of loadChat()) {
       addMsg(m.role, m.text, { chip: m.chip, save: false, insertTerm: m.insertTerm ?? null, insertOcc: m.insertOcc ?? null, mermaidCode: m.mermaidCode ?? null });
