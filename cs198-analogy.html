@@ -203,6 +203,24 @@
       transition: all 0.15s; box-shadow: 0 3px 10px rgba(99,102,241,0.35);
     }
     #btn-send:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(99,102,241,0.5); }
+    #btn-mic {
+      flex-shrink: 0; width: 34px; height: 34px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px; color: #b8b8c2; cursor: pointer; font-size: 14px;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    #btn-mic:hover:not(:disabled) { color: #fff; background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
+    #btn-mic:disabled { opacity: 0.3; cursor: not-allowed; }
+    #btn-mic.recording {
+      background: #dc2626; border-color: #dc2626; color: #fff;
+      animation: micPulse 1.4s ease-out infinite;
+    }
+    @keyframes micPulse {
+      0% { box-shadow: 0 0 0 0 rgba(220,38,38,0.55); }
+      70% { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+      100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); }
+    }
 
     /* ── Diagram / quiz cards ── */
     .mermaid-box {
@@ -777,6 +795,7 @@ Content-Length: 154
       </div>
       <div class="chat-input-row">
         <textarea id="chat-input" placeholder="Ask your tutor… (e.g. 'what should I learn today?')"></textarea>
+        <button id="btn-mic" type="button" title="Voice input">🎤</button>
         <button id="btn-send" title="Send">➤</button>
       </div>
     </div>
@@ -1580,6 +1599,66 @@ Content-Length: 154
     document.getElementById('chat-input').addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
     });
+
+    // Voice input for the chat composer, via the browser's built-in Web Speech API.
+    (() => {
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const btnMic = document.getElementById('btn-mic');
+      const input = document.getElementById('chat-input');
+
+      if (!SpeechRecognitionAPI) {
+        btnMic.disabled = true;
+        btnMic.title = 'Voice input needs Chrome, Edge, or Safari';
+        return;
+      }
+
+      const recognition = new SpeechRecognitionAPI();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      let recording = false;
+      let baseText = '';
+
+      recognition.addEventListener('result', (e) => {
+        let transcript = '';
+        for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+        input.value = (baseText + ' ' + transcript).trim();
+      });
+
+      recognition.addEventListener('end', () => {
+        recording = false;
+        btnMic.classList.remove('recording');
+        btnMic.title = 'Voice input';
+      });
+
+      recognition.addEventListener('error', (e) => {
+        recording = false;
+        btnMic.classList.remove('recording');
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          btnMic.title = 'Microphone access denied — check your browser/site permissions';
+        } else if (e.error !== 'no-speech' && e.error !== 'aborted') {
+          btnMic.title = `Voice input error: ${e.error}`;
+        }
+      });
+
+      btnMic.addEventListener('click', () => {
+        if (recording) {
+          recognition.stop();
+          return;
+        }
+        baseText = input.value;
+        try {
+          recognition.start();
+          recording = true;
+          btnMic.classList.add('recording');
+          btnMic.title = 'Listening… click to stop';
+          input.focus();
+        } catch {
+          // start() throws if a recognition session is already active; ignore.
+        }
+      });
+    })();
 
     document.getElementById('btn-chat-clear').addEventListener('click', () => {
       saveChat([]);
