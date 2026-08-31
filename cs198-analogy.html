@@ -182,6 +182,8 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     #chat-selection button { background: none; border: none; cursor: pointer; font-size: 11px; color: #8b8b96; }
+    .sel-action { font-size: 13px; padding: 3px 5px; border-radius: 6px; transition: background 0.15s, color 0.15s; }
+    .sel-action:hover { background: rgba(255,255,255,0.1); color: #fff; }
     .chat-input-row {
       display: flex; gap: 8px; align-items: flex-end;
       background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
@@ -745,29 +747,6 @@ Content-Length: 154
   <a class="top" href="#top" aria-label="Back to top">↑</a>
   </main>
 
-  <!-- Floating Analogy AI Tooltip -->
-  <div id="ai-tooltip" class="fixed hidden z-50 bg-gray-900 text-white rounded-lg shadow-2xl p-4 w-80 space-y-3 transition-all duration-150">
-    <div class="flex items-center justify-between border-b border-gray-700 pb-2">
-      <span class="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1">✨ Analogy AI</span>
-      <span class="flex items-center gap-2">
-        <span id="selected-preview" class="text-xs text-gray-400 truncate max-w-[100px]"></span>
-        <button id="btn-settings" title="Configure AI (Gemini API key)" class="text-gray-500 hover:text-gray-300 text-sm leading-none">⚙️</button>
-        <button id="btn-tooltip-close" type="button" title="Close Analogy AI" aria-label="Close Analogy AI" class="text-gray-400 hover:text-white text-base leading-none rounded focus:outline-none focus:ring-2 focus:ring-blue-400">✕</button>
-      </span>
-    </div>
-
-    <div id="prompt-state">
-      <p class="text-xs text-gray-300 mb-2">Unclear about this concept?</p>
-      <button id="btn-explain" class="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold py-2 px-3 rounded shadow transition">
-        💡 Explain to me using an analogy
-      </button>
-      <button id="btn-diagram" class="w-full mt-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold py-2 px-3 rounded shadow transition">
-        📊 Diagram it
-      </button>
-      <p id="ai-status" class="text-[10px] text-gray-500 mt-2 text-center"></p>
-    </div>
-  </div>
-
   <!-- Mobile SDET Tutor chat -->
   <button id="chat-fab" title="Open Mobile SDET Tutor">🎓</button>
 
@@ -779,11 +758,12 @@ Content-Length: 154
         <div class="chat-sub">Stanford-style · Super Mall Method</div>
       </div>
       <span class="spacer"></span>
+      <button id="btn-settings" title="Configure AI (Gemini API key)">⚙️</button>
       <button id="btn-chat-clear" title="Clear chat history">🗑</button>
       <button id="btn-chat-close" title="Hide chat">✕</button>
     </div>
     <div class="chat-messages" id="chat-messages">
-      <div class="chat-empty" id="chat-empty">🎓 I'm your personal Mobile SDET tutor. My mission: get you to mid-level Mobile SDET. Highlight anything in the lecture and hit "Explain", or ask me anything — pytest, Appium, XCUITest, networking, CI/CD. Try: "what should I learn today?"</div>
+      <div class="chat-empty" id="chat-empty">🎓 I'm your personal Mobile SDET tutor. My mission: get you to mid-level Mobile SDET. Highlight anything in the lecture — the buttons below will light up — or ask me anything — pytest, Appium, XCUITest, networking, CI/CD. Try: "what should I learn today?"</div>
     </div>
     <div class="chat-footer">
       <div class="quick-row" id="quick-row">
@@ -791,6 +771,8 @@ Content-Length: 154
       </div>
       <div id="chat-selection">
         <span>🔦</span><span class="sel-text" id="chat-selection-text"></span>
+        <button id="btn-sel-explain" class="sel-action" title="Explain using an analogy">💡</button>
+        <button id="btn-sel-diagram" class="sel-action" title="Diagram it">📊</button>
         <button id="btn-sel-clear" title="Clear selection">✕</button>
       </div>
       <div class="chat-input-row">
@@ -807,60 +789,36 @@ Content-Length: 154
     let currentSelection = null;
     let currentRange = null;
 
-    const tooltip = document.getElementById('ai-tooltip');
-    const selectedPreview = document.getElementById('selected-preview');
-    const btnExplain = document.getElementById('btn-explain');
-    const btnTooltipClose = document.getElementById('btn-tooltip-close');
     const chatPanel = document.getElementById('chat-panel');
 
-    function closeTooltip() {
-      tooltip.classList.add('hidden');
-      currentSelection = null;
-      currentRange = null;
-      selectedPreview.textContent = '';
-      window.getSelection()?.removeAllRanges();
-    }
-
-    btnTooltipClose.addEventListener('click', closeTooltip);
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !tooltip.classList.contains('hidden')) closeTooltip();
-    });
-
-    // 1. Detect text selection on mouseup
+    // 1. Track text selection and surface it as a chip in the chat panel's
+    //    footer (its Explain / Diagram buttons act on the current selection)
+    //    instead of a separate floating popup.
     document.addEventListener('mouseup', (e) => {
-      if (tooltip.contains(e.target) || chatPanel.contains(e.target)) return;
+      if (chatPanel.contains(e.target)) return;
 
       const selection = window.getSelection();
       const text = selection.toString().trim();
 
-      // Don't pop the tooltip while editing a badge
+      // Don't react while editing a badge
       if (selection.anchorNode?.parentElement?.closest('.analogy-badge.editing')) return;
 
       if (text.length > 0) {
         currentSelection = text;
         currentRange = selection.getRangeAt(0).cloneRange();
-
-        const rect = currentRange.getBoundingClientRect();
-        tooltip.style.left = `${Math.min(window.innerWidth - 340, Math.max(10, rect.left))}px`;
-        tooltip.style.top = `${rect.bottom + 8}px`;
-
-        selectedPreview.textContent = `"${text}"`;
-        tooltip.classList.remove('hidden');
         offerSelectionInChat(text);
-      } else {
-        tooltip.classList.add('hidden');
       }
     });
 
     // 2. "Explain" hands off to the tutor chat
-    btnExplain.addEventListener('click', () => {
+    document.getElementById('btn-sel-explain').addEventListener('click', () => {
+      if (!currentSelection || !currentRange) return;
       const term = currentSelection;
       const anchorEl = currentRange.startContainer.parentElement;
       const block = anchorEl.closest('p, li, td, pre, h1, h2, h3, section, div') || anchorEl;
       const surroundingContext = block.innerText;
       const occ = Math.max(0, occurrenceIndexOfRange(term, currentRange));
 
-      tooltip.classList.add('hidden');
       window.getSelection().removeAllRanges();
       clearChatSelection();
       openChat();
@@ -868,13 +826,13 @@ Content-Length: 154
     });
 
     // 2b. "Diagram it" — the tutor draws the concept as a rendered diagram in chat
-    document.getElementById('btn-diagram').addEventListener('click', () => {
+    document.getElementById('btn-sel-diagram').addEventListener('click', () => {
+      if (!currentSelection || !currentRange) return;
       const term = currentSelection;
       const anchorEl = currentRange.startContainer.parentElement;
       const block = anchorEl.closest('p, li, td, pre, h1, h2, h3, section, div') || anchorEl;
       const surroundingContext = block.innerText;
 
-      tooltip.classList.add('hidden');
       window.getSelection().removeAllRanges();
       clearChatSelection();
       openChat();
@@ -892,12 +850,12 @@ Content-Length: 154
       localStorage.setItem(ANNOTATIONS_STORAGE, JSON.stringify(list));
     }
 
-    // All text nodes in the lecture, excluding text inside badges or the tooltip
+    // All text nodes in the lecture, excluding text inside badges or the chat panel
     function lectureTextNodes() {
       const root = document.getElementById('content');
       const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
         acceptNode(node) {
-          return node.parentElement.closest('.analogy-badge, #ai-tooltip, #chat-panel')
+          return node.parentElement.closest('.analogy-badge, #chat-panel')
             ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
         }
       });
@@ -1039,14 +997,13 @@ Content-Length: 154
     const GEMINI_KEY_STORAGE = "cs198_gemini_api_key";
 
     const btnSettings = document.getElementById('btn-settings');
-    const aiStatus = document.getElementById('ai-status');
 
     function getGeminiKey() { return localStorage.getItem(GEMINI_KEY_STORAGE) || ""; }
 
     function updateAiStatus() {
-      aiStatus.textContent = getGeminiKey()
-        ? "🟢 Real AI enabled (Gemini)"
-        : "⚪ Using built-in analogies — click ⚙️ to add a free Gemini API key for real AI";
+      btnSettings.title = getGeminiKey()
+        ? "🟢 Real AI enabled (Gemini) — click to change your key"
+        : "⚪ Using built-in analogies — click to add a free Gemini API key for real AI";
     }
     updateAiStatus();
 
