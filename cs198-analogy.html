@@ -328,6 +328,7 @@
     .insight { position:relative; margin:1rem 0; padding:1.1rem 4.4rem 1.1rem 1.25rem; border:1px solid var(--line); border-left-width:4px; border-radius:0 12px 12px 0; background:var(--paper); box-shadow:0 2px 10px rgba(60,50,30,0.04); }
     .insight span { display:block; margin-bottom:.3rem; text-transform:uppercase; letter-spacing:.13em; font:800 .6rem/1.2 ui-monospace,monospace; }
     .insight p { margin:0; color:#423d33; white-space:pre-wrap; overflow-wrap:anywhere; font-size:.9rem; line-height:1.6; }
+    .insight p.diagram { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.78rem; line-height:1.45; }
     .insight-actions { position:absolute; top:.8rem; right:.8rem; display:flex; gap:.35rem; }
     .insight-action { width:1.8rem; height:1.8rem; display:grid; place-items:center; padding:0; border:1px solid var(--line); border-radius:7px; background:var(--paper); color:var(--muted); cursor:pointer; font:800 .9rem/1 system-ui,sans-serif; transition:border-color .15s,background .15s,color .15s,transform .15s; }
     .insight-action:hover { color:var(--ink); border-color:var(--muted); background:rgba(60,50,30,.05); transform:translateY(-1px); }
@@ -1797,6 +1798,8 @@ Content-Length: 154
       const key = `${kind}-${index}`;
       if (deletedCards.has(key)) { card.remove(); return; }
       if (Object.prototype.hasOwnProperty.call(savedInsightEdits, key)) body.textContent = savedInsightEdits[key];
+      const markDiagram = () => body.classList.toggle('diagram', /[│─┌┐└┘├┤┬┴┼═║╔╗╚╝▲▼◀▶►◄]/.test(body.textContent));
+      markDiagram();
 
       const actions = document.createElement('div');
       actions.className = 'insight-actions';
@@ -1817,18 +1820,45 @@ Content-Length: 154
 
       // Text pasted from elsewhere (e.g. a hard-wrapped source doc, one line per
       // sentence) shouldn't turn into a wall of forced line breaks here — these
-      // cards hold flowing prose. Collapse incidental line breaks into spaces;
-      // keep genuine paragraph breaks (a blank line) as a single line break.
+      // cards hold flowing prose. Collapse incidental line breaks into spaces,
+      // but NEVER reflow structure: ASCII diagrams, indented/code lines,
+      // bullets, numbered lists, and heading-like lines keep their breaks.
+      const DIAGRAM_CHARS = /[│─┌┐└┘├┤┬┴┼═║╔╗╚╝▲▼◀▶►◄]|(?:^|\n)\s*(?:\+[-=]{2,}|\|[\s|])/;
+      const isStructuralLine = (line) => {
+        const t = line.trim();
+        return DIAGRAM_CHARS.test(line)          // box-drawing / arrows
+          || /^\s{4,}\S/.test(line)              // indented (code / diagram)
+          || /^([-*•>#]|\d+[.)]|Act \d|Step \d)/i.test(t) // bullets, lists, acts, steps
+          || /^\[.*\]/.test(t)                   // [ labelled diagram nodes ]
+          || /[:：]$/.test(t)                     // heading / label ending in a colon
+          || t.length <= 3;                      // tiny connector lines like "|" or "▼"
+      };
       body.addEventListener('paste', (e) => {
         if (body.getAttribute('contenteditable') !== 'plaintext-only') return;
         e.preventDefault();
-        const raw = (e.clipboardData || window.clipboardData).getData('text/plain');
-        const normalized = raw
-          .replace(/\r\n?/g, '\n')
-          .split(/\n{2,}/)
-          .map(block => block.split('\n').map(line => line.trim()).filter(Boolean).join(' '))
-          .filter(Boolean)
-          .join('\n');
+        const raw = (e.clipboardData || window.clipboardData).getData('text/plain').replace(/\r\n?/g, '\n');
+        let normalized;
+        if (DIAGRAM_CHARS.test(raw)) {
+          // Contains a diagram — paste verbatim so alignment survives; just
+          // tidy trailing whitespace and runs of blank lines.
+          normalized = raw.split('\n').map(l => l.replace(/\s+$/, '')).join('\n')
+            .replace(/\n{3,}/g, '\n\n').trim();
+        } else {
+          normalized = raw
+            .split(/\n{2,}/)
+            .map(block => {
+              const lines = block.split('\n').filter(l => l.trim());
+              let out = '';
+              lines.forEach((line, i) => {
+                if (i === 0) { out = line.replace(/\s+$/, ''); return; }
+                const joinAsProse = !isStructuralLine(line) && !isStructuralLine(lines[i - 1]);
+                out += (joinAsProse ? ' ' : '\n') + (joinAsProse ? line.trim() : line.replace(/\s+$/, ''));
+              });
+              return out;
+            })
+            .filter(Boolean)
+            .join('\n\n');
+        }
         document.execCommand('insertText', false, normalized);
       });
 
@@ -1851,6 +1881,7 @@ Content-Length: 154
       });
       cancel.addEventListener('click', () => {
         body.textContent = beforeEdit;
+        markDiagram();
         finishEditing();
       });
       // Keep the current text selection intact when the clipboard button is pressed.
@@ -1875,6 +1906,7 @@ Content-Length: 154
         // browser represents them as <div> or <br> nodes inside contenteditable.
         const text = body.innerText.replace(/\r\n?/g, '\n').trim();
         body.textContent = text;
+        markDiagram();
         const edits = loadInsightEdits();
         edits[key] = text;
         saveInsightEdits(edits);
