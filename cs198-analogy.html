@@ -346,6 +346,19 @@
     .mall { border-left-color:var(--gold) } .mall span { color:var(--gold) }
     .silicon { border-left-color:var(--blue) } .silicon span { color:var(--blue) }
     .why { border-left-color:var(--purple) } .why span { color:var(--purple) }
+    .act-kicker { margin:2.6rem 0 .9rem; display:flex; align-items:baseline; gap:.6rem; color:var(--gold); text-transform:uppercase; letter-spacing:.12em; font:800 .74rem/1.4 ui-monospace,monospace; }
+    .act-kicker:before { content:""; width:1.6rem; height:1px; background:var(--gold); opacity:.55; }
+    .stepper { counter-reset:step; list-style:none; margin:1.85rem 0; padding:1.6rem 1.75rem 1.3rem; border:1px solid var(--line); border-radius:16px; background:var(--paper); box-shadow:0 2px 12px rgba(60,50,30,0.05); }
+    .stepper li { position:relative; padding:0 0 1.6rem 3.15rem; }
+    .stepper li:last-child { padding-bottom:0; }
+    .stepper li:before { content:""; position:absolute; left:1rem; top:2.15rem; bottom:-.15rem; width:1px; background:var(--line); }
+    .stepper li:last-child:before { display:none; }
+    .stepper .num { position:absolute; left:0; top:0; width:2rem; height:2rem; border-radius:50%; display:grid; place-items:center; font:800 .82rem/1 ui-monospace,monospace; background:var(--code-bg); border:1.5px solid var(--step-accent); color:var(--step-accent); }
+    .stepper h4 { margin:0 0 .3rem; font-size:1rem; line-height:1.3; color:var(--ink); font-weight:700; }
+    .stepper p { margin:0; color:var(--code-ink); font-size:.9rem; line-height:1.62; }
+    .stepper code { color:var(--step-accent); background:var(--code-bg); padding:.12rem .38rem; border-radius:5px; font-size:.84em; }
+    .stepper.gold { --step-accent:var(--gold); }
+    .stepper.blue { --step-accent:var(--blue); }
     .matrix { overflow:auto; margin-top:2rem; border:1px solid var(--line); border-radius:16px; }
     table { border-collapse:collapse; min-width:980px; font-size:.82rem; line-height:1.5; }
     th,td { padding:.9rem; text-align:left; vertical-align:top; border:1px solid var(--line); }
@@ -517,6 +530,41 @@ PATH="/Users/you/StageTimePNW_Automation/venv/bin:/usr/local/bin:/usr/bin:/bin:/
                                                        [ Unlocks Suite 204 (PID 24088) ]</code></pre></figure>
 <div class="insight mall"><span>Mall metaphor</span><p>Now—and only now—with the conftest.py blueprint dry on the table, the zsh dispatch radio humming, and the v3.14.5 (venv) custom tool belt sitting ready, Arthur types into the radio:<br>pytest<br>test_login.py<br>pytest test_login.py<br>The radio signal shoots straight up to Commander XNU's Penthouse Office.<br>Commander XNU grabs the v3.14.5 custom tool belt, hires Monty (The Python Automation Worker), straps the tool belt around his waist, hands him the conftest.py blueprint, and unlocks the concrete doors to Suite 204 (Process PID 24088)!</p></div>
 <div class="insight silicon"><span>Silicon reality</span><p>The zsh shell parses the command, locates the pytest executable in venv/bin/pytest, and executes a posix_spawn() / execve() system call. The XNU Kernel allocates a new process (PID 24088), loads Python 3.14.5, binds the venv site-packages to the runtime, and begins executing the test pipeline from Act I!</p></div>
+<h3>6. The Mission Ignition: A Four-Act Execution Chain</h3>
+<figure class="code-panel"><figcaption>Bash</figcaption><pre><code>SDET_MASTER on  main [!] via  v3.14.5 (venv) on
+○ ❯ pytest test_login.py</code></pre></figure>
+<div class="insight mall"><span>Mall metaphor</span><p>Arthur presses his thumb firmly against the mechanical Return key: CLACK. The instant that switch makes contact, an ultra-fast, four-act chain reaction ripples through the steel and silicon corridors of the M5 Citadel.</p></div>
+<ol class="stepper gold">
+<li><span class="num">1</span><h4>The Route Lookup</h4><p>The dispatch runner pulls his laminated Search Priority Card (<code>$PATH</code>) and finds pytest waiting at Priority #1: <code>SDET_MASTER/venv/bin/pytest</code>.</p></li>
+<li><span class="num">2</span><h4>The POSIX Handshake</h4><p>The kernel's <code>fork()</code> clones the runner into a parent and a child; <code>execve()</code> loads the CPython binary named on the shebang line into the child.</p></li>
+<li><span class="num">3</span><h4>Penthouse: Commander XNU</h4><p>XNU punches a timecard &mdash; <strong>PID #48204</strong> &mdash; and the Silicon Centurion (the MMU) reserves a private slice of the 128GB Unified Memory floor.</p></li>
+<li><span class="num">4</span><h4>Suite 204 Awakens</h4><p>Monty (CPython 3.14.5) is born into active RAM inside Suite 204, blueprints in hand, ready to test.</p></li>
+</ol>
+<div class="act-kicker">Act 1 &middot; The $PATH priority card &amp; the shebang</div>
+<div class="insight mall"><span>Mall metaphor</span><p>Arthur's fast-footed dispatch runner hears the command roar through the speaker: "Deploy pytest for the login mission!" He reaches into his breast pocket for his laminated Search Priority Card ($PATH).<br>The old route sent him down into the mall's dusty, locked public basement (/usr/bin/python3), where only outdated tools were kept. Because Arthur ran source venv/bin/activate, a bold red stamp now sits at Priority #1.</p></div>
+<figure class="code-panel"><figcaption>Text</figcaption><pre><code>PRIORITY #1: /Users/viradeth/Desktop/SDET_MASTER/venv/bin/</code></pre></figure>
+<div class="insight mall"><span>Mall metaphor</span><p>The runner sprints straight to Suite 101's private locker, bypasses the public basement entirely, and pulls the pytest launcher off the rack. He flips it over and reads the tiny brass plate stamped onto the handle &mdash; the shebang line.</p></div>
+<figure class="code-panel"><figcaption>Bash</figcaption><pre><code>#!/Users/viradeth/Desktop/SDET_MASTER/venv/bin/python</code></pre></figure>
+<div class="insight mall"><span>Mall metaphor</span><p>The plate gives an absolute, unbendable instruction: "Do not use generic mall labor. Execute this test using the Master Contractor Gear (venv/bin/python) mounted on Hook #1 back in Step 0!"</p></div>
+<div class="act-kicker">Act 2 &middot; The shadow clone &amp; the tool swap</div>
+<div class="insight mall"><span>Mall metaphor</span><p>To launch the mission without freezing Arthur's desk intercom, the operating system runs a lightning-fast two-step maneuver. The Shadow Clone: the dispatch runner duplicates himself &mdash; the original stays behind keeping the radio responsive, while the child runner grabs the work order and sprints down the corridor. The Metamorphosis: the child dashes into the locker, strips off his generic uniform, and dons the full Master Contractor Toolbelt (venv/bin/python3.14) from Step 0, snapping the pytest launcher to his hip before stepping into the pneumatic transit chute.</p></div>
+<div class="insight silicon"><span>Silicon reality</span><p>fork() duplicates the terminal process into parent and child PIDs. The kernel inspects the shebang (#!/Users/.../venv/bin/python), then execve() overwrites the child's address space with the CPython 3.14 Mach-O binary &mdash; no new process is created, the child simply becomes Python.</p></div>
+<div class="act-kicker">Act 3 &middot; Commander XNU &amp; the Silicon Centurion</div>
+<div class="insight mall"><span>Mall metaphor</span><p>At the top of the Citadel, Commander XNU reviews the runner's credentials &mdash; project bureau, requested tooling, target script &mdash; and approves the mission. He pulls the lever on the master punch clock.</p></div>
+<figure class="code-panel"><figcaption>Text</figcaption><pre><code>TIMECARD PUNCHED: PROCESS ID (PID) #48204</code></pre></figure>
+<div class="insight mall"><span>Mall metaphor</span><p>Commander XNU radios the Silicon Centurion (the Hardware MMU), who flips open the gate to a secure, private room on the 128GB Unified Memory floor &mdash; configuring hardware page tables so no other program in the mall can read, overwrite, or interfere with this test's memory space.</p></div>
+<div class="act-kicker">Act 4 &middot; Suite 204 awakens: Monty takes the floor</div>
+<div class="insight mall"><span>Mall metaphor</span><p>The steel doors of Suite 204 slide open with a hiss of pressurized air. Monty &mdash; the CPython Automation Engine, PID #48204 &mdash; is no longer an inert file on the 2TB SSD; he is now a live, breathing process consuming CPU cycles. He unrolls Arthur's golden binder (conftest.py): lexes the source into an AST, compiles it to bytecode, executes @pytest.fixture, and grabs the dedicated hotline to Penny at the Appium Server. Then he keys his radio:<br>"Monty is on the clock in Suite 204. Process #48204 active. Blueprints compiled into 128GB RAM. Penny, wake up the iPhone 16 Pro simulator &mdash; we are driving the login screen now!"</p></div>
+<h3>7. Silicon Reality: The Technical Pipeline</h3>
+<ol class="stepper blue">
+<li><span class="num">1</span><h4>Shell Tokenizer &amp; PATH Search</h4><p>Zsh scans <code>$PATH</code> left-to-right and finds the binary at <code>/Users/viradeth/Desktop/SDET_MASTER/venv/bin/pytest</code>.</p></li>
+<li><span class="num">2</span><h4>POSIX System Calls: fork() + execve()</h4><p><code>fork()</code> duplicates the terminal process into a parent and child PID; the kernel inspects the shebang, then <code>execve()</code> overwrites the child's address space with the CPython 3.14 Mach-O binary.</p></li>
+<li><span class="num">3</span><h4>Kernel Process &amp; MMU Memory Mapping</h4><p>The XNU kernel allocates a Process Control Block with PID 48204; the hardware MMU assigns Translation Lookaside Buffer entries and maps virtual memory directly to 128GB of Unified Memory.</p></li>
+<li><span class="num">4</span><h4>CPython VM Execution &amp; Pytest Engine</h4><p>conftest.py and test_login.py are parsed into Abstract Syntax Trees, compiled to Python bytecode, and executed by the PVM &mdash; pytest collects tests, runs the driver fixture, and dispatches HTTP WebDriver commands.</p></li>
+</ol>
+<div class="insight why"><span>Why it matters</span><p><strong>True process sandboxing (POSIX safety).</strong> Spawning a fully isolated child process (PID #48204) means any catastrophic test failure, memory leak, or C-level extension crash stays contained inside Suite 204. Arthur's VS Code editor, his drafting desk, and the host macOS system remain 100% stable and untouched.</p></div>
+<div class="insight why"><span>Why it matters</span><p><strong>Zero dependency collisions.</strong> Because the shebang explicitly points to /Users/viradeth/Desktop/SDET_MASTER/venv/bin/python, the kernel guarantees that only the packages installed inside Suite 101 (Appium-Python-Client, selenium, pytest) get loaded into memory. Apple's system Python is completely bypassed.</p></div>
+<div class="insight why"><span>Why it matters</span><p><strong>Deterministic CI/CD execution.</strong> This exact four-act sequence occurs identically whether running locally on an M5 Max MacBook Pro or inside a headless Linux/macOS runner in a GitHub Actions pipeline.</p></div>
 <h3>📋 SUMMARY MATRIX: THE ACT 0 PREPARATION</h3>
 <div class="matrix"><table>
 <tr><th>🏬 The Super Mall Metaphor</th><th>💻 The Silicon Reality (M5 Max)</th><th>⚙️ What Is Happening?</th><th>💡 THE WHY: Engineering Reason</th></tr>
