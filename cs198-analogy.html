@@ -325,9 +325,11 @@
     pre { width:100%; max-width:100%; margin:0; padding:1.4rem; overflow-x:auto; color:var(--code-ink); line-height:1.45; }
     .code-panel pre,
     .code-panel pre code { font-size:var(--course-map-font-size) !important; }
-    .insight { position:relative; margin:1rem 0; padding:1.1rem 4.4rem 1.1rem 1.25rem; border:1px solid var(--line); border-left-width:4px; border-radius:0 12px 12px 0; background:var(--paper); box-shadow:0 2px 10px rgba(60,50,30,0.04); }
-    .insight span { display:block; margin-bottom:.3rem; text-transform:uppercase; letter-spacing:.13em; font:800 .6rem/1.2 ui-monospace,monospace; }
+    .insight { position:relative; margin:1rem 0; padding:1.1rem 4.4rem 1.1rem 1.25rem; border:1px solid var(--line); border-left-width:4px; border-radius:0 12px 12px 0; background:var(--paper); box-shadow:0 2px 10px rgba(60,50,30,0.04); transition:box-shadow .18s,transform .18s; }
+    .insight:hover { box-shadow:0 6px 20px rgba(60,50,30,0.08); transform:translateY(-1px); }
+    .insight span { display:inline-flex; align-items:center; gap:.4rem; margin-bottom:.55rem; padding:.25rem .65rem; border-radius:99px; text-transform:uppercase; letter-spacing:.12em; font:800 .6rem/1.3 ui-monospace,monospace; }
     .insight p { margin:0; color:#423d33; white-space:pre-wrap; overflow-wrap:anywhere; font-size:.9rem; line-height:1.6; }
+    .insight p strong { font-weight:800; }
     .insight p.diagram { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.78rem; line-height:1.45; }
     .insight-actions { position:absolute; top:.8rem; right:.8rem; display:flex; gap:.35rem; }
     .insight-action { width:1.8rem; height:1.8rem; display:grid; place-items:center; padding:0; border:1px solid var(--line); border-radius:7px; background:var(--paper); color:var(--muted); cursor:pointer; font:800 .9rem/1 system-ui,sans-serif; transition:border-color .15s,background .15s,color .15s,transform .15s; }
@@ -343,9 +345,18 @@
     .insight-action[hidden] { display:none; }
     .insight.editing { border-color:var(--accent); box-shadow:0 0 0 3px rgba(217,119,87,.15); }
     .insight.editing p { min-height:4rem; padding:.7rem .8rem; border:1px dashed var(--muted); border-radius:8px; background:#fbf9f4; color:var(--ink); outline:none; white-space:pre-wrap; }
-    .mall { border-left-color:var(--gold) } .mall span { color:var(--gold) }
-    .silicon { border-left-color:var(--blue) } .silicon span { color:var(--blue) }
-    .why { border-left-color:var(--purple) } .why span { color:var(--purple) }
+    .mall { border-left-color:var(--gold); background:linear-gradient(135deg, rgba(168,121,31,.06), var(--paper) 45%); }
+    .mall span { color:var(--gold); background:rgba(168,121,31,.12); }
+    .mall span::before { content:'🏬'; font-size:.85em; }
+    .mall p strong { color:var(--gold-dark, #8a6118); }
+    .silicon { border-left-color:var(--blue); background:linear-gradient(135deg, rgba(63,126,166,.06), var(--paper) 45%); }
+    .silicon span { color:var(--blue); background:rgba(63,126,166,.12); }
+    .silicon span::before { content:'💻'; font-size:.85em; }
+    .silicon p strong { color:var(--blue); }
+    .why { border-left-color:var(--purple); background:linear-gradient(135deg, rgba(122,92,179,.06), var(--paper) 45%); }
+    .why span { color:var(--purple); background:rgba(122,92,179,.12); }
+    .why span::before { content:'💡'; font-size:.85em; }
+    .why p strong { color:var(--purple); }
     .act-kicker { margin:2.6rem 0 .9rem; display:flex; align-items:baseline; gap:.6rem; color:var(--gold); text-transform:uppercase; letter-spacing:.12em; font:800 .74rem/1.4 ui-monospace,monospace; }
     .act-kicker:before { content:""; width:1.6rem; height:1px; background:var(--gold); opacity:.55; }
     .stepper { counter-reset:step; list-style:none; margin:1.85rem 0; padding:1.6rem 1.75rem 1.3rem; border:1px solid var(--line); border-radius:16px; background:var(--paper); box-shadow:0 2px 12px rgba(60,50,30,0.05); }
@@ -486,7 +497,7 @@
     ├── bin/           &lt;-- [The Tool Rack: python3.14 on Hook #1, awaiting pytest]
     └── lib/           &lt;-- [The Parts Shelves: Currently empty, awaiting Appium/Selenium]</code></pre></figure>
 <div class="insight mall"><span>Mall metaphor</span><p>The locker is built, clean, and structurally sound.<br>With the empty cabinet securely in place, Arthur is ready to flip on its power switch (source venv/bin/activate), call the courier to stock the shelves (pip install ...), and prepare Monty for the mission.</p></div>
-<h3>Step 1: Flipping the Radio Switch (source venv/bin/activate)</h3>
+<h3>Step 1: Tuning the Radio to the Locker Channel (source venv/bin/activate)</h3>
 <figure class="code-panel"><figcaption>Text</figcaption><pre><code>Terminal Prompt:
 SDET_MASTER on ⑂ main [!] via 🐍 v3.14.5 (venv) on ☁
 ❯ [ ]</code></pre></figure>
@@ -535,7 +546,7 @@ def driver():
     driver = webdriver.Remote("http://127.0.0.1:4723", options=options)
     yield driver
     driver.quit()</code></pre></figure>
-<div class="insight mall"><span>Mall metaphor</span><p>On Arthur's desk lies a special golden binder labeled conftest.py. In the construction world, this is the Master Pre-Flight Rigging &amp; Clean-up Rulebook.<br>Arthur writes the master fixture directive: @pytest.fixture(scope="function") def driver():.<br>This tells any worker who enters the suite:<br>The Pre-Shift Rigging (Setup): "Before you test a single button on that iPhone 16 Pro screen, you are legally required to open a secure direct line to Suite 400 (Appium), commission a fresh iPhone 16 Pro Simulator, and verify the connection at 127.0.0.1:4723."<br>The Hand-off: "Hand the active steering wheel (driver) to the test worker so they can execute their test steps."<br>The Post-Shift Sanitization (Teardown): "The very millisecond the test finishes&mdash;whether it passes, fails, or catches fire&mdash;you must immediately order Suite 400 to close the app, clean up the work area, and wipe the session clean (driver.quit()). Do not leave rogue simulators burning electricity and clogging up the mall!"<br>Not a single squiggly red line appears beneath Arthur's pen: IntelliSense already knows pytest, webdriver, and XCUITestOptions, because Step 2's delivery is sitting right there on the shelf.</p></div>
+<div class="insight mall"><span>Mall metaphor</span><p>On Arthur's desk lies a special golden binder labeled conftest.py. In the construction world, this is the Master Pre-Flight Rigging &amp; Clean-up Rulebook.<br>Arthur writes the master fixture directive: @pytest.fixture(scope="function") def driver():. This tells any worker who enters the suite:<br><strong>The Pre-Shift Rigging (Setup):</strong> "Before you test a single button on that iPhone 16 Pro screen, you are legally required to open a secure direct line to Suite 400 (Appium), commission a fresh iPhone 16 Pro Simulator, and verify the connection at 127.0.0.1:4723."<br><strong>The Hand-off:</strong> "Hand the active steering wheel (driver) to the test worker so they can execute their test steps."<br><strong>The Post-Shift Sanitization (Teardown):</strong> "The very millisecond the test finishes&mdash;whether it passes, fails, or catches fire&mdash;you must immediately order Suite 400 to close the app, clean up the work area, and wipe the session clean (driver.quit()). Do not leave rogue simulators burning electricity and clogging up the mall!"<br>Not a single squiggly red line appears beneath Arthur's pen: IntelliSense already knows pytest, webdriver, and XCUITestOptions, because Step 2's delivery is sitting right there on the shelf.</p></div>
 <div class="insight silicon"><span>Silicon reality</span><p>conftest.py is the root configuration and fixture discovery file for the pytest test framework. The @pytest.fixture(scope="function") decorator registers a generator hook with pytest's dependency injection engine. When a test function requests the driver parameter, pytest executes the setup code up to yield before handing control to the test body, and guarantees execution of the teardown code (driver.quit()) during post-test cleanup, even on failure.</p></div>
 <div class="insight why"><span>Why it matters</span><p>Hermetic Isolation &amp; Clean State Guarantees.<br>Automated tests must be independent and idempotent. If a test fails halfway through, it may leave modal dialogs, half-submitted text fields, or stale authentication tokens on the screen. The conftest.py fixture lifecycle guarantees that every single test begins with a fresh, predictable environment and completely destroys its state upon completion.</p></div>
 <h3>📋 SUMMARY MATRIX: THE ACT 0 PREPARATION</h3>
