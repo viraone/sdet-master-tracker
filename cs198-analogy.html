@@ -396,55 +396,8 @@
   <main id="content">
   <header class="hero"><div class="hero-inner"><div class="eyebrow">Advanced systems lecture · Module 01</div><h1>CS 198: Advanced Mobile Test Infrastructure &amp; Systems Architecture</h1><p class="subtitle">Module 1: The Client Runtime, OS Kernel Boundaries, Protocol Serialization, and Transport Mechanics</p></div></header>
   <div class="shell">
-    <nav aria-label="Course chapters"><h2>Course map</h2><a href="#full-systems-topology-the-m5-max-mega-mall"><span>01</span>🗺️ FULL SYSTEMS TOPOLOGY: THE M5 MAX MEGA-MALL</a><a href="#prologue-the-sandboxed-showcase"><span>02</span>🏛️ PROLOGUE: THE SANDBOXED SHOWCASE</a><a href="#act-0-the-architectural-bureau-the-specialized-tool-locker-venv"><span>03</span>🎬 ACT 0: THE ARCHITECTURAL BUREAU &amp; THE SPECIALIZED TOOL LOCKER (venv)</a><a href="#act-i-the-dispatch-radio-mission-ignition"><span>04</span>🎬 ACT I: THE DISPATCH RADIO &amp; MISSION IGNITION</a><a href="#act-ii-parsing-abstract-syntax-trees-ast-bytecode-compilation"><span>05</span>🎬 ACT II: PARSING, ABSTRACT SYNTAX TREES (AST), &amp; BYTECODE COMPILATION</a><a href="#act-iii-the-virtual-memory-heap-w3c-serialization"><span>06</span>🎬 ACT III: THE VIRTUAL MEMORY HEAP &amp; W3C SERIALIZATION</a><a href="#memory-boundary-deep-dive-mmu-tlb-unified-memory"><span>07</span>🛡️ MEMORY BOUNDARY DEEP DIVE: MMU, TLB, &amp; UNIFIED MEMORY</a><a href="#act-iv-application-layer-framing-http-1-1-post-session"><span>08</span>🎬 ACT IV: APPLICATION LAYER FRAMING (HTTP/1.1 POST /session)</a><a href="#act-v-the-transport-network-machinery-tcp-ip"><span>09</span>🎬 ACT V: THE TRANSPORT &amp; NETWORK MACHINERY (TCP/IP)</a><a href="#act-vi-the-loopback-driver-lo0-zero-wire-transit"><span>10</span>🎬 ACT VI: THE LOOPBACK DRIVER (lo0) &amp; ZERO-WIRE TRANSIT</a><a href="#act-vii-appium-receiving-dock-kqueue-xcuitest-dispatch"><span>11</span>🎬 ACT VII: APPIUM RECEIVING DOCK, kqueue, &amp; XCUITest DISPATCH</a><a href="#act-viii-complete-systems-mall-translation-matrix"><span>12</span>📋 ACT VIII: COMPLETE SYSTEMS &amp; MALL TRANSLATION MATRIX</a></nav>
-    <article><section id="full-systems-topology-the-m5-max-mega-mall" class="chapter"><div class="chapter-kicker">Chapter 01</div>
-<figure class="code-panel"><figcaption>System map</figcaption><pre><code>==================================================================================================
-                 🏢 THE 16.2-INCH M5 MAX MEGA-MALL &amp; LOGISTICS COMPLEX 🏢
-==================================================================================================
- [ 🖥️ FRONT GLASS PAVILION ] ── 16.2-inch Liquid Retina XDR Display (Visual Front)
- [ 🗄️ DEEP ARCHIVE VAULT   ] ── 2TB NVMe SSD Bedrock (Permanent Blueprint &amp; OS Storage)
- [ 👷 OPERATIONS CREW     ] ── 18-Core CPU (18 General Floor Managers executing tasks)
- [ 🎨 DIGITAL SIGNAGE CREW ] ── 40-Core GPU (40 High-Speed Visual Simulation Renderers)
- [ 📦 THE CENTRAL BASEMENT ] ── 128-Acre Unified Warehouse (128GB Unified Memory / RAM)
-==================================================================================================</code></pre></figure>
-<figure class="code-panel"><figcaption>System map</figcaption><pre><code>🏬 THE M5 MAX MACBOOK PRO (THE MEGA-MALL)
-│
-├── 💻 SUITE 101: VS CODE (Architectural Drafting Bureau)
-│    │  Spawns POSIX Subprocess via Kernel fork() / execve()
-│    ▼
-├── 🐍 SUITE 204: CPYTHON RUNTIME (The Python Automation Worker: Monty, PID #48204)
-│    ├── 1. Source Lexing &amp; AST Generation
-│    ├── 2. Bytecode Compilation &amp; PVM Execution
-│    ├── 3. Memory Heap Allocation (PyDictObject Capabilities)
-│    ├── 4. W3C WebDriver Protocol Serialization (Dict ──► JSON String)
-│    └── 5. Application Layer Framing (HTTP POST /session)
-│
-├── 🛡️ THE HARDWARE MMU (The Silicon Centurion &amp; Security Gatekeeper)
-│    └── Translates Virtual Addresses via TLB/Page Tables to 128GB Unified Memory
-│
-├── ⚙️ HOST OS KERNEL: XNU / MACH / BSD (Commander XNU: Mall General Manager)
-│    ├── 6. POSIX Socket Layer Transition (`sys_socket.c`)
-│    ├── 7. TCP Layer: Mr. TCP (Segmentation, 32-bit Sequence IDs, Checksum Seals)
-│    ├── 8. IP Layer: Mr. IP (Routing Header Encapsulation: 127.0.0.1 ─► 127.0.0.1)
-│    └── 9. The lo0 Loopback Driver: Internal Pneumatic Vacuum Wall Chute
-│
-└── 🏪 SUITE 400: APPIUM SERVER / NODE.JS (Central Freight &amp; Logistics Hub: Penny)
-     ├── 10. kqueue Brass Alarm &amp; Inbound Socket Buffer Ingestion
-     ├── 11. TCP Stream Reassembly, Checksum Verification &amp; HTTP Parsing
-     └── 12. Direct In-Memory Office Handoff to Inspector XCUITest</code></pre></figure>
-<h3>Commander XNU &amp; the Silicon Workforce</h3>
-<div class="insight mall"><span>Mall metaphor</span><p>The 16.2-inch M5 Max Mega-Mall is an enterprise facility. Its operations are overseen by Commander XNU, an old-school military building director (the Mach-BSD hybrid kernel) who sits in the penthouse command office. He commands 18 Floor Managers (CPU Cores) who race across the building executing tenant tasks, and 40 Digital Signage Artists (GPU Cores) dedicated to rendering high-definition visuals on the 16.2-inch Grand Glass Pavilion. Beneath the retail level lies the 128-Acre Unified Subterranean Basement (128GB RAM), while deep underground sits the 2-Terabyte Steel Archival Vault (2TB NVMe SSD Bedrock) holding permanent blueprints.</p></div>
-<div class="insight silicon"><span>Silicon reality</span><p>The host runs macOS on Apple Silicon (M5 Max SoC). The kernel integrates Carnegie Mellon's Mach microkernel (thread scheduling, IPC, tasks), FreeBSD (POSIX compliance, networking, file systems), and IOKit/DriverKit (hardware driver frameworks). Compute resources are divided into an 18-core CPU cluster and a 40-core GPU cluster, both wired into a single 128GB unified memory architecture (UMA) rather than separate memory pools.</p></div>
-<div class="insight why"><span>Why it matters</span><p>High-Throughput Parallelism. Combining Mach's lightweight message-passing primitives with FreeBSD's battle-tested POSIX network stack allows macOS to schedule thousands of concurrent threads across asymmetric CPU core clusters while maintaining sub-millisecond I/O response times &mdash; the same substrate every process in this course (Monty, Penny, Inspector XCUITest) runs on top of.</p></div>
-</section>
-<section id="prologue-the-sandboxed-showcase" class="chapter"><div class="chapter-kicker">Chapter 02</div><h2>🏛️ PROLOGUE: THE SANDBOXED SHOWCASE</h2>
-<h3>The Core Problem: Crossing System Boundaries</h3>
-<figure class="code-panel"><figcaption>System map</figcaption><pre><code>[ Python Script (User Space) ] ───( Solid Concrete / Ballistic Security Glass )───► [ iPhone 16 Pro / StageTimePNW (Sandboxed) ]</code></pre></figure>
-<div class="insight mall"><span>Mall metaphor</span><p>Imagine standing in the bustling main concourse of the mall. Dead center sits the Apple Showcase Gallery, encased behind three-inch-thick ballistic security glass, displaying a pristine iPhone 16 Pro running the StageTimePNW app. You hold a piece of paper that says, "Click the Login button." You cannot walk through the glass. You cannot tap the screen with your hand. You cannot toss a rock through the window without mall security tackling you to the tile floor. Only authorized Apple technicians with biometric clearance badges may unlock that glass door and step inside. If you want that button tapped, your written request must travel through official postal channels, pass armed security turnstiles, clear building inspectors, and be handed to a certified Apple technician authorized to work behind the glass.</p></div>
-<div class="insight silicon"><span>Silicon reality</span><p>The iOS Simulator and the StageTimePNW target app execute inside isolated sandbox profiles enforced by macOS security daemons. An automated test script written in Python executes in unprivileged user space. It possesses zero direct memory pointers, zero hardware interrupts, and zero direct execution privileges inside Apple's private XCTest.framework or the Simulator's UI display server &mdash; the biometric badge in the metaphor is the code-signed, entitlement-gated access that only Apple's own automation daemons hold.</p></div>
-<div class="insight why"><span>Why it matters</span><p>System Integrity and Zero-Trust Security. Modern operating systems are designed around isolation. If an unprivileged user space script could directly manipulate UI elements or access the memory of another application without strict authentication and protocol boundaries, malicious software could easily hijack user sessions, read sensitive keychain data, or crash the host kernel. Every chapter that follows exists solely to get a request across that glass legitimately.</p></div>
-</section>
-<section id="act-0-the-architectural-bureau-the-specialized-tool-locker-venv" class="chapter">
+    <nav aria-label="Course chapters"><h2>Course map</h2><a href="#act-0-the-architectural-bureau-the-specialized-tool-locker-venv"><span>03</span>🎬 ACT 0: THE ARCHITECTURAL BUREAU &amp; THE SPECIALIZED TOOL LOCKER (venv)</a><a href="#act-i-the-dispatch-radio-mission-ignition"><span>04</span>🎬 ACT I: THE DISPATCH RADIO &amp; MISSION IGNITION</a><a href="#act-ii-parsing-abstract-syntax-trees-ast-bytecode-compilation"><span>05</span>🎬 ACT II: PARSING, ABSTRACT SYNTAX TREES (AST), &amp; BYTECODE COMPILATION</a><a href="#act-iii-the-virtual-memory-heap-w3c-serialization"><span>06</span>🎬 ACT III: THE VIRTUAL MEMORY HEAP &amp; W3C SERIALIZATION</a><a href="#memory-boundary-deep-dive-mmu-tlb-unified-memory"><span>07</span>🛡️ MEMORY BOUNDARY DEEP DIVE: MMU, TLB, &amp; UNIFIED MEMORY</a><a href="#act-iv-application-layer-framing-http-1-1-post-session"><span>08</span>🎬 ACT IV: APPLICATION LAYER FRAMING (HTTP/1.1 POST /session)</a><a href="#act-v-the-transport-network-machinery-tcp-ip"><span>09</span>🎬 ACT V: THE TRANSPORT &amp; NETWORK MACHINERY (TCP/IP)</a><a href="#act-vi-the-loopback-driver-lo0-zero-wire-transit"><span>10</span>🎬 ACT VI: THE LOOPBACK DRIVER (lo0) &amp; ZERO-WIRE TRANSIT</a><a href="#act-vii-appium-receiving-dock-kqueue-xcuitest-dispatch"><span>11</span>🎬 ACT VII: APPIUM RECEIVING DOCK, kqueue, &amp; XCUITest DISPATCH</a><a href="#act-viii-complete-systems-mall-translation-matrix"><span>12</span>📋 ACT VIII: COMPLETE SYSTEMS &amp; MALL TRANSLATION MATRIX</a></nav>
+    <article><section id="act-0-the-architectural-bureau-the-specialized-tool-locker-venv" class="chapter">
 <div class="chapter-kicker">Chapter 03</div>
 <h2>🎬 ACT 0: THE ARCHITECTURAL BUREAU &amp; THE SPECIALIZED TOOL LOCKER (venv)</h2>
 <p>Suite 101 (VS Code), the Architect, and the four-step ritual &mdash; build the locker, activate the radio, take delivery of the tools, and draft the golden binder &mdash; that must happen before any code can run.</p>
