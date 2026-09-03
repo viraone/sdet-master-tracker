@@ -342,6 +342,8 @@
     .insight-action.save:hover { color:#fff; background:#2f8f57; border-color:#2f8f57; }
     .insight-action.delete { color:#c1443f; border-color:#e7b9b3; background:#fdeceb; }
     .insight-action.delete:hover { color:#fff; background:#c1443f; border-color:#c1443f; }
+    .insight-action.add { color:var(--accent-dark); border-color:#eccdbd; background:#fbeee7; font-size:1.05rem; }
+    .insight-action.add:hover { color:#fff; background:var(--accent-dark); border-color:var(--accent-dark); }
     .insight-action[hidden] { display:none; }
     .insight.editing { border-color:var(--accent); box-shadow:0 0 0 3px rgba(217,119,87,.15); }
     .insight.editing p { min-height:4rem; padding:.7rem .8rem; border:1px dashed var(--muted); border-radius:8px; background:#fbf9f4; color:var(--ink); outline:none; white-space:pre-wrap; }
@@ -1948,6 +1950,7 @@ Content-Length: 144
       if (!body) return;
       const kind = card.classList.contains('mall') ? 'mall' : card.classList.contains('silicon') ? 'silicon' : 'why';
       const key = `${kind}-${index}`;
+      card.dataset.cardKey = key;
       if (deletedCards.has(key)) { card.remove(); return; }
       if (Object.prototype.hasOwnProperty.call(savedInsightEdits, key)) body.textContent = savedInsightEdits[key];
       const markDiagram = () => body.classList.toggle('diagram', /[│─┌┐└┘├┤┬┴┼═║╔╗╚╝▲▼◀▶►◄]/.test(body.textContent));
@@ -1968,7 +1971,8 @@ Content-Length: 144
       save.type = 'button'; save.className = 'insight-action save'; save.textContent = '✓'; save.hidden = true;
       save.title = 'Save changes'; save.setAttribute('aria-label', 'Save changes');
       const del = makeCardDeleteButton(card, key, `${kind === 'mall' ? 'Mall metaphor' : kind === 'silicon' ? 'Silicon reality' : 'Why it matters'} card`);
-      actions.append(edit, cancel, copy, save, del); card.appendChild(actions);
+      const add = makeAddBashButton(card);
+      actions.append(add, edit, cancel, copy, save, del); card.appendChild(actions);
 
       // Text pasted from elsewhere (e.g. a hard-wrapped source doc, one line per
       // sentence) shouldn't turn into a wall of forced line breaks here — these
@@ -2100,13 +2104,18 @@ Content-Length: 144
       localStorage.setItem(CODE_PANEL_EDITS_STORAGE, JSON.stringify(edits));
     }
     const savedCodePanelEdits = loadCodePanelEdits();
-    document.querySelectorAll('#content .code-panel').forEach((panel, index) => {
+
+    // Wires up edit/copy/save/add/delete for one code panel. Shared by the
+    // panels already in the page and by new Bash blocks created via the "+"
+    // button below. `onSave` lets callers choose how the saved text is
+    // persisted (existing panels use CODE_PANEL_EDITS_STORAGE keyed by
+    // position; newly-added blocks store their own text directly).
+    function initCodePanel(panel, key, { onSave } = {}) {
       const figcaption = panel.querySelector('figcaption');
       const body = panel.querySelector('pre code') || panel.querySelector('pre');
-      if (!figcaption || !body) return;
-      const key = `code-${index}`;
-      if (deletedCards.has(key)) { panel.remove(); return; }
-      if (Object.prototype.hasOwnProperty.call(savedCodePanelEdits, key)) body.textContent = savedCodePanelEdits[key];
+      if (!figcaption || !body) return null;
+      panel.dataset.cardKey = key;
+      if (deletedCards.has(key)) { panel.remove(); return null; }
 
       const actions = document.createElement('div');
       actions.className = 'code-panel-actions';
@@ -2123,7 +2132,8 @@ Content-Length: 144
       save.type = 'button'; save.className = 'insight-action save'; save.textContent = '✓'; save.hidden = true;
       save.title = 'Save changes'; save.setAttribute('aria-label', 'Save changes');
       const del = makeCardDeleteButton(panel, key, `${figcaption.textContent.trim()} code block`);
-      actions.append(edit, cancel, copy, save, del);
+      const add = makeAddBashButton(panel);
+      actions.append(add, edit, cancel, copy, save, del);
       figcaption.appendChild(actions);
 
       let beforeEdit = body.textContent;
@@ -2167,9 +2177,12 @@ Content-Length: 144
       save.addEventListener('click', () => {
         const text = body.innerText.replace(/\r\n?/g, '\n').trim();
         body.textContent = text;
-        const edits = loadCodePanelEdits();
-        edits[key] = text;
-        saveCodePanelEdits(edits);
+        if (onSave) onSave(text);
+        else {
+          const edits = loadCodePanelEdits();
+          edits[key] = text;
+          saveCodePanelEdits(edits);
+        }
         beforeEdit = text;
         finishEditing();
       });
@@ -2177,6 +2190,79 @@ Content-Length: 144
         if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); save.click(); }
         if (event.key === 'Escape') { event.preventDefault(); cancel.click(); }
       });
+      return { edit };
+    }
+
+    document.querySelectorAll('#content .code-panel').forEach((panel, index) => {
+      const key = `code-${index}`;
+      if (Object.prototype.hasOwnProperty.call(savedCodePanelEdits, key)) {
+        const body = panel.querySelector('pre code') || panel.querySelector('pre');
+        if (body) body.textContent = savedCodePanelEdits[key];
+      }
+      initCodePanel(panel, key);
+    });
+
+    // "+" button (on insight cards and code panels alike): inserts a new,
+    // empty Bash block right after that element, ready to type into. New
+    // blocks are this-browser-only, like every other edit above; each is
+    // chained onto whichever card/panel it was added after so it reappears
+    // in the same spot on reload.
+    const ADDED_BASH_STORAGE = 'cs198_added_bash_blocks_v1';
+    function loadAddedBashBlocks() {
+      try { return JSON.parse(localStorage.getItem(ADDED_BASH_STORAGE)) || []; }
+      catch { return []; }
+    }
+    function saveAddedBashBlocks(list) {
+      localStorage.setItem(ADDED_BASH_STORAGE, JSON.stringify(list));
+    }
+    function createBashPanel(id, text) {
+      const panel = document.createElement('figure');
+      panel.className = 'code-panel';
+      const figcaption = document.createElement('figcaption');
+      figcaption.textContent = 'Bash';
+      const pre = document.createElement('pre');
+      const code = document.createElement('code');
+      code.textContent = text || '';
+      pre.appendChild(code);
+      panel.append(figcaption, pre);
+      const ctl = initCodePanel(panel, id, {
+        onSave: (newText) => {
+          const list = loadAddedBashBlocks();
+          const rec = list.find((r) => r.id === id);
+          if (rec) { rec.text = newText; saveAddedBashBlocks(list); }
+        },
+      });
+      return { panel, ctl };
+    }
+    function makeAddBashButton(afterElement) {
+      const add = document.createElement('button');
+      add.type = 'button'; add.className = 'insight-action add'; add.textContent = '+';
+      add.title = 'Add a Bash block after this'; add.setAttribute('aria-label', 'Add a Bash block after this');
+      add.addEventListener('click', () => {
+        const afterKey = afterElement.dataset.cardKey;
+        if (!afterKey) return;
+        const id = `added-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const list = loadAddedBashBlocks();
+        list.push({ id, afterKey, text: '' });
+        saveAddedBashBlocks(list);
+        const { panel, ctl } = createBashPanel(id, '');
+        // Insert into the document first — a detached element can't take
+        // focus, so auto-entering edit mode only works once it's live.
+        afterElement.insertAdjacentElement('afterend', panel);
+        if (ctl) ctl.edit.click();
+        panel.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      });
+      return add;
+    }
+    // Restore previously-added Bash blocks in creation order, so a block
+    // added after another added block can always find its anchor already
+    // in the DOM by the time its own turn comes up.
+    loadAddedBashBlocks().forEach((rec) => {
+      if (deletedCards.has(rec.id)) return;
+      const anchor = document.querySelector(`[data-card-key="${CSS.escape(rec.afterKey)}"]`);
+      if (!anchor) return;
+      const { panel } = createBashPanel(rec.id, rec.text);
+      anchor.insertAdjacentElement('afterend', panel);
     });
 
     // Per-chapter delete (this browser only). Confirms before removing.
