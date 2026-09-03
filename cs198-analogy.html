@@ -1180,45 +1180,101 @@ Content-Length: 144
     }
     function base64EncodeUtf8(str) { return btoa(unescape(encodeURIComponent(str))); }
     function base64DecodeUtf8(b64) { return decodeURIComponent(escape(atob(b64.replace(/\n/g, '')))); }
+    function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
-    // Finds the Nth (0-based, document order) insight-card block in the raw
-    // page source and swaps just its <p> text for newText, leaving everything
-    // else in the file untouched. Throws if the live GitHub source no longer
-    // matches what was on screen when editing started (someone/something else
-    // changed it), rather than risk overwriting the wrong text.
-    function patchInsightCardInSource(rawText, insightIndex, beforeEdit, newText) {
-      const re = /<div class="insight (mall|silicon|why)"><span>[^<]*<\/span><p>([\s\S]*?)<\/p><\/div>/gd;
-      let match, i = 0, target = null;
-      while ((match = re.exec(rawText)) !== null) {
-        if (i === insightIndex) { target = match; break; }
-        i++;
+    // Finds one card's markup in the raw page source, by the same `key`
+    // used everywhere above (e.g. "mall-3", "code-5", or "added-<id>" for a
+    // Bash block previously published via the "+" button). Returns the byte
+    // range of the whole element and of just its editable inner text, or
+    // null if it isn't there. Insight cards and original code panels are
+    // located by position (the Nth one, same order as the page's own
+    // querySelectorAll); published "+" blocks are located by the
+    // data-card-key attribute baked into their markup when they were first
+    // inserted, since their position isn't fixed ahead of time.
+    function locateCardInSource(rawText, key) {
+      if (key.startsWith('added-')) {
+        const re = new RegExp(
+          `<figure class="code-panel" data-card-key="${escapeRegExp(key)}"><figcaption>[^<]*<\\/figcaption><pre><code>([\\s\\S]*?)<\\/code><\\/pre><\\/figure>`,
+          'd'
+        );
+        const m = re.exec(rawText);
+        return m ? { fullRange: m.indices[0], innerRange: m.indices[1] } : null;
       }
-      if (!target) throw new Error('Could not find that card in the GitHub source — it may have moved or been deleted there.');
-      const decoded = decodeHtmlFragment(target[2]);
-      if (decoded !== beforeEdit) {
-        throw new Error("The file on GitHub doesn't match what you started editing (it changed since this page loaded). Reload the page and try again.");
+      const insightMatch = /^(mall|silicon|why)-(\d+)$/.exec(key);
+      if (insightMatch) {
+        const targetIndex = Number(insightMatch[2]);
+        const re = /<div class="insight (?:mall|silicon|why)"><span>[^<]*<\/span><p>([\s\S]*?)<\/p><\/div>/gd;
+        let m, i = 0;
+        while ((m = re.exec(rawText)) !== null) {
+          if (i === targetIndex) return { fullRange: m.indices[0], innerRange: m.indices[1] };
+          i++;
+        }
+        return null;
       }
-      const [pStart, pEnd] = target.indices[2];
-      return rawText.slice(0, pStart) + escapeHtml(newText) + rawText.slice(pEnd);
+      const codeMatch = /^code-(\d+)$/.exec(key);
+      if (codeMatch) {
+        const targetIndex = Number(codeMatch[1]);
+        const re = /<figure class="code-panel"><figcaption>[^<]*<\/figcaption><pre><code>([\s\S]*?)<\/code><\/pre><\/figure>/gd;
+        let m, i = 0;
+        while ((m = re.exec(rawText)) !== null) {
+          if (i === targetIndex) return { fullRange: m.indices[0], innerRange: m.indices[1] };
+          i++;
+        }
+        return null;
+      }
+      return null;
     }
 
-    async function commitInsightEditToGithub(insightIndex, beforeEdit, newText) {
+    // Swaps just a card's inner text for newText, leaving everything else in
+    // the file untouched. Throws if the live GitHub source no longer matches
+    // what was on screen when editing started (someone/something else
+    // changed it), rather than risk overwriting the wrong text.
+    function patchCardTextInSource(rawText, key, beforeText, newText) {
+      const loc = locateCardInSource(rawText, key);
+      if (!loc) throw new Error(`Could not find "${key}" in the GitHub source — it may have moved or been deleted there.`);
+      const [start, end] = loc.innerRange;
+      const decoded = decodeHtmlFragment(rawText.slice(start, end));
+      if (decoded !== beforeText) {
+        throw new Error("The file on GitHub doesn't match what you started editing (it changed since this page loaded). Reload the page and try again.");
+      }
+      return rawText.slice(0, start) + escapeHtml(newText) + rawText.slice(end);
+    }
+
+    // Inserts a brand-new Bash block right after an existing card/panel
+    // (identified by afterKey), tagging it with data-card-key so it can be
+    // found again (to edit it, or to chain another block after it) before
+    // the next page load renumbers it into the ordinary code-N scheme.
+    function insertBashBlockInSource(rawText, afterKey, newId, text) {
+      const loc = locateCardInSource(rawText, afterKey);
+      if (!loc) {
+        throw new Error(
+          `Could not find "${afterKey}" in the GitHub source to insert after. If that's a draft Bash block you haven't published yet, publish it first.`
+        );
+      }
+      const [, end] = loc.fullRange;
+      const snippet = `<figure class="code-panel" data-card-key="${newId}"><figcaption>Bash</figcaption><pre><code>${escapeHtml(text)}</code></pre></figure>`;
+      return rawText.slice(0, end) + snippet + rawText.slice(end);
+    }
+
+    async function githubGetFile() {
       const token = getGithubToken();
-      if (!token) return { skipped: true };
+      if (!token) return null;
       const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE_PATH}`;
       const headers = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' };
       const getRes = await fetch(`${apiUrl}?ref=${GITHUB_BRANCH}`, { headers });
       if (!getRes.ok) throw new Error(`GitHub read failed (${getRes.status}). Check your token is valid and scoped to ${GITHUB_OWNER}/${GITHUB_REPO}.`);
       const fileMeta = await getRes.json();
-      const rawText = base64DecodeUtf8(fileMeta.content);
-      const newRawText = patchInsightCardInSource(rawText, insightIndex, beforeEdit, newText);
-      const putRes = await fetch(apiUrl, {
+      return { rawText: base64DecodeUtf8(fileMeta.content), sha: fileMeta.sha, apiUrl, headers };
+    }
+
+    async function githubPutFile(file, newRawText, message) {
+      const putRes = await fetch(file.apiUrl, {
         method: 'PUT',
-        headers: { ...headers, 'Content-Type': 'application/json' },
+        headers: { ...file.headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: 'docs(cs198-analogy): edit insight card via in-page editor',
+          message,
           content: base64EncodeUtf8(newRawText),
-          sha: fileMeta.sha,
+          sha: file.sha,
           branch: GITHUB_BRANCH,
         }),
       });
@@ -1226,6 +1282,21 @@ Content-Length: 144
         const errBody = await putRes.json().catch(() => ({}));
         throw new Error(`GitHub commit failed (${putRes.status}): ${errBody.message || putRes.statusText}`);
       }
+    }
+
+    async function commitCardEditToGithub(key, beforeText, newText) {
+      const file = await githubGetFile();
+      if (!file) return { skipped: true };
+      const newRawText = patchCardTextInSource(file.rawText, key, beforeText, newText);
+      await githubPutFile(file, newRawText, `docs(cs198-analogy): edit ${key} via in-page editor`);
+      return { skipped: false };
+    }
+
+    async function commitNewBashBlockToGithub(id, afterKey, text) {
+      const file = await githubGetFile();
+      if (!file) return { skipped: true };
+      const newRawText = insertBashBlockInSource(file.rawText, afterKey, id, text);
+      await githubPutFile(file, newRawText, 'docs(cs198-analogy): add Bash block via in-page editor');
       return { skipped: false };
     }
 
@@ -2072,7 +2143,7 @@ Content-Length: 144
 
         if (text === prevText) return;
         save.hidden = false; save.disabled = true; save.textContent = '⏳'; save.title = 'Publishing to GitHub…';
-        commitInsightEditToGithub(index, prevText, text)
+        commitCardEditToGithub(key, prevText, text)
           .then((result) => {
             save.textContent = result.skipped ? '✓' : '☁️';
             save.title = result.skipped ? 'Saved in this browser only — click 🐙 above to publish live' : 'Published to GitHub';
@@ -2110,7 +2181,13 @@ Content-Length: 144
     // button below. `onSave` lets callers choose how the saved text is
     // persisted (existing panels use CODE_PANEL_EDITS_STORAGE keyed by
     // position; newly-added blocks store their own text directly).
-    function initCodePanel(panel, key, { onSave } = {}) {
+    //
+    // `isDraft`/`afterKey`/`onPublished` are only for "+"-created blocks
+    // that haven't made it into the GitHub source yet: their first save
+    // INSERTS new markup after `afterKey` instead of PATCHING existing text,
+    // and once that succeeds `onPublished()` fires (to drop the local draft
+    // record) and the block behaves like any other card from then on.
+    function initCodePanel(panel, key, { onSave, isDraft = false, afterKey, onPublished } = {}) {
       const figcaption = panel.querySelector('figcaption');
       const body = panel.querySelector('pre code') || panel.querySelector('pre');
       if (!figcaption || !body) return null;
@@ -2137,6 +2214,7 @@ Content-Length: 144
       figcaption.appendChild(actions);
 
       let beforeEdit = body.textContent;
+      let draft = isDraft;
       function finishEditing() {
         body.removeAttribute('contenteditable');
         panel.classList.remove('editing');
@@ -2176,6 +2254,7 @@ Content-Length: 144
       });
       save.addEventListener('click', () => {
         const text = body.innerText.replace(/\r\n?/g, '\n').trim();
+        const prevText = beforeEdit;
         body.textContent = text;
         if (onSave) onSave(text);
         else {
@@ -2185,6 +2264,29 @@ Content-Length: 144
         }
         beforeEdit = text;
         finishEditing();
+
+        if (!draft && text === prevText) return;
+        save.hidden = false; save.disabled = true; save.textContent = '⏳'; save.title = 'Publishing to GitHub…';
+        const publishPromise = draft
+          ? commitNewBashBlockToGithub(key, afterKey, text)
+          : commitCardEditToGithub(key, prevText, text);
+        publishPromise
+          .then((result) => {
+            if (!result.skipped && draft) {
+              draft = false;
+              if (onPublished) onPublished();
+            }
+            save.textContent = result.skipped ? '✓' : '☁️';
+            save.title = result.skipped ? 'Saved in this browser only — click 🐙 above to publish live' : 'Published to GitHub';
+          })
+          .catch((err) => {
+            console.error(err);
+            save.textContent = '⚠️'; save.title = 'Publish failed — saved in this browser only';
+            window.alert('Saved in this browser, but publishing to GitHub failed:\n\n' + err.message);
+          })
+          .finally(() => {
+            setTimeout(() => { save.hidden = true; save.disabled = false; save.textContent = '✓'; save.title = 'Save changes'; }, 2000);
+          });
       });
       body.addEventListener('keydown', (event) => {
         if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); save.click(); }
@@ -2215,7 +2317,13 @@ Content-Length: 144
     function saveAddedBashBlocks(list) {
       localStorage.setItem(ADDED_BASH_STORAGE, JSON.stringify(list));
     }
-    function createBashPanel(id, text) {
+    // A block is a "draft" for as long as its record lives in
+    // ADDED_BASH_STORAGE. Its first successful save publishes it (inserts
+    // it into the GitHub source, tagged with its id); onPublished() then
+    // drops the local record, since the file itself is now its home — on
+    // the next page load it's picked up by the ordinary #content
+    // .code-panel scan above like any other panel, with a plain code-N key.
+    function createBashPanel(id, text, afterKey) {
       const panel = document.createElement('figure');
       panel.className = 'code-panel';
       const figcaption = document.createElement('figcaption');
@@ -2231,6 +2339,11 @@ Content-Length: 144
           const rec = list.find((r) => r.id === id);
           if (rec) { rec.text = newText; saveAddedBashBlocks(list); }
         },
+        isDraft: true,
+        afterKey,
+        onPublished: () => {
+          saveAddedBashBlocks(loadAddedBashBlocks().filter((r) => r.id !== id));
+        },
       });
       return { panel, ctl };
     }
@@ -2245,7 +2358,7 @@ Content-Length: 144
         const list = loadAddedBashBlocks();
         list.push({ id, afterKey, text: '' });
         saveAddedBashBlocks(list);
-        const { panel, ctl } = createBashPanel(id, '');
+        const { panel, ctl } = createBashPanel(id, '', afterKey);
         // Insert into the document first — a detached element can't take
         // focus, so auto-entering edit mode only works once it's live.
         afterElement.insertAdjacentElement('afterend', panel);
@@ -2254,14 +2367,14 @@ Content-Length: 144
       });
       return add;
     }
-    // Restore previously-added Bash blocks in creation order, so a block
-    // added after another added block can always find its anchor already
-    // in the DOM by the time its own turn comes up.
+    // Restore previously-added, not-yet-published Bash blocks in creation
+    // order, so a block added after another added block can always find its
+    // anchor already in the DOM by the time its own turn comes up.
     loadAddedBashBlocks().forEach((rec) => {
       if (deletedCards.has(rec.id)) return;
       const anchor = document.querySelector(`[data-card-key="${CSS.escape(rec.afterKey)}"]`);
       if (!anchor) return;
-      const { panel } = createBashPanel(rec.id, rec.text);
+      const { panel } = createBashPanel(rec.id, rec.text, rec.afterKey);
       anchor.insertAdjacentElement('afterend', panel);
     });
 
