@@ -861,6 +861,7 @@ Content-Length: 144
       </div>
       <span class="spacer"></span>
       <button id="btn-settings" title="Configure AI (Gemini API key)">⚙️</button>
+      <button id="btn-github-token" title="Configure GitHub publishing (push card edits live)">🐙</button>
       <button id="btn-chat-clear" title="Clear chat history">🗑</button>
       <button id="btn-chat-close" title="Hide chat">✕</button>
     </div>
@@ -1129,6 +1130,102 @@ Content-Length: 144
       else localStorage.removeItem(GEMINI_KEY_STORAGE);
       updateAiStatus();
     });
+
+    // --- Publish insight-card edits live to GitHub (optional) --------------
+    // Without a token, the insight-card ✓ button only remembers edits in this
+    // browser's localStorage — nothing is sent anywhere, so a different
+    // browser/device, or an incognito session that later closes, sees the
+    // original text again. Configuring a token here makes ✓ also commit the
+    // change straight to GITHUB_BRANCH so it's live for every visitor.
+    const GITHUB_OWNER = 'viraone';
+    const GITHUB_REPO = 'sdet-master-tracker';
+    const GITHUB_BRANCH = 'main';
+    const GITHUB_FILE_PATH = 'cs198-analogy.html';
+    const GITHUB_TOKEN_STORAGE = 'cs198_github_pat';
+
+    const btnGithubToken = document.getElementById('btn-github-token');
+    function getGithubToken() { return localStorage.getItem(GITHUB_TOKEN_STORAGE) || ""; }
+    function updateGithubStatus() {
+      btnGithubToken.title = getGithubToken()
+        ? "🟢 Card edits publish live to GitHub — click to change/remove your token"
+        : "⚪ Card edits stay in this browser only — click to add a GitHub token and publish live";
+    }
+    updateGithubStatus();
+    btnGithubToken.addEventListener('click', () => {
+      const existing = getGithubToken();
+      const input = window.prompt(
+        "Paste a GitHub fine-grained personal access token, scoped ONLY to the " +
+        `${GITHUB_OWNER}/${GITHUB_REPO} repo with "Contents: Read and write" permission ` +
+        "(create one at github.com/settings/personal-access-tokens/new).\n" +
+        "It is stored ONLY in this browser's localStorage and is used only to commit card " +
+        `edits directly to the '${GITHUB_BRANCH}' branch.\n\n` +
+        "Leave empty and press OK to remove the saved token.",
+        existing
+      );
+      if (input === null) return; // cancelled
+      if (input.trim()) localStorage.setItem(GITHUB_TOKEN_STORAGE, input.trim());
+      else localStorage.removeItem(GITHUB_TOKEN_STORAGE);
+      updateGithubStatus();
+    });
+
+    function escapeHtml(text) {
+      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function decodeHtmlFragment(html) {
+      const t = document.createElement('template');
+      t.innerHTML = html;
+      return t.content.textContent;
+    }
+    function base64EncodeUtf8(str) { return btoa(unescape(encodeURIComponent(str))); }
+    function base64DecodeUtf8(b64) { return decodeURIComponent(escape(atob(b64.replace(/\n/g, '')))); }
+
+    // Finds the Nth (0-based, document order) insight-card block in the raw
+    // page source and swaps just its <p> text for newText, leaving everything
+    // else in the file untouched. Throws if the live GitHub source no longer
+    // matches what was on screen when editing started (someone/something else
+    // changed it), rather than risk overwriting the wrong text.
+    function patchInsightCardInSource(rawText, insightIndex, beforeEdit, newText) {
+      const re = /<div class="insight (mall|silicon|why)"><span>[^<]*<\/span><p>([\s\S]*?)<\/p><\/div>/gd;
+      let match, i = 0, target = null;
+      while ((match = re.exec(rawText)) !== null) {
+        if (i === insightIndex) { target = match; break; }
+        i++;
+      }
+      if (!target) throw new Error('Could not find that card in the GitHub source — it may have moved or been deleted there.');
+      const decoded = decodeHtmlFragment(target[2]);
+      if (decoded !== beforeEdit) {
+        throw new Error("The file on GitHub doesn't match what you started editing (it changed since this page loaded). Reload the page and try again.");
+      }
+      const [pStart, pEnd] = target.indices[2];
+      return rawText.slice(0, pStart) + escapeHtml(newText) + rawText.slice(pEnd);
+    }
+
+    async function commitInsightEditToGithub(insightIndex, beforeEdit, newText) {
+      const token = getGithubToken();
+      if (!token) return { skipped: true };
+      const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE_PATH}`;
+      const headers = { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' };
+      const getRes = await fetch(`${apiUrl}?ref=${GITHUB_BRANCH}`, { headers });
+      if (!getRes.ok) throw new Error(`GitHub read failed (${getRes.status}). Check your token is valid and scoped to ${GITHUB_OWNER}/${GITHUB_REPO}.`);
+      const fileMeta = await getRes.json();
+      const rawText = base64DecodeUtf8(fileMeta.content);
+      const newRawText = patchInsightCardInSource(rawText, insightIndex, beforeEdit, newText);
+      const putRes = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'docs(cs198-analogy): edit insight card via in-page editor',
+          content: base64EncodeUtf8(newRawText),
+          sha: fileMeta.sha,
+          branch: GITHUB_BRANCH,
+        }),
+      });
+      if (!putRes.ok) {
+        const errBody = await putRes.json().catch(() => ({}));
+        throw new Error(`GitHub commit failed (${putRes.status}): ${errBody.message || putRes.statusText}`);
+      }
+      return { skipped: false };
+    }
 
     // The Stanford-style Mobile SDET tutor persona (same tutor as code-explainer.html)
     const TUTOR_MISSION =
@@ -1960,6 +2057,7 @@ Content-Length: 144
         // innerText preserves visual line breaks inserted by Enter even when the
         // browser represents them as <div> or <br> nodes inside contenteditable.
         const text = body.innerText.replace(/\r\n?/g, '\n').trim();
+        const prevText = beforeEdit;
         body.textContent = text;
         markDiagram();
         const edits = loadInsightEdits();
@@ -1967,6 +2065,22 @@ Content-Length: 144
         saveInsightEdits(edits);
         beforeEdit = text;
         finishEditing();
+
+        if (text === prevText) return;
+        save.hidden = false; save.disabled = true; save.textContent = '⏳'; save.title = 'Publishing to GitHub…';
+        commitInsightEditToGithub(index, prevText, text)
+          .then((result) => {
+            save.textContent = result.skipped ? '✓' : '☁️';
+            save.title = result.skipped ? 'Saved in this browser only — click 🐙 above to publish live' : 'Published to GitHub';
+          })
+          .catch((err) => {
+            console.error(err);
+            save.textContent = '⚠️'; save.title = 'Publish failed — saved in this browser only';
+            window.alert('Saved in this browser, but publishing to GitHub failed:\n\n' + err.message);
+          })
+          .finally(() => {
+            setTimeout(() => { save.hidden = true; save.disabled = false; save.textContent = '✓'; save.title = 'Save changes'; }, 2000);
+          });
       });
       body.addEventListener('keydown', (event) => {
         if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); save.click(); }
